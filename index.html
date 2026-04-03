@@ -38,8 +38,8 @@
       display: block;
     }
 
-    /* 登录页 */
-    #login-page {
+    /* 登录/认证页 */
+    #auth-page {
       display: flex;
       justify-content: center;
       align-items: center;
@@ -114,7 +114,7 @@
     #main-page header {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       margin-bottom: 20px;
     }
     #main-page header h1 {
@@ -441,18 +441,17 @@
   </style>
 </head>
 <body>
-  <!-- 登录页 -->
-  <!--
-    欢迎页：用户输入固定密码后进入主界面。按照用户要求，标题去掉了空格和“的”字，
-    并且使用“背诵”二字突出功能。成功登录后直接切换到主界面，而不是采用滑动展开的方式。
-  -->
-  <div id="login-page" class="view active">
+  <!-- 认证页：邮箱注册/登录 -->
+  <div id="auth-page" class="view active">
     <div class="login-container">
-      <!-- 登录标题使用统一的文案，无空格且突出“背诵” -->
-      <h1>欢迎来到Justin专属单词背诵程序</h1>
-      <p>请输入密码后进入</p>
-      <input type="password" id="login-password" placeholder="请输入密码" />
-      <button id="login-btn">进入</button>
+      <h1>Justin专属单词背诵程序</h1>
+      <p>请使用邮箱注册或登录</p>
+      <input type="email" id="auth-email" placeholder="邮箱" />
+      <input type="password" id="auth-password" placeholder="密码" />
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <button id="login-btn">登录</button>
+        <button id="register-btn">注册</button>
+      </div>
     </div>
   </div>
 
@@ -460,6 +459,7 @@
   <div id="main-page" class="view">
     <header>
       <h1>Justin专属单词背诵程序</h1>
+      <button id="logout-btn" class="icon-btn" title="退出">退出</button>
     </header>
     <div class="import-section">
       <button id="open-import" class="import-btn">导入单词</button>
@@ -472,10 +472,8 @@
       </div>
       <!-- 需巩固单词及终巩固单词栏 -->
       <div class="list-column">
-        <!-- 需巩固单词组 -->
         <h2>需巩固单词</h2>
         <div id="review-lists" class="list-container"></div>
-        <!-- 终巩固单词组：独立于需巩固列表显示在其下方 -->
         <h2 style="margin-top:24px;">巩固单词 final</h2>
         <div id="final-lists" class="list-container"></div>
       </div>
@@ -551,297 +549,533 @@
     </div>
   </div>
 
-  <script>
-    (function() {
-      // 状态存储
-      let newLists = [];
-      // 需巩固单词列表，每个列表最多20个单词。当某个列表未满20个时会继续向该列表追加单词。
-      let reviewLists = [];
-      // 终巩固单词列表：来自需巩固单词列表的单词，每个列表最多20个，独立分组
-      let finalLists = [];
-      // 序号计数器：用于为新导入的列表和巩固列表生成编号
-      let newListCounter = 1;
-      let reviewListCounter = 1;
-      let finalListCounter = 1;
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      collection,
+      getDoc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      onSnapshot,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-      // 当前操作列表
-      let currentList = null;
-      let currentListType = null; // 'new' or 'review' or 'final'
-      let selectedMode = 'en2zh';
-      let selectedOrder = 'normal';
+    const firebaseConfig = {
+      apiKey: "AIzaSyAiad21KUwq4W6Ag6b25SPFztbWRx8FZow",
+      authDomain: "justin-voca.firebaseapp.com",
+      projectId: "justin-voca",
+      storageBucket: "justin-voca.firebasestorage.app",
+      messagingSenderId: "854453067641",
+      appId: "1:854453067641:web:8e37dcdbc706972daf99a8",
+      measurementId: "G-4YR62GXVM6"
+    };
 
-      // 页面元素
-      const loginPage = document.getElementById('login-page');
-      const mainPage = document.getElementById('main-page');
-      const importPage = document.getElementById('import-page');
-      const modePage = document.getElementById('mode-page');
-      const studyPage = document.getElementById('study-page');
-      const previewPage = document.getElementById('preview-page');
-      const modal = document.getElementById('modal');
-      const modalMsg = document.getElementById('modal-message');
-      const modalCancel = document.getElementById('modal-cancel');
-      const modalConfirm = document.getElementById('modal-confirm');
-      let modalCallback = null;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-      // 登录相关
-      const loginBtn = document.getElementById('login-btn');
-      const loginPwd = document.getElementById('login-password');
-      loginBtn.addEventListener('click', handleLogin);
-      loginPwd.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
+    // 数据结构
+    let newLists = [];
+    let reviewLists = [];
+    let finalLists = [];
+    let newListCounter = 1;
+    let reviewListCounter = 1;
+    let finalListCounter = 1;
+    let currentList = null;
+    let currentListType = null;
+    let selectedMode = 'en2zh';
+    let selectedOrder = 'normal';
+    let listsUnsubscribe = null;
+
+    // 页面引用
+    const authPage = document.getElementById('auth-page');
+    const mainPage = document.getElementById('main-page');
+    const importPage = document.getElementById('import-page');
+    const modePage = document.getElementById('mode-page');
+    const studyPage = document.getElementById('study-page');
+    const previewPage = document.getElementById('preview-page');
+    const modal = document.getElementById('modal');
+    const modalMsg = document.getElementById('modal-message');
+    const modalCancel = document.getElementById('modal-cancel');
+    const modalConfirm = document.getElementById('modal-confirm');
+
+    // 认证页元素
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const loginButton = document.getElementById('login-btn');
+    const registerButton = document.getElementById('register-btn');
+    const logoutButton = document.getElementById('logout-btn');
+
+    // 显示页面
+    function showPage(page) {
+      // 隐藏非认证页面
+      [mainPage, importPage, modePage, studyPage, previewPage].forEach(p => {
+        if (p) p.classList.remove('active');
       });
-
-      function handleLogin() {
-        const val = loginPwd.value.trim();
-        if (val === '070713') {
-          // 密码正确：清空输入框并隐藏登录页，跳转到主界面
-          loginPwd.value = '';
-          // 从文档中移除登录页（由于登录页样式使用 display:flex，因此需要彻底移除）
-          if (loginPage && loginPage.parentNode) {
-            loginPage.parentNode.removeChild(loginPage);
-          }
-          // 加载数据并切换到主界面
-          loadData();
-          showPage(mainPage);
-        } else {
-          showModal('密码错误', null);
-        }
-      }
-
-      // 如果网址带有#debug则跳过登录，用于调试
-      if (window.location.hash === '#debug') {
-        // 调试模式：直接移除登录页并显示主界面
-        if (loginPage && loginPage.parentNode) {
-          loginPage.parentNode.removeChild(loginPage);
-        }
-        loadData();
-        showPage(mainPage);
-      }
-
-      // 通用显示/隐藏函数
-      function showPage(page) {
-        // 隐藏主要功能页面（主/导入/模式/学习/预览），不处理登录页
-        [mainPage, importPage, modePage, studyPage, previewPage].forEach(p => {
-          p.classList.remove('active');
-        });
-        // 显示目标页面
-        page.classList.add('active');
-        // 如果切换到主界面，则刷新列表数据
-        if (page === mainPage) {
-          updateMainPage();
-        }
-      }
-
-      // 模态框
-      function showModal(message, onConfirm) {
-        modalMsg.textContent = message;
-        modal.classList.remove('hidden');
-        modalCallback = onConfirm;
-      }
-      modalCancel.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modalCallback = null;
-      });
-      modalConfirm.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        if (typeof modalCallback === 'function') {
-          modalCallback();
-        }
-        modalCallback = null;
-      });
-
-      // 数据加载与保存
-      function loadData() {
-        try {
-          newLists = JSON.parse(localStorage.getItem('newLists')) || [];
-          reviewLists = JSON.parse(localStorage.getItem('reviewLists')) || [];
-          finalLists = JSON.parse(localStorage.getItem('finalLists')) || [];
-          newListCounter = parseInt(localStorage.getItem('newListCounter')) || 1;
-          reviewListCounter = parseInt(localStorage.getItem('reviewListCounter')) || 1;
-          finalListCounter = parseInt(localStorage.getItem('finalListCounter')) || 1;
-        } catch (err) {
-          newLists = [];
-          reviewLists = [];
-          finalLists = [];
-          newListCounter = 1;
-          reviewListCounter = 1;
-          finalListCounter = 1;
-        }
-      }
-      function saveData() {
-        localStorage.setItem('newLists', JSON.stringify(newLists));
-        localStorage.setItem('reviewLists', JSON.stringify(reviewLists));
-        localStorage.setItem('finalLists', JSON.stringify(finalLists));
-        localStorage.setItem('newListCounter', newListCounter);
-        localStorage.setItem('reviewListCounter', reviewListCounter);
-        localStorage.setItem('finalListCounter', finalListCounter);
-      }
-
-      // 更新主页面列表
-      function updateMainPage() {
-        const newContainer = document.getElementById('new-lists');
-        const reviewContainer = document.getElementById('review-lists');
-        const finalContainer = document.getElementById('final-lists');
-        newContainer.innerHTML = '';
-        reviewContainer.innerHTML = '';
-        finalContainer.innerHTML = '';
-        // 新单词列表
-        newLists.forEach(list => {
-          const row = createListRow(list, 'new');
-          newContainer.appendChild(row);
-        });
-        // 需巩固列表：直接展示 reviewLists 中的所有列表
-        reviewLists.forEach(list => {
-          const row = createListRow(list, 'review');
-          reviewContainer.appendChild(row);
-        });
-        // 终巩固列表：展示 finalLists
-        finalLists.forEach(list => {
-          const row = createListRow(list, 'final');
-          finalContainer.appendChild(row);
-        });
-      }
-
-      // 创建列表行
-      function createListRow(list, type) {
-        const row = document.createElement('div');
-        row.className = 'list-item';
-        // 名称和数量容器
-        const leftWrap = document.createElement('div');
-        leftWrap.style.display = 'flex';
-        leftWrap.style.alignItems = 'center';
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'list-name';
-        // 根据类型生成名称：新单词用 List，需巩固用 巩固单词list
-        if (type === 'new') {
-          nameSpan.textContent = 'List ' + list.id;
-        } else if (type === 'review') {
-          nameSpan.textContent = '巩固单词list' + list.id;
-        } else {
-          nameSpan.textContent = '巩固单词final list' + list.id;
-        }
-        const countSpan = document.createElement('span');
-        countSpan.className = 'list-count';
-        countSpan.textContent = list.words.length + '个';
-        leftWrap.appendChild(nameSpan);
-        leftWrap.appendChild(countSpan);
-        row.appendChild(leftWrap);
-        // 操作按钮容器
-        const actions = document.createElement('div');
-        actions.className = 'list-actions';
-        // 预览按钮
-        const previewBtn = document.createElement('button');
-        previewBtn.className = 'icon-btn';
-        previewBtn.title = '预览';
-        previewBtn.textContent = '🔍';
-        previewBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openPreview(list, type);
-        });
-        // 删除按钮
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'icon-btn';
-        deleteBtn.title = '删除';
-        deleteBtn.textContent = '×';
-        deleteBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          showModal('确定删除该列表吗？', () => {
-            deleteList(list, type);
-          });
-        });
-        actions.appendChild(previewBtn);
-        actions.appendChild(deleteBtn);
-        row.appendChild(actions);
-        // 点击整行进入模式选择
-        row.addEventListener('click', () => {
-          startModeSelection(list, type);
-        });
-        return row;
-      }
-
-      // 删除列表
-      function deleteList(list, type) {
-        if (type === 'new') {
-          // 删除新单词列表
-          newLists = newLists.filter(item => item.id !== list.id);
-        } else if (type === 'review') {
-          // 删除需巩固列表
-          reviewLists = reviewLists.filter(item => item.id !== list.id);
-        } else {
-          // 删除终巩固列表
-          finalLists = finalLists.filter(item => item.id !== list.id);
-        }
-        saveData();
+      if (page) page.classList.add('active');
+      if (page === mainPage) {
         updateMainPage();
       }
+    }
 
-      // 打开导入页面
-      document.getElementById('open-import').addEventListener('click', () => {
-        showPage(importPage);
-      });
-      // 返回主页面
-      document.getElementById('import-back').addEventListener('click', () => {
-        showPage(mainPage);
-      });
-      document.getElementById('mode-back').addEventListener('click', () => {
-        showPage(mainPage);
-      });
-      document.getElementById('study-back').addEventListener('click', () => {
-        showPage(modePage);
-      });
-      document.getElementById('preview-back').addEventListener('click', () => {
-        showPage(mainPage);
-      });
+    // 模态框
+    function showModal(message, onConfirm) {
+      modalMsg.textContent = message;
+      modal.classList.remove('hidden');
+      modalConfirm.onclick = () => {
+        modal.classList.add('hidden');
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+      modalCancel.onclick = () => {
+        modal.classList.add('hidden');
+      };
+    }
 
-      // 导入文件
-      document.getElementById('import-file-btn').addEventListener('click', () => {
-        const fileInput = document.getElementById('csv-file');
-        const groupSizeInput = document.getElementById('csv-group-size');
-        const groupSize = parseInt(groupSizeInput.value) || 50;
-        if (!fileInput.files || fileInput.files.length === 0) {
-          showModal('请选择CSV文件', null);
-          return;
+    // 认证事件处理
+    loginButton.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      if (!email || !password) {
+        showModal('请输入邮箱和密码');
+        return;
+      }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        showModal(error.message || '登录失败');
+      }
+    });
+
+    registerButton.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      if (!email || !password) {
+        showModal('请输入邮箱和密码');
+        return;
+      }
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        showModal(error.message || '注册失败');
+      }
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
+    // 监听认证状态变化
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        authPage.style.display = 'none';
+        await initUser(user.uid);
+        showPage(mainPage);
+      } else {
+        // 用户登出
+        if (listsUnsubscribe) {
+          listsUnsubscribe();
+          listsUnsubscribe = null;
         }
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const text = e.target.result;
-          const lines = text.split(/\r?\n/);
-          const words = [];
-          lines.forEach(line => {
-            if (!line.trim()) return;
-            const parts = line.split(',');
-            if (parts.length >= 2) {
-              const en = parts[0].trim();
-              const zh = parts.slice(1).join(',').trim();
-              if (en && zh) {
-                words.push({ en: en, zh: zh });
-              }
+        newLists = [];
+        reviewLists = [];
+        finalLists = [];
+        currentList = null;
+        currentListType = null;
+        authPage.style.display = 'flex';
+        [mainPage, importPage, modePage, studyPage, previewPage].forEach(p => {
+          if (p) p.classList.remove('active');
+        });
+      }
+    });
+
+    // 初始化用户数据
+    async function initUser(uid) {
+      const countersRef = doc(db, 'users', uid, 'metadata', 'counters');
+      const countersSnap = await getDoc(countersRef);
+      if (!countersSnap.exists()) {
+        await setDoc(countersRef, {
+          newListCounter: 1,
+          reviewListCounter: 1,
+          finalListCounter: 1
+        });
+        newListCounter = 1;
+        reviewListCounter = 1;
+        finalListCounter = 1;
+      } else {
+        const data = countersSnap.data();
+        newListCounter = data.newListCounter || 1;
+        reviewListCounter = data.reviewListCounter || 1;
+        finalListCounter = data.finalListCounter || 1;
+      }
+      // 监听列表
+      const listsRef = collection(db, 'users', uid, 'lists');
+      if (listsUnsubscribe) listsUnsubscribe();
+      listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
+        newLists = [];
+        reviewLists = [];
+        finalLists = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const listObj = {
+            ...data,
+            docId: docSnap.id
+          };
+          if (data.type === 'new') newLists.push(listObj);
+          else if (data.type === 'review') reviewLists.push(listObj);
+          else if (data.type === 'final') finalLists.push(listObj);
+        });
+        updateMainPage();
+      });
+    }
+
+    // 新建新单词列表
+    async function appendNewLists(words, groupSize) {
+      const user = auth.currentUser;
+      if (!user) return;
+      for (let i = 0; i < words.length; i += groupSize) {
+        const slice = words.slice(i, i + groupSize);
+        const id = newListCounter;
+        const docId = `new_${id}`;
+        const listData = {
+          id: id,
+          type: 'new',
+          words: slice
+        };
+        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+        newListCounter++;
+      }
+      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+        newListCounter: newListCounter
+      });
+    }
+
+    // 添加单词到需巩固
+    async function addToReviewBuffer(word) {
+      const user = auth.currentUser;
+      if (!user) return;
+      let target = reviewLists.find(item => item.words && item.words.length < 20);
+      if (target) {
+        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
+          words: arrayUnion(word)
+        });
+      } else {
+        const id = reviewListCounter;
+        const docId = `review_${id}`;
+        const listData = {
+          id: id,
+          type: 'review',
+          words: [word]
+        };
+        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+        reviewListCounter++;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+          reviewListCounter: reviewListCounter
+        });
+      }
+    }
+
+    // 添加单词到终巩固
+    async function addToFinalBuffer(word) {
+      const user = auth.currentUser;
+      if (!user) return;
+      let target = finalLists.find(item => item.words && item.words.length < 20);
+      if (target) {
+        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
+          words: arrayUnion(word)
+        });
+      } else {
+        const id = finalListCounter;
+        const docId = `final_${id}`;
+        const listData = {
+          id: id,
+          type: 'final',
+          words: [word]
+        };
+        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+        finalListCounter++;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+          finalListCounter: finalListCounter
+        });
+      }
+    }
+
+    // 删除列表
+    async function deleteList(list) {
+      const user = auth.currentUser;
+      if (!user) return;
+      await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+    }
+
+    // 更新主页面列表
+    function updateMainPage() {
+      const newContainer = document.getElementById('new-lists');
+      const reviewContainer = document.getElementById('review-lists');
+      const finalContainer = document.getElementById('final-lists');
+      if (!newContainer || !reviewContainer || !finalContainer) return;
+      newContainer.innerHTML = '';
+      reviewContainer.innerHTML = '';
+      finalContainer.innerHTML = '';
+      newLists.forEach(list => {
+        const row = createListRow(list, 'new');
+        newContainer.appendChild(row);
+      });
+      reviewLists.forEach(list => {
+        const row = createListRow(list, 'review');
+        reviewContainer.appendChild(row);
+      });
+      finalLists.forEach(list => {
+        const row = createListRow(list, 'final');
+        finalContainer.appendChild(row);
+      });
+    }
+
+    // 创建列表行
+    function createListRow(list, type) {
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      const leftWrap = document.createElement('div');
+      leftWrap.style.display = 'flex';
+      leftWrap.style.alignItems = 'center';
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'list-name';
+      if (type === 'new') {
+        nameSpan.textContent = 'List ' + list.id;
+      } else if (type === 'review') {
+        nameSpan.textContent = '巩固单词list' + list.id;
+      } else {
+        nameSpan.textContent = '巩固单词final list' + list.id;
+      }
+      const countSpan = document.createElement('span');
+      countSpan.className = 'list-count';
+      countSpan.textContent = list.words.length + '个';
+      leftWrap.appendChild(nameSpan);
+      leftWrap.appendChild(countSpan);
+      row.appendChild(leftWrap);
+      const actions = document.createElement('div');
+      actions.className = 'list-actions';
+      const previewBtn = document.createElement('button');
+      previewBtn.className = 'icon-btn';
+      previewBtn.title = '预览';
+      previewBtn.textContent = '🔍';
+      previewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPreview(list);
+      });
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'icon-btn';
+      deleteBtn.title = '删除';
+      deleteBtn.textContent = '×';
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showModal('确定删除该列表吗？', () => {
+          deleteList(list);
+        });
+      });
+      actions.appendChild(previewBtn);
+      actions.appendChild(deleteBtn);
+      row.appendChild(actions);
+      row.addEventListener('click', () => {
+        startModeSelection(list);
+      });
+      return row;
+    }
+
+    // 进入模式选择
+    function startModeSelection(list) {
+      currentList = list;
+      currentListType = list.type;
+      selectedMode = 'en2zh';
+      selectedOrder = 'normal';
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('mode-en2zh').classList.add('active');
+      document.getElementById('order-normal').classList.add('active');
+      if (list.type === 'new') {
+        document.getElementById('mode-title').textContent = 'List ' + list.id;
+      } else if (list.type === 'review') {
+        document.getElementById('mode-title').textContent = '巩固单词list' + list.id;
+      } else {
+        document.getElementById('mode-title').textContent = '巩固单词final list' + list.id;
+      }
+      showPage(modePage);
+    }
+
+    // 模式按钮
+    document.getElementById('mode-en2zh').addEventListener('click', function() {
+      selectedMode = 'en2zh';
+      setActiveModeBtn(this);
+    });
+    document.getElementById('mode-zh2en').addEventListener('click', function() {
+      selectedMode = 'zh2en';
+      setActiveModeBtn(this);
+    });
+    function setActiveModeBtn(btn) {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    document.getElementById('order-normal').addEventListener('click', function() {
+      selectedOrder = 'normal';
+      setActiveOrderBtn(this);
+    });
+    document.getElementById('order-reverse').addEventListener('click', function() {
+      selectedOrder = 'reverse';
+      setActiveOrderBtn(this);
+    });
+    document.getElementById('order-random').addEventListener('click', function() {
+      selectedOrder = 'random';
+      setActiveOrderBtn(this);
+    });
+    function setActiveOrderBtn(btn) {
+      document.querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    document.getElementById('start-study').addEventListener('click', () => {
+      openStudyPage();
+    });
+
+    // 打开学习页面
+    function openStudyPage() {
+      if (!currentList) return;
+      let items = currentList.words.slice();
+      if (selectedOrder === 'reverse') items = items.slice().reverse();
+      else if (selectedOrder === 'random') {
+        items = items.slice();
+        for (let i = items.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [items[i], items[j]] = [items[j], items[i]];
+        }
+      }
+      const studyList = document.getElementById('study-list');
+      studyList.innerHTML = '';
+      if (currentList.type === 'new') {
+        document.getElementById('study-title').textContent = 'List ' + currentList.id + ' 背诵';
+      } else if (currentList.type === 'review') {
+        document.getElementById('study-title').textContent = '巩固单词list' + currentList.id + ' 背诵';
+      } else {
+        document.getElementById('study-title').textContent = '巩固单词final list' + currentList.id + ' 背诵';
+      }
+      items.forEach((word, idx) => {
+        const row = document.createElement('div');
+        row.className = 'study-row';
+        const idxSpan = document.createElement('span');
+        idxSpan.className = 'study-index';
+        idxSpan.textContent = idx + 1;
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'study-prompt';
+        promptDiv.textContent = (selectedMode === 'en2zh' ? word.en : word.zh);
+        const ansDiv = document.createElement('div');
+        ansDiv.className = 'study-answer';
+        ansDiv.textContent = '点击显示';
+        ansDiv.dataset.answer = (selectedMode === 'en2zh' ? word.zh : word.en);
+        ansDiv.addEventListener('click', () => {
+          if (ansDiv.classList.contains('show')) {
+            ansDiv.classList.remove('show');
+            ansDiv.textContent = '点击显示';
+          } else {
+            ansDiv.classList.add('show');
+            ansDiv.textContent = ansDiv.dataset.answer;
+          }
+        });
+        let ghost = null;
+        if (currentList.type !== 'final') {
+          ghost = document.createElement('span');
+          ghost.className = 'ghost-btn';
+          ghost.textContent = '👻';
+          ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入巩固单词final';
+          ghost.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentList.type === 'new') {
+              showModal('是否添加至需巩固单词本？', () => {
+                addToReviewBuffer(word);
+              });
+            } else if (currentList.type === 'review') {
+              showModal('是否添加至巩固单词final本？', () => {
+                addToFinalBuffer(word);
+              });
             }
           });
-          if (words.length === 0) {
-            showModal('文件内容为空或格式不正确', null);
-            return;
-          }
-          appendNewLists(words, groupSize);
-          fileInput.value = '';
-          groupSizeInput.value = 50;
-          showPage(mainPage);
-        };
-        reader.readAsText(file, 'utf-8');
-      });
-
-      // 导入粘贴内容
-      document.getElementById('import-paste-btn').addEventListener('click', () => {
-        const textArea = document.getElementById('paste-area');
-        const groupSizeInput = document.getElementById('paste-group-size');
-        const groupSize = parseInt(groupSizeInput.value) || 50;
-        const rawText = textArea.value.trim();
-        if (!rawText) {
-          showModal('请输入单词内容', null);
-          return;
         }
-        const lines = rawText.split(/\r?\n/);
+        row.appendChild(idxSpan);
+        row.appendChild(promptDiv);
+        row.appendChild(ansDiv);
+        if (ghost) row.appendChild(ghost);
+        studyList.appendChild(row);
+      });
+      showPage(studyPage);
+    }
+
+    // 打开预览页面
+    function openPreview(list) {
+      if (list.type === 'new') {
+        document.getElementById('preview-title').textContent = 'List ' + list.id + ' 预览';
+      } else if (list.type === 'review') {
+        document.getElementById('preview-title').textContent = '巩固单词list' + list.id + ' 预览';
+      } else {
+        document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
+      }
+      const previewList = document.getElementById('preview-list');
+      previewList.innerHTML = '';
+      list.words.forEach(word => {
+        const row = document.createElement('div');
+        row.className = 'preview-row';
+        const enDiv = document.createElement('div');
+        enDiv.className = 'preview-en';
+        enDiv.textContent = word.en;
+        const zhDiv = document.createElement('div');
+        zhDiv.className = 'preview-zh';
+        zhDiv.textContent = word.zh;
+        row.appendChild(enDiv);
+        row.appendChild(zhDiv);
+        previewList.appendChild(row);
+      });
+      showPage(previewPage);
+    }
+
+    // 页面导航按钮
+    document.getElementById('open-import').addEventListener('click', () => {
+      showPage(importPage);
+    });
+    document.getElementById('import-back').addEventListener('click', () => {
+      showPage(mainPage);
+    });
+    document.getElementById('mode-back').addEventListener('click', () => {
+      showPage(mainPage);
+    });
+    document.getElementById('study-back').addEventListener('click', () => {
+      showPage(modePage);
+    });
+    document.getElementById('preview-back').addEventListener('click', () => {
+      showPage(mainPage);
+    });
+
+    // 导入文件
+    document.getElementById('import-file-btn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('csv-file');
+      const groupSizeInput = document.getElementById('csv-group-size');
+      const groupSize = parseInt(groupSizeInput.value) || 50;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showModal('请选择CSV文件');
+        return;
+      }
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/);
         const words = [];
         lines.forEach(line => {
           if (!line.trim()) return;
@@ -849,223 +1083,53 @@
           if (parts.length >= 2) {
             const en = parts[0].trim();
             const zh = parts.slice(1).join(',').trim();
-            if (en && zh) words.push({ en: en, zh: zh });
+            if (en && zh) {
+              words.push({ en: en, zh: zh });
+            }
           }
         });
         if (words.length === 0) {
-          showModal('内容格式不正确', null);
+          showModal('文件内容为空或格式不正确');
           return;
         }
-        appendNewLists(words, groupSize);
-        textArea.value = '';
+        await appendNewLists(words, groupSize);
+        fileInput.value = '';
         groupSizeInput.value = 50;
         showPage(mainPage);
-      });
+      };
+      reader.readAsText(file, 'utf-8');
+    });
 
-      // 将单词数组按组大小分组并添加到 newLists
-      function appendNewLists(words, groupSize) {
-        for (let i = 0; i < words.length; i += groupSize) {
-          const slice = words.slice(i, i + groupSize);
-          const list = { id: newListCounter++, words: slice };
-          newLists.push(list);
-        }
-        saveData();
-        updateMainPage();
+    // 导入粘贴内容
+    document.getElementById('import-paste-btn').addEventListener('click', async () => {
+      const textArea = document.getElementById('paste-area');
+      const groupSizeInput = document.getElementById('paste-group-size');
+      const groupSize = parseInt(groupSizeInput.value) || 50;
+      const rawText = textArea.value.trim();
+      if (!rawText) {
+        showModal('请输入单词内容');
+        return;
       }
-
-      // 点击列表行进入模式选择
-      function startModeSelection(list, type) {
-        currentList = list;
-        currentListType = type;
-        selectedMode = 'en2zh';
-        selectedOrder = 'normal';
-        // 清除激活样式
-        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById('mode-en2zh').classList.add('active');
-        document.getElementById('order-normal').classList.add('active');
-        // 更新模式选择标题
-        if (currentListType === 'new') {
-          document.getElementById('mode-title').textContent = 'List ' + list.id;
-        } else if (currentListType === 'review') {
-          document.getElementById('mode-title').textContent = '巩固单词list' + list.id;
-        } else {
-          document.getElementById('mode-title').textContent = '巩固单词final list' + list.id;
+      const lines = rawText.split(/\r?\n/);
+      const words = [];
+      lines.forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split(',');
+        if (parts.length >= 2) {
+          const en = parts[0].trim();
+          const zh = parts.slice(1).join(',').trim();
+          if (en && zh) words.push({ en: en, zh: zh });
         }
-        showPage(modePage);
-      }
-
-      // 模式按钮选择
-      document.getElementById('mode-en2zh').addEventListener('click', function() {
-        selectedMode = 'en2zh';
-        setActiveModeBtn(this);
       });
-      document.getElementById('mode-zh2en').addEventListener('click', function() {
-        selectedMode = 'zh2en';
-        setActiveModeBtn(this);
-      });
-      function setActiveModeBtn(btn) {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+      if (words.length === 0) {
+        showModal('内容格式不正确');
+        return;
       }
-      document.getElementById('order-normal').addEventListener('click', function() {
-        selectedOrder = 'normal';
-        setActiveOrderBtn(this);
-      });
-      document.getElementById('order-reverse').addEventListener('click', function() {
-        selectedOrder = 'reverse';
-        setActiveOrderBtn(this);
-      });
-      document.getElementById('order-random').addEventListener('click', function() {
-        selectedOrder = 'random';
-        setActiveOrderBtn(this);
-      });
-      function setActiveOrderBtn(btn) {
-        document.querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      }
-      // 开始背诵
-      document.getElementById('start-study').addEventListener('click', () => {
-        openStudyPage();
-      });
-
-      // 打开学习页面
-      function openStudyPage() {
-        if (!currentList) return;
-        // 根据顺序处理单词列表
-        let items = currentList.words.slice();
-        if (selectedOrder === 'reverse') items = items.slice().reverse();
-        else if (selectedOrder === 'random') {
-          // shuffle
-          items = items.slice();
-          for (let i = items.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [items[i], items[j]] = [items[j], items[i]];
-          }
-        }
-        // 清空列表
-        const studyList = document.getElementById('study-list');
-        studyList.innerHTML = '';
-        // 设置学习页面标题
-        if (currentListType === 'new') {
-          document.getElementById('study-title').textContent = 'List ' + currentList.id + ' 背诵';
-        } else if (currentListType === 'review') {
-          document.getElementById('study-title').textContent = '巩固单词list' + currentList.id + ' 背诵';
-        } else {
-          document.getElementById('study-title').textContent = '巩固单词final list' + currentList.id + ' 背诵';
-        }
-        // 构建行
-        items.forEach((word, idx) => {
-          const row = document.createElement('div');
-          row.className = 'study-row';
-          // 序号
-          const idxSpan = document.createElement('span');
-          idxSpan.className = 'study-index';
-          idxSpan.textContent = idx + 1;
-          // 提示
-          const promptDiv = document.createElement('div');
-          promptDiv.className = 'study-prompt';
-          promptDiv.textContent = (selectedMode === 'en2zh' ? word.en : word.zh);
-          // 答案
-          const ansDiv = document.createElement('div');
-          ansDiv.className = 'study-answer';
-          ansDiv.textContent = '点击显示';
-          ansDiv.dataset.answer = (selectedMode === 'en2zh' ? word.zh : word.en);
-          ansDiv.addEventListener('click', () => {
-            if (ansDiv.classList.contains('show')) {
-              ansDiv.classList.remove('show');
-              ansDiv.textContent = '点击显示';
-            } else {
-              ansDiv.classList.add('show');
-              ansDiv.textContent = ansDiv.dataset.answer;
-            }
-          });
-          // ghost按钮：新单词列表点击加入需巩固，需巩固列表点击加入终巩固；终巩固列表不显示
-          let ghost = null;
-          if (currentListType !== 'final') {
-            ghost = document.createElement('span');
-            ghost.className = 'ghost-btn';
-            ghost.textContent = '👻';
-            // 根据列表类型设定标题
-            ghost.title = currentListType === 'new' ? '加入需巩固' : '加入巩固单词final';
-            ghost.addEventListener('click', (e) => {
-              e.stopPropagation();
-              // 弹窗确认后根据类型添加单词
-              if (currentListType === 'new') {
-                showModal('是否添加至需巩固单词本？', () => {
-                  addToReviewBuffer(word);
-                });
-              } else if (currentListType === 'review') {
-                showModal('是否添加至巩固单词final本？', () => {
-                  addToFinalBuffer(word);
-                });
-              }
-            });
-          }
-          row.appendChild(idxSpan);
-          row.appendChild(promptDiv);
-          row.appendChild(ansDiv);
-          if (ghost) row.appendChild(ghost);
-          studyList.appendChild(row);
-        });
-        showPage(studyPage);
-      }
-
-      // 添加到需巩固缓冲区
-      function addToReviewBuffer(word) {
-        // 将单词加入当前需巩固列表，未满20个则继续追加，满20个则新开列表
-        // 找到未满20个单词的巩固列表，如果不存在则新建
-        let targetList = reviewLists.find(item => item.words && item.words.length < 20);
-        if (!targetList) {
-          targetList = { id: reviewListCounter++, words: [] };
-          reviewLists.push(targetList);
-        }
-        targetList.words.push(word);
-        saveData();
-        updateMainPage();
-      }
-
-      // 添加到终巩固列表
-      function addToFinalBuffer(word) {
-        // 将单词加入终巩固列表，未满20个则继续追加，满20个则新开列表
-        let targetList = finalLists.find(item => item.words && item.words.length < 20);
-        if (!targetList) {
-          targetList = { id: finalListCounter++, words: [] };
-          finalLists.push(targetList);
-        }
-        targetList.words.push(word);
-        saveData();
-        updateMainPage();
-      }
-
-      // 打开预览页面
-      function openPreview(list, type) {
-        // 设置预览标题
-        if (type === 'new') {
-          document.getElementById('preview-title').textContent = 'List ' + list.id + ' 预览';
-        } else if (type === 'review') {
-          document.getElementById('preview-title').textContent = '巩固单词list' + list.id + ' 预览';
-        } else {
-          document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
-        }
-        const previewList = document.getElementById('preview-list');
-        previewList.innerHTML = '';
-        list.words.forEach(word => {
-          const row = document.createElement('div');
-          row.className = 'preview-row';
-          const enDiv = document.createElement('div');
-          enDiv.className = 'preview-en';
-          enDiv.textContent = word.en;
-          const zhDiv = document.createElement('div');
-          zhDiv.className = 'preview-zh';
-          zhDiv.textContent = word.zh;
-          row.appendChild(enDiv);
-          row.appendChild(zhDiv);
-          previewList.appendChild(row);
-        });
-        showPage(previewPage);
-      }
-    })();
+      await appendNewLists(words, groupSize);
+      textArea.value = '';
+      groupSizeInput.value = 50;
+      showPage(mainPage);
+    });
   </script>
 </body>
 </html>
