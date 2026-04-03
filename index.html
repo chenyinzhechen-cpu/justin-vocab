@@ -746,18 +746,27 @@
     async function appendNewLists(words, groupSize) {
       const user = auth.currentUser;
       if (!user) return;
+      // Determine used IDs from existing new lists to reuse the smallest available ID.
+      const usedIds = newLists.map((l) => l.id);
       for (let i = 0; i < words.length; i += groupSize) {
+        // Find smallest positive integer not in usedIds
+        let newId = 1;
+        while (usedIds.includes(newId)) {
+          newId++;
+        }
+        usedIds.push(newId);
         const slice = words.slice(i, i + groupSize);
-        const id = newListCounter;
-        const docId = `new_${id}`;
+        const docId = `new_${newId}`;
         const listData = {
-          id: id,
+          id: newId,
           type: 'new',
           words: slice
         };
         await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-        newListCounter++;
       }
+      // Update next newListCounter based on max used ID + 1
+      const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+      newListCounter = nextCounter;
       await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
         newListCounter: newListCounter
       });
@@ -773,18 +782,26 @@
           words: arrayUnion(word)
         });
       } else {
-        const id = reviewListCounter;
-        const docId = `review_${id}`;
-        const listData = {
-          id: id,
-          type: 'review',
-          words: [word]
-        };
-        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-        reviewListCounter++;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-          reviewListCounter: reviewListCounter
-        });
+    // When creating a new review list, reuse the smallest available ID
+    const usedIds = reviewLists.map((l) => l.id);
+    let newId = 1;
+    while (usedIds.includes(newId)) {
+      newId++;
+    }
+    usedIds.push(newId);
+    const docId = `review_${newId}`;
+    const listData = {
+      id: newId,
+      type: 'review',
+      words: [word]
+    };
+    await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+    // Update review list counter
+    const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+    reviewListCounter = nextCounter;
+    await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+      reviewListCounter: reviewListCounter
+    });
       }
     }
 
@@ -798,18 +815,26 @@
           words: arrayUnion(word)
         });
       } else {
-        const id = finalListCounter;
-        const docId = `final_${id}`;
-        const listData = {
-          id: id,
-          type: 'final',
-          words: [word]
-        };
-        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-        finalListCounter++;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-          finalListCounter: finalListCounter
-        });
+    // When creating a new final list, reuse the smallest available ID
+    const usedIds = finalLists.map((l) => l.id);
+    let newId = 1;
+    while (usedIds.includes(newId)) {
+      newId++;
+    }
+    usedIds.push(newId);
+    const docId = `final_${newId}`;
+    const listData = {
+      id: newId,
+      type: 'final',
+      words: [word]
+    };
+    await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+    // Update final list counter
+    const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+    finalListCounter = nextCounter;
+    await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+      finalListCounter: finalListCounter
+    });
       }
     }
 
@@ -818,7 +843,39 @@
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+    // Recalculate counters when a list is deleted so IDs can be reused
+    if (list.type === 'new') {
+      const remainingIds = newLists
+        .filter((l) => l.docId !== list.docId && l.type === 'new')
+        .map((l) => l.id);
+      const nextCounter =
+        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+      newListCounter = nextCounter;
+      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+        newListCounter: newListCounter
+      });
+    } else if (list.type === 'review') {
+      const remainingIds = reviewLists
+        .filter((l) => l.docId !== list.docId && l.type === 'review')
+        .map((l) => l.id);
+      const nextCounter =
+        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+      reviewListCounter = nextCounter;
+      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+        reviewListCounter: reviewListCounter
+      });
+    } else if (list.type === 'final') {
+      const remainingIds = finalLists
+        .filter((l) => l.docId !== list.docId && l.type === 'final')
+        .map((l) => l.id);
+      const nextCounter =
+        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+      finalListCounter = nextCounter;
+      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+        finalListCounter: finalListCounter
+      });
     }
+  }
 
     // 更新主页面列表
     function updateMainPage() {
