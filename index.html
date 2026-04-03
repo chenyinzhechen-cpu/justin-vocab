@@ -746,30 +746,18 @@
     async function appendNewLists(words, groupSize) {
       const user = auth.currentUser;
       if (!user) return;
-      // Gather already used IDs from existing new lists. We'll assign
-      // the smallest unused positive integer for each new list to avoid
-      // leaving gaps when lists are deleted.
-      const usedIds = newLists.map((l) => l.id);
       for (let i = 0; i < words.length; i += groupSize) {
-        // Find the smallest ID not currently in use.
-        let newId = 1;
-        while (usedIds.includes(newId)) {
-          newId++;
-        }
-        // Mark this ID as used so subsequent iterations skip it.
-        usedIds.push(newId);
         const slice = words.slice(i, i + groupSize);
-        const docId = `new_${newId}`;
+        const id = newListCounter;
+        const docId = `new_${id}`;
         const listData = {
-          id: newId,
+          id: id,
           type: 'new',
           words: slice
         };
         await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+        newListCounter++;
       }
-      // Determine the next counter based on the highest used ID plus one.
-      const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-      newListCounter = nextCounter;
       await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
         newListCounter: newListCounter
       });
@@ -830,20 +818,6 @@
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
-      // If a new list is deleted, recalculate the next available ID for new lists.
-      if (list.type === 'new') {
-        // Build an array of IDs of remaining new lists after deletion.
-        const remainingIds = newLists
-          .filter((l) => l.docId !== list.docId && l.type === 'new')
-          .map((l) => l.id);
-        // The next counter should be one more than the current maximum used ID, or 1 if none remain.
-        const nextCounter =
-          remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-        newListCounter = nextCounter;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-          newListCounter: newListCounter
-        });
-      }
     }
 
     // 更新主页面列表
@@ -855,15 +829,19 @@
       newContainer.innerHTML = '';
       reviewContainer.innerHTML = '';
       finalContainer.innerHTML = '';
-      newLists.forEach(list => {
+      // sort lists by numeric id before rendering to ensure consistent order
+      const sortedNew = [...newLists].sort((a, b) => a.id - b.id);
+      const sortedReview = [...reviewLists].sort((a, b) => a.id - b.id);
+      const sortedFinal = [...finalLists].sort((a, b) => a.id - b.id);
+      sortedNew.forEach(list => {
         const row = createListRow(list, 'new');
         newContainer.appendChild(row);
       });
-      reviewLists.forEach(list => {
+      sortedReview.forEach(list => {
         const row = createListRow(list, 'review');
         reviewContainer.appendChild(row);
       });
-      finalLists.forEach(list => {
+      sortedFinal.forEach(list => {
         const row = createListRow(list, 'final');
         finalContainer.appendChild(row);
       });
