@@ -746,24 +746,30 @@
     async function appendNewLists(words, groupSize) {
       const user = auth.currentUser;
       if (!user) return;
-      // Reuse the smallest available positive IDs for new lists.
-      const existingIds = newLists.map(list => list.id);
+      // Gather already used IDs from existing new lists. We'll assign
+      // the smallest unused positive integer for each new list to avoid
+      // leaving gaps when lists are deleted.
+      const usedIds = newLists.map((l) => l.id);
       for (let i = 0; i < words.length; i += groupSize) {
-        const slice = words.slice(i, i + groupSize);
-        let id = 1;
-        while (existingIds.includes(id)) {
-          id++;
+        // Find the smallest ID not currently in use.
+        let newId = 1;
+        while (usedIds.includes(newId)) {
+          newId++;
         }
-        existingIds.push(id);
-        const docId = `new_${id}`;
+        // Mark this ID as used so subsequent iterations skip it.
+        usedIds.push(newId);
+        const slice = words.slice(i, i + groupSize);
+        const docId = `new_${newId}`;
         const listData = {
-          id: id,
+          id: newId,
           type: 'new',
           words: slice
         };
         await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
       }
-      newListCounter = existingIds.length ? Math.max(...existingIds) + 1 : 1;
+      // Determine the next counter based on the highest used ID plus one.
+      const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+      newListCounter = nextCounter;
       await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
         newListCounter: newListCounter
       });
@@ -824,9 +830,16 @@
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+      // If a new list is deleted, recalculate the next available ID for new lists.
       if (list.type === 'new') {
-        const remainingIds = newLists.filter(item => item.docId !== list.docId).map(item => item.id);
-        newListCounter = remainingIds.length ? Math.max(...remainingIds) + 1 : 1;
+        // Build an array of IDs of remaining new lists after deletion.
+        const remainingIds = newLists
+          .filter((l) => l.docId !== list.docId && l.type === 'new')
+          .map((l) => l.id);
+        // The next counter should be one more than the current maximum used ID, or 1 if none remain.
+        const nextCounter =
+          remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+        newListCounter = nextCounter;
         await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
           newListCounter: newListCounter
         });
