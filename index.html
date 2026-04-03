@@ -746,9 +746,15 @@
     async function appendNewLists(words, groupSize) {
       const user = auth.currentUser;
       if (!user) return;
+      // Reuse the smallest available positive IDs for new lists.
+      const existingIds = newLists.map(list => list.id);
       for (let i = 0; i < words.length; i += groupSize) {
         const slice = words.slice(i, i + groupSize);
-        const id = newListCounter;
+        let id = 1;
+        while (existingIds.includes(id)) {
+          id++;
+        }
+        existingIds.push(id);
         const docId = `new_${id}`;
         const listData = {
           id: id,
@@ -756,8 +762,8 @@
           words: slice
         };
         await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-        newListCounter++;
       }
+      newListCounter = existingIds.length ? Math.max(...existingIds) + 1 : 1;
       await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
         newListCounter: newListCounter
       });
@@ -818,6 +824,13 @@
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+      if (list.type === 'new') {
+        const remainingIds = newLists.filter(item => item.docId !== list.docId).map(item => item.id);
+        newListCounter = remainingIds.length ? Math.max(...remainingIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
+          newListCounter: newListCounter
+        });
+      }
     }
 
     // 更新主页面列表
