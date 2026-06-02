@@ -247,6 +247,27 @@
       background: #f5f5f5;
     }
 
+    /* AI 单词整理页面 */
+    .ai-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr); gap: 18px; }
+    .ai-card { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 18px; margin-bottom: 18px; }
+    .ai-card h3 { margin: 0 0 8px; font-size: 17px; }
+    .ai-note, .ai-status { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
+    .ai-status.error { color: var(--danger); }
+    .ai-input, .ai-textarea { width: 100%; padding: 10px; margin-bottom: 10px; background: var(--panel-dark); color: var(--text); border: 1px solid var(--panel-light); border-radius: 10px; outline: none; font: inherit; }
+    .ai-textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
+    #ai-import-output { min-height: 190px; }
+    .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .ai-btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--accent); color: #111318; cursor: pointer; font-size: 14px; }
+    .ai-btn.secondary { border: 1px solid var(--panel-light); background: var(--panel-dark); color: var(--text); }
+    .ai-btn:disabled { opacity: 0.55; cursor: wait; }
+    .ai-settings-toggle { margin-left: auto; font-size: 19px; line-height: 1; }
+    .ai-report { white-space: pre-wrap; line-height: 1.65; font-size: 14px; }
+    .ai-report.empty { color: var(--muted); }
+    .chat-log { max-height: 420px; overflow-y: auto; margin-bottom: 10px; }
+    .chat-bubble { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+    .chat-bubble.user { background: var(--panel-light); }
+    .chat-bubble.assistant { background: var(--panel-dark); }
+
     /* 模式选择页面 */
     #mode-page .mode-select {
       background: var(--panel);
@@ -428,6 +449,9 @@
 
     /* 响应式布局 */
     @media (max-width: 768px) {
+      .ai-grid {
+        grid-template-columns: 1fr;
+      }
       .lists-container {
         flex-direction: column;
       }
@@ -463,6 +487,7 @@
     </header>
     <div class="import-section">
       <button id="open-import" class="import-btn">导入单词</button>
+      <button id="open-ai-organizer" class="import-btn" style="margin-top:10px;">AI 单词整理</button>
     </div>
     <div class="lists-container">
       <!-- 新单词栏 -->
@@ -499,6 +524,70 @@
       <label for="paste-group-size">每个列表单词数</label>
       <input type="number" id="paste-group-size" min="1" value="50" />
       <button id="import-paste-btn">导入粘贴内容并分组</button>
+    </div>
+  </div>
+
+  <!-- AI 单词整理页面 -->
+  <div id="ai-page" class="view">
+    <header style="display:flex; align-items:center;">
+      <button id="ai-back" class="back-btn">← 返回</button>
+      <h2>AI 单词整理</h2>
+      <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
+    </header>
+    <div class="ai-grid">
+      <div>
+        <div class="ai-card">
+          <h3>生成口语整理报告</h3>
+          <p class="ai-note">粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。每次最多整理 30 条。</p>
+          <textarea id="ai-source-input" class="ai-textarea" placeholder="例如：&#10;我需要出去逛逛 I need to touch grass&#10;look up&#10;这周末我只想在家休息"></textarea>
+          <div class="ai-actions">
+            <button id="generate-ai-report" class="ai-btn">生成报告</button>
+            <span id="ai-generate-status" class="ai-status" style="margin:0;"></span>
+          </div>
+        </div>
+        <div class="ai-card">
+          <h3>整理报告</h3>
+          <div id="ai-report" class="ai-report empty">生成后，这里会显示每条表达的简短说明。</div>
+        </div>
+        <div class="ai-card">
+          <h3>可直接导入单词本的完整段落</h3>
+          <p class="ai-note">格式固定为每行 <code>英文,中文</code>。可先修改，再一键导入；每组最多 30 条。</p>
+          <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
+          <div class="ai-actions">
+            <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
+            <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ai-card">
+          <h3>进一步追问</h3>
+          <p class="ai-note">可以继续问语气、使用场景、替代表达或练习例句。助手会自动带上刚才的整理内容。</p>
+          <div id="ai-chat-log" class="chat-log"></div>
+          <textarea id="ai-chat-input" class="ai-textarea" style="min-height:90px;" placeholder="例如：touch grass 是开玩笑还是正式表达？"></textarea>
+          <div class="ai-actions">
+            <button id="send-ai-chat" class="ai-btn">发送</button>
+            <button id="clear-ai-chat" class="ai-btn secondary">清空对话</button>
+            <span id="ai-chat-status" class="ai-status" style="margin:0;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 设置页面 -->
+  <div id="ai-settings-page" class="view">
+    <header style="display:flex; align-items:center;">
+      <button id="ai-settings-back" class="back-btn">← 返回</button>
+      <h2>DeepSeek 设置</h2>
+    </header>
+    <div class="ai-card">
+      <p class="ai-note">使用最低成本的 deepseek-v4-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
+      <div class="ai-actions">
+        <input id="deepseek-api-key" class="ai-input" type="password" placeholder="输入 DeepSeek API Key（sk-...）" style="flex:1; margin-bottom:0;" />
+        <button id="save-api-key" class="ai-btn secondary">保存 Key</button>
+        <button id="clear-api-key" class="ai-btn secondary">清除</button>
+      </div>
     </div>
   </div>
 
@@ -596,11 +685,16 @@
     let selectedMode = 'en2zh';
     let selectedOrder = 'normal';
     let listsUnsubscribe = null;
+    let aiChatMessages = [];
+    let latestAiReport = '';
+    let latestAiImport = '';
 
     // 页面引用
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
     const importPage = document.getElementById('import-page');
+    const aiPage = document.getElementById('ai-page');
+    const aiSettingsPage = document.getElementById('ai-settings-page');
     const modePage = document.getElementById('mode-page');
     const studyPage = document.getElementById('study-page');
     const previewPage = document.getElementById('preview-page');
@@ -619,7 +713,7 @@
     // 显示页面
     function showPage(page) {
       // 隐藏非认证页面
-      [mainPage, importPage, modePage, studyPage, previewPage].forEach(p => {
+      [mainPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
         if (p) p.classList.remove('active');
       });
       if (page) page.classList.add('active');
@@ -696,7 +790,7 @@
         currentList = null;
         currentListType = null;
         authPage.style.display = 'flex';
-        [mainPage, importPage, modePage, studyPage, previewPage].forEach(p => {
+        [mainPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
           if (p) p.classList.remove('active');
         });
       }
@@ -1110,7 +1204,13 @@
     document.getElementById('open-import').addEventListener('click', () => {
       showPage(importPage);
     });
+    document.getElementById('open-ai-organizer').addEventListener('click', () => {
+      showPage(aiPage);
+    });
     document.getElementById('import-back').addEventListener('click', () => {
+      showPage(mainPage);
+    });
+    document.getElementById('ai-back').addEventListener('click', () => {
       showPage(mainPage);
     });
     document.getElementById('mode-back').addEventListener('click', () => {
@@ -1121,6 +1221,196 @@
     });
     document.getElementById('preview-back').addEventListener('click', () => {
       showPage(mainPage);
+    });
+    document.getElementById('open-ai-settings').addEventListener('click', () => {
+      document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
+      showPage(aiSettingsPage);
+    });
+    document.getElementById('ai-settings-back').addEventListener('click', () => {
+      showPage(aiPage);
+    });
+
+    // DeepSeek AI 单词整理
+    const AI_MODEL = 'deepseek-v4-flash';
+    const AI_URL = 'https://api.deepseek.com/chat/completions';
+    const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。
+用户会输入中文、英文、中英混合内容、词组、句子或段落。请完整覆盖用户输入，不遗漏信息，并整理为最多30条可背诵内容。
+规则：
+1. 中文输入：给出自然的英文口语表达和准确中文。
+2. 英文输入：给出中文意思；若表达不自然，使用更地道的英文作为最终表达，并在报告中说明。
+3. 中英混合输入：判断英文是否正确、自然、是否符合语境；必要时润色。
+4. 报告简洁实用：逐条说明含义、常见用法、自然度和 formal / informal / neutral 语气。不要写得过度专业。
+5. importText 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。英文列不得出现英文逗号，请改用分号或省略逗号。不要加序号、表头、代码块或额外说明。
+6. 仅返回 JSON 对象：{"report":"逐条报告","importText":"英文,中文\\n英文,中文","itemCount":数字}。`;
+
+    function setAiStatus(id, text, isError = false) {
+      const element = document.getElementById(id);
+      element.textContent = text;
+      element.classList.toggle('error', isError);
+    }
+
+    function getDeepSeekKey() {
+      return localStorage.getItem('deepseekApiKey') || '';
+    }
+
+    async function callDeepSeek(messages, jsonMode = false) {
+      const apiKey = getDeepSeekKey();
+      if (!apiKey) throw new Error('请先填写并保存 DeepSeek API Key');
+      const body = {
+        model: AI_MODEL,
+        messages,
+        thinking: { type: 'disabled' },
+        max_tokens: 6000
+      };
+      if (jsonMode) body.response_format = { type: 'json_object' };
+      let response;
+      try {
+        response = await fetch(AI_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(body)
+        });
+      } catch (error) {
+        throw new Error('无法连接 DeepSeek。若浏览器拦截跨域请求，请用本地服务器打开网页，或为正式版本增加后端代理。');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error?.message || `DeepSeek 请求失败（${response.status}）`);
+      }
+      return data.choices?.[0]?.message?.content || '';
+    }
+
+    function parseImportLines(text) {
+      return text.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+        const commaIndex = line.indexOf(',');
+        if (commaIndex < 1) return null;
+        const en = line.slice(0, commaIndex).trim();
+        const zh = line.slice(commaIndex + 1).trim();
+        return en && zh ? { en, zh } : null;
+      }).filter(Boolean);
+    }
+
+    function appendChatBubble(role, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${role}`;
+      bubble.textContent = text;
+      const log = document.getElementById('ai-chat-log');
+      log.appendChild(bubble);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    document.getElementById('save-api-key').addEventListener('click', () => {
+      const key = document.getElementById('deepseek-api-key').value.trim();
+      if (!key) {
+        showModal('请输入 DeepSeek API Key');
+        return;
+      }
+      localStorage.setItem('deepseekApiKey', key);
+      showModal('API Key 已保存到当前浏览器');
+    });
+
+    document.getElementById('clear-api-key').addEventListener('click', () => {
+      localStorage.removeItem('deepseekApiKey');
+      document.getElementById('deepseek-api-key').value = '';
+      showModal('API Key 已清除');
+    });
+
+    document.getElementById('generate-ai-report').addEventListener('click', async () => {
+      const source = document.getElementById('ai-source-input').value.trim();
+      const sourceLines = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (!source) {
+        showModal('请先输入需要整理的内容');
+        return;
+      }
+      if (sourceLines.length > 30) {
+        showModal('一次最多整理 30 行，请分批生成报告');
+        return;
+      }
+      const button = document.getElementById('generate-ai-report');
+      button.disabled = true;
+      setAiStatus('ai-generate-status', '正在整理，请稍等...');
+      try {
+        const content = await callDeepSeek([
+          { role: 'system', content: organizerSystemPrompt },
+          { role: 'user', content: source }
+        ], true);
+        const result = JSON.parse(content);
+        const words = parseImportLines(result.importText || '');
+        if (!result.report || words.length === 0) throw new Error('AI 返回格式不完整，请再生成一次');
+        if (words.length > 30) throw new Error('AI 生成超过 30 条，请缩短输入后重试');
+        latestAiReport = result.report;
+        latestAiImport = result.importText;
+        document.getElementById('ai-report').textContent = result.report;
+        document.getElementById('ai-report').classList.remove('empty');
+        document.getElementById('ai-import-output').value = result.importText.trim();
+        aiChatMessages = [
+          { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
+          { role: 'user', content: `这是本次整理内容：\n${result.report}\n\n可导入表达：\n${result.importText}` },
+          { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
+        ];
+        document.getElementById('ai-chat-log').innerHTML = '';
+        appendChatBubble('assistant', `已整理完成，共 ${words.length} 条。你可以在这里继续问我。`);
+        setAiStatus('ai-generate-status', `已生成 ${words.length} 条`);
+      } catch (error) {
+        setAiStatus('ai-generate-status', error.message || '生成失败', true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById('copy-ai-output').addEventListener('click', async () => {
+      const text = document.getElementById('ai-import-output').value.trim();
+      if (!text) return showModal('还没有可复制的导入段落');
+      try {
+        await navigator.clipboard.writeText(text);
+        showModal('已复制导入段落');
+      } catch (error) {
+        showModal('浏览器未允许自动复制，请手动选中复制');
+      }
+    });
+
+    document.getElementById('import-ai-output').addEventListener('click', async () => {
+      const words = parseImportLines(document.getElementById('ai-import-output').value.trim());
+      if (words.length === 0) return showModal('导入段落为空或格式不正确');
+      if (words.length > 30) return showModal('一次最多导入 30 条，请分批处理');
+      await appendNewLists(words, 30);
+      showModal(`已导入 ${words.length} 条表达`);
+    });
+
+    document.getElementById('send-ai-chat').addEventListener('click', async () => {
+      const input = document.getElementById('ai-chat-input');
+      const question = input.value.trim();
+      if (!question) return;
+      if (!latestAiReport) return showModal('请先生成一次整理报告');
+      const button = document.getElementById('send-ai-chat');
+      button.disabled = true;
+      input.value = '';
+      appendChatBubble('user', question);
+      aiChatMessages.push({ role: 'user', content: question });
+      setAiStatus('ai-chat-status', '正在回答...');
+      try {
+        const answer = await callDeepSeek(aiChatMessages);
+        aiChatMessages.push({ role: 'assistant', content: answer });
+        appendChatBubble('assistant', answer);
+        setAiStatus('ai-chat-status', '');
+      } catch (error) {
+        setAiStatus('ai-chat-status', error.message || '发送失败', true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById('clear-ai-chat').addEventListener('click', () => {
+      aiChatMessages = latestAiReport ? [
+        { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
+        { role: 'user', content: `这是本次整理内容：\n${latestAiReport}\n\n可导入表达：\n${latestAiImport}` },
+        { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
+      ] : [];
+      document.getElementById('ai-chat-log').innerHTML = '';
+      setAiStatus('ai-chat-status', '');
     });
 
     // 导入文件
