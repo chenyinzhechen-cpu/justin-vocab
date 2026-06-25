@@ -172,37 +172,39 @@
     .ai-btn:disabled { opacity: 0.55; cursor: wait; }
     .ai-settings-toggle { margin-left: auto; font-size: 19px; line-height: 1; }
     .ai-report {
-      max-height: 620px;
+      max-height: 560px;
       overflow-y: auto;
-      padding: 14px;
-      border: 1px solid var(--panel-light);
-      border-radius: 14px;
-      background: var(--panel-dark);
+      padding: 18px;
+      border: 1px solid #344156;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #0f151f 0%, #0b1018 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
       line-height: 1.65;
       font-size: 14px;
     }
     .ai-report.empty { color: var(--muted); }
     .report-item {
-      background: #111722;
-      border: 1px solid var(--panel-light);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 14px;
+      background: #151c29;
+      border: 1px solid #2f3b50;
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
     }
     .report-item:last-child { margin-bottom: 0; }
     .report-title {
       display: flex;
       gap: 10px;
       align-items: flex-start;
-      margin-bottom: 14px;
-      font-size: 18px;
+      margin-bottom: 16px;
+      font-size: 20px;
       font-weight: 800;
       line-height: 1.4;
     }
     .report-number {
       flex: 0 0 auto;
-      min-width: 28px;
-      height: 28px;
+      min-width: 30px;
+      height: 30px;
       border-radius: 999px;
       background: var(--accent);
       color: #111318;
@@ -216,12 +218,12 @@
     .report-section {
       margin-top: 14px;
       padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
     .report-section-title {
-      margin-bottom: 7px;
+      margin-bottom: 8px;
       color: #fff;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
     }
     .report-line {
@@ -381,7 +383,10 @@
           </div>
         </div>
         <div class="ai-card">
-          <h3>整理报告</h3>
+          <h3>整理报告（结构化阅读版）</h3>
+          <div class="ai-actions" style="margin-bottom:10px;">
+            <button id="format-ai-report" class="ai-btn secondary">重新排版当前报告</button>
+          </div>
           <div id="ai-report" class="ai-report empty">生成后，这里会显示每条表达的简短说明。</div>
         </div>
         <div class="ai-card">
@@ -517,6 +522,7 @@
     let aiChatMessages = [];
     let latestAiReport = '';
     let latestAiImport = '';
+    let latestRawReport = '';
 
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
@@ -1061,15 +1067,17 @@ IMPORT_TEXT 规则：
         'Final advice'
       ];
       const escapedNames = sectionNames.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const regex = new RegExp(`^(${escapedNames.join('|')}):\\s*$`, 'gmi');
+      const regex = new RegExp(`^(${escapedNames.join('|')}):\\s*(.*)$`, 'gmi');
       const matches = [...itemText.matchAll(regex)];
       if (matches.length === 0) return [];
       return matches.map((match, index) => {
+        const inlineBody = (match[2] || '').trim();
         const start = match.index + match[0].length;
         const end = index + 1 < matches.length ? matches[index + 1].index : itemText.length;
+        const followingBody = itemText.slice(start, end).trim();
         return {
           title: match[1],
-          body: itemText.slice(start, end).trim()
+          body: [inlineBody, followingBody].filter(Boolean).join('\n')
         };
       });
     }
@@ -1099,6 +1107,7 @@ IMPORT_TEXT 规则：
     function renderAiReport(report) {
       const container = document.getElementById('ai-report');
       const normalized = report.trim();
+      latestRawReport = normalized;
       if (!normalized) {
         container.textContent = '生成后，这里会显示每条表达的简短说明。';
         container.classList.add('empty');
@@ -1154,6 +1163,15 @@ IMPORT_TEXT 规则：
       localStorage.removeItem('deepseekApiKey');
       document.getElementById('deepseek-api-key').value = '';
       showModal('API Key 已清除');
+    });
+
+    document.getElementById('format-ai-report').addEventListener('click', () => {
+      const currentReport = latestRawReport || document.getElementById('ai-report').textContent.trim();
+      if (!currentReport || currentReport === '生成后，这里会显示每条表达的简短说明。') {
+        showModal('还没有可以重新排版的报告');
+        return;
+      }
+      renderAiReport(currentReport);
     });
 
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
