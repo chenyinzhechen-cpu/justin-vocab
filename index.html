@@ -171,8 +171,91 @@
     }
     .ai-btn:disabled { opacity: 0.55; cursor: wait; }
     .ai-settings-toggle { margin-left: auto; font-size: 19px; line-height: 1; }
-    .ai-report { white-space: pre-wrap; line-height: 1.65; font-size: 14px; }
+    .ai-report {
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 14px;
+      border: 1px solid var(--panel-light);
+      border-radius: 14px;
+      background: var(--panel-dark);
+      line-height: 1.65;
+      font-size: 14px;
+    }
     .ai-report.empty { color: var(--muted); }
+    .report-item {
+      background: #111722;
+      border: 1px solid var(--panel-light);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .report-item:last-child { margin-bottom: 0; }
+    .report-title {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .report-number {
+      flex: 0 0 auto;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #111318;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      margin-top: -1px;
+    }
+    .report-section {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .report-section-title {
+      margin-bottom: 7px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .report-line {
+      margin: 3px 0;
+      color: var(--text);
+    }
+    .report-muted { color: var(--muted); }
+    .report-list {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+    .report-list li { margin: 4px 0; }
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .report-table th, .report-table td {
+      border-bottom: 1px solid var(--panel-light);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .report-table th {
+      background: var(--panel-light);
+      font-weight: 800;
+    }
+    .report-table tr:last-child td { border-bottom: none; }
+    .report-text-block {
+      white-space: pre-wrap;
+    }
     .chat-log { max-height: 420px; overflow-y: auto; margin-bottom: 10px; }
     .chat-bubble { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
     .chat-bubble.user { background: var(--panel-light); }
@@ -957,6 +1040,100 @@ IMPORT_TEXT 规则：
       };
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function splitReportSections(itemText) {
+      const sectionNames = [
+        'Spoken meaning',
+        'Naturalness',
+        'Better spoken alternatives',
+        'Useful speaking patterns',
+        'Examples in real contexts',
+        'Common mistake',
+        'Mini dialogue',
+        'Final advice'
+      ];
+      const escapedNames = sectionNames.map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const regex = new RegExp(`^(${escapedNames.join('|')}):\\s*$`, 'gmi');
+      const matches = [...itemText.matchAll(regex)];
+      if (matches.length === 0) return [];
+      return matches.map((match, index) => {
+        const start = match.index + match[0].length;
+        const end = index + 1 < matches.length ? matches[index + 1].index : itemText.length;
+        return {
+          title: match[1],
+          body: itemText.slice(start, end).trim()
+        };
+      });
+    }
+
+    function renderReportBody(body) {
+      if (!body) return '';
+      const lines = body.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const tableLines = lines.filter(line => line.startsWith('|') && line.endsWith('|'));
+      if (tableLines.length >= 2) {
+        const rows = tableLines
+          .filter(line => !/^\|\s*-+/.test(line))
+          .map(line => line.split('|').slice(1, -1).map(cell => cell.trim()));
+        if (rows.length >= 1) {
+          const [header, ...bodyRows] = rows;
+          const headHtml = header.map(cell => `<th>${escapeHtml(cell)}</th>`).join('');
+          const bodyHtml = bodyRows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('');
+          return `<table class="report-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+        }
+      }
+      const listItems = lines.filter(line => /^[-•]\s+/.test(line));
+      if (listItems.length === lines.length && lines.length > 1) {
+        return `<ul class="report-list">${lines.map(line => `<li>${escapeHtml(line.replace(/^[-•]\s+/, ''))}</li>`).join('')}</ul>`;
+      }
+      return lines.map(line => `<p class="report-line">${escapeHtml(line)}</p>`).join('');
+    }
+
+    function renderAiReport(report) {
+      const container = document.getElementById('ai-report');
+      const normalized = report.trim();
+      if (!normalized) {
+        container.textContent = '生成后，这里会显示每条表达的简短说明。';
+        container.classList.add('empty');
+        return;
+      }
+      const rawItems = normalized.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
+      const items = rawItems.length > 0 ? rawItems : [normalized];
+      const html = items.map((item, index) => {
+        const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
+        const title = titleMatch ? titleMatch[1].trim() : `表达 ${index + 1}`;
+        const withoutTitle = titleMatch ? item.replace(titleMatch[0], '').trim() : item;
+        const sections = splitReportSections(withoutTitle);
+        const sectionsHtml = sections.length > 0
+          ? sections.map(section => `
+              <section class="report-section">
+                <div class="report-section-title">${escapeHtml(section.title)}</div>
+                ${renderReportBody(section.body)}
+              </section>
+            `).join('')
+          : `<div class="report-text-block">${escapeHtml(withoutTitle)}</div>`;
+        return `
+          <article class="report-item">
+            <div class="report-title">
+              <span class="report-number">${index + 1}</span>
+              <span>${escapeHtml(title)}</span>
+            </div>
+            ${sectionsHtml}
+          </article>
+        `;
+      }).join('');
+      container.innerHTML = html;
+      container.classList.remove('empty');
+      container.scrollTop = 0;
+    }
+
     function appendChatBubble(role, text) {
       const bubble = document.createElement('div');
       bubble.className = `chat-bubble ${role}`;
@@ -998,8 +1175,7 @@ IMPORT_TEXT 规则：
         if (words.length > 30) throw new Error('AI 生成超过 30 条，请缩短输入后重试');
         latestAiReport = result.report;
         latestAiImport = result.importText;
-        document.getElementById('ai-report').textContent = result.report;
-        document.getElementById('ai-report').classList.remove('empty');
+        renderAiReport(result.report);
         document.getElementById('ai-import-output').value = result.importText.trim();
         aiChatMessages = [
           { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
