@@ -6,7 +6,6 @@
   <title>Justin专属单词背诵程序</title>
   <style>
     :root {
-      /* 颜色主题 */
       --bg: #0b0d12;
       --panel: #141821;
       --panel-light: #1c2331;
@@ -16,11 +15,7 @@
       --accent: #ffffff;
       --danger: #e35d6a;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -28,17 +23,8 @@
       color: var(--text);
       min-height: 100vh;
     }
-
-    /* 通用视图容器 */
-    .view {
-      display: none;
-      padding: 24px;
-    }
-    .view.active {
-      display: block;
-    }
-
-    /* 登录/认证页 */
+    .view { display: none; padding: 24px; }
+    .view.active { display: block; }
     #auth-page {
       display: flex;
       justify-content: center;
@@ -56,16 +42,8 @@
       text-align: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     }
-    .login-container h1 {
-      margin: 0 0 16px;
-      font-size: 22px;
-      line-height: 1.4;
-    }
-    .login-container p {
-      margin: 0 0 24px;
-      color: var(--muted);
-      font-size: 14px;
-    }
+    .login-container h1 { margin: 0 0 16px; font-size: 22px; line-height: 1.4; }
+    .login-container p { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
     .login-container input {
       width: 100%;
       padding: 10px 14px;
@@ -77,10 +55,7 @@
       outline: none;
       margin-bottom: 16px;
     }
-    .login-container button {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
+    .login-container button, .ai-btn, #import-page button, #start-study {
       background: var(--accent);
       color: #111318;
       border: none;
@@ -88,19 +63,10 @@
       cursor: pointer;
       transition: background 0.2s ease;
     }
-    .login-container button:hover {
-      background: #f5f5f5;
-    }
-
-    /* 头部标题 */
-    header h1, header h2 {
-      margin: 0;
-      font-size: 24px;
-    }
-    header {
-      margin-bottom: 20px;
-    }
-
+    .login-container button { width: 100%; padding: 10px; font-size: 16px; }
+    button:hover { background: #f5f5f5; }
+    header { margin-bottom: 20px; }
+    header h1, header h2 { margin: 0; font-size: 24px; }
     .back-btn {
       background: none;
       border: none;
@@ -109,20 +75,14 @@
       cursor: pointer;
       margin-right: 12px;
     }
-
-    /* 主页面 */
     #main-page header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 20px;
     }
-    #main-page header h1 {
-      font-size: 28px;
-    }
-    .import-section {
-      margin-bottom: 24px;
-    }
+    #main-page header h1 { font-size: 28px; }
+    .import-section { margin-bottom: 24px; }
     .import-btn {
       display: block;
       width: 100%;
@@ -136,28 +96,11 @@
       text-align: center;
       transition: background 0.2s ease;
     }
-    .import-btn:hover {
-      background: var(--panel-light);
-    }
-    .lists-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-    .list-column {
-      flex: 1 1 320px;
-      min-width: 260px;
-    }
-    .list-column h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
-      color: var(--muted);
-    }
-    .list-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .import-btn:hover { background: var(--panel-light); }
+    .lists-container { display: flex; flex-wrap: wrap; gap: 20px; }
+    .list-column { flex: 1 1 320px; min-width: 260px; }
+    .list-column h2 { margin: 0 0 12px; font-size: 18px; color: var(--muted); }
+    .list-container { display: flex; flex-direction: column; gap: 8px; }
     .list-item {
       background: var(--panel);
       border: 1px solid var(--panel-light);
@@ -169,22 +112,10 @@
       cursor: pointer;
       transition: background 0.15s ease;
     }
-    .list-item:hover {
-      background: var(--panel-light);
-    }
-    .list-name {
-      font-size: 16px;
-    }
-    .list-count {
-      font-size: 14px;
-      color: var(--muted);
-      margin-left: 8px;
-    }
-    .list-actions {
-      display: flex;
-      gap: 10px;
-      flex-shrink: 0;
-    }
+    .list-item:hover { background: var(--panel-light); }
+    .list-name { font-size: 16px; }
+    .list-count { font-size: 14px; color: var(--muted); margin-left: 8px; }
+    .list-actions { display: flex; gap: 10px; flex-shrink: 0; }
     .icon-btn {
       background: none;
       border: none;
@@ -193,24 +124,16 @@
       cursor: pointer;
       padding: 4px;
     }
-    .icon-btn:hover {
-      color: var(--accent);
-    }
-
-    /* 导入页面 */
-    #import-page .import-form {
+    .icon-btn:hover { color: var(--accent); }
+    #import-page .import-form, .ai-card, #mode-page .mode-select {
       background: var(--panel);
       border: 1px solid var(--panel-light);
       border-radius: 16px;
       padding: 18px;
       margin-bottom: 20px;
     }
-    #import-page h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 16px;
-    }
-    #import-page input[type="number"] {
+    #import-page h3, #mode-page h3, .ai-card h3 { margin-top: 0; margin-bottom: 12px; font-size: 16px; }
+    #import-page input[type="number"], .ai-input {
       width: 100%;
       padding: 8px;
       margin-bottom: 12px;
@@ -221,9 +144,9 @@
       font-size: 14px;
       outline: none;
     }
-    #import-page textarea {
+    #import-page textarea, .ai-textarea {
       width: 100%;
-      height: 140px;
+      min-height: 140px;
       padding: 10px;
       margin-bottom: 12px;
       background: var(--panel-dark);
@@ -231,34 +154,21 @@
       border: 1px solid var(--panel-light);
       border-radius: 10px;
       resize: vertical;
-      font-size: 14px;
+      font: inherit;
+      line-height: 1.55;
     }
-    #import-page button {
-      background: var(--accent);
-      color: #111318;
-      border: none;
-      border-radius: 12px;
-      padding: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    #import-page button:hover {
-      background: #f5f5f5;
-    }
-
-    /* AI 单词整理页面 */
+    #import-page button { padding: 10px; font-size: 14px; }
     .ai-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr); gap: 18px; }
-    .ai-card { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 18px; margin-bottom: 18px; }
-    .ai-card h3 { margin: 0 0 8px; font-size: 17px; }
     .ai-note, .ai-status { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
     .ai-status.error { color: var(--danger); }
-    .ai-input, .ai-textarea { width: 100%; padding: 10px; margin-bottom: 10px; background: var(--panel-dark); color: var(--text); border: 1px solid var(--panel-light); border-radius: 10px; outline: none; font: inherit; }
-    .ai-textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
     #ai-import-output { min-height: 190px; }
     .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .ai-btn { padding: 10px 14px; border: none; border-radius: 10px; background: var(--accent); color: #111318; cursor: pointer; font-size: 14px; }
-    .ai-btn.secondary { border: 1px solid var(--panel-light); background: var(--panel-dark); color: var(--text); }
+    .ai-btn { padding: 10px 14px; font-size: 14px; }
+    .ai-btn.secondary, .mode-btn, .order-btn {
+      border: 1px solid var(--panel-light);
+      background: var(--panel-dark);
+      color: var(--text);
+    }
     .ai-btn:disabled { opacity: 0.55; cursor: wait; }
     .ai-settings-toggle { margin-left: auto; font-size: 19px; line-height: 1; }
     .ai-report { white-space: pre-wrap; line-height: 1.65; font-size: 14px; }
@@ -267,205 +177,52 @@
     .chat-bubble { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
     .chat-bubble.user { background: var(--panel-light); }
     .chat-bubble.assistant { background: var(--panel-dark); }
-
-    /* 模式选择页面 */
-    #mode-page .mode-select {
-      background: var(--panel);
-      border: 1px solid var(--panel-light);
-      border-radius: 16px;
-      padding: 20px;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    #mode-page h3 {
-      margin-top: 0;
-      font-size: 16px;
-    }
+    #mode-page .mode-select { max-width: 480px; margin: 0 auto; }
     .mode-btn, .order-btn, #start-study {
       display: inline-block;
       margin: 6px 4px;
       padding: 10px 14px;
-      border: 1px solid var(--panel-light);
       border-radius: 12px;
-      background: var(--panel-dark);
-      color: var(--text);
       cursor: pointer;
       font-size: 14px;
       transition: background 0.2s ease;
     }
-    .mode-btn.active, .order-btn.active {
-      background: var(--accent);
-      color: #111318;
-    }
-    #start-study {
-      background: var(--accent);
-      color: #111318;
-      margin-top: 16px;
-      width: 100%;
-    }
-    #start-study:hover {
-      background: #f5f5f5;
-    }
-
-    /* 学习页面 */
-    #study-page #study-list {
+    .mode-btn.active, .order-btn.active { background: var(--accent); color: #111318; }
+    #start-study { margin-top: 16px; width: 100%; }
+    #study-page #study-list, #preview-page #preview-list {
       background: var(--panel);
       border: 1px solid var(--panel-light);
       border-radius: 14px;
       overflow: auto;
       max-height: calc(100vh - 160px);
     }
-    .study-row {
-      display: grid;
-      grid-template-columns: 50px 1fr 1fr 40px;
-      /* 拉伸每列，使提示框与答案框始终等高 */
-      align-items: stretch;
-      border-bottom: 1px solid var(--panel-light);
-    }
-    .study-row:last-child {
-      border-bottom: none;
-    }
-    .study-row span, .study-row div {
-      padding: 10px;
-      word-break: break-word;
-      /* 让每个单元格撑满所在的网格宽高 */
-      width: 100%;
-    }
-    .study-index {
-      text-align: center;
-      color: var(--muted);
-    }
-    .study-prompt {
-      background: var(--panel-dark);
-      border-radius: 10px;
-      min-height: 46px;
-      /* 去除 flex 布局和固定高度，让其自动撑满行高 */
-    }
-    .study-answer {
-      background: var(--panel-dark);
-      border-radius: 10px;
-      min-height: 46px;
-      cursor: pointer;
-      color: var(--muted);
-    }
-    .study-answer.show {
-      color: var(--text);
-    }
-    .ghost-btn {
-      text-align: center;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--muted);
-      transition: color 0.2s ease;
-    }
-    .ghost-btn:hover {
-      color: var(--accent);
-    }
-
-    /* 预览页面 */
-    #preview-page #preview-list {
-      background: var(--panel);
-      border: 1px solid var(--panel-light);
-      border-radius: 14px;
-      overflow: auto;
-      max-height: calc(100vh - 160px);
-    }
-    .preview-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      border-bottom: 1px solid var(--panel-light);
-    }
-    .preview-row:last-child {
-      border-bottom: none;
-    }
-    .preview-row div {
-      padding: 10px;
-      word-break: break-word;
-    }
-    .preview-en {
-      background: var(--panel-dark);
-    }
-    .preview-zh {
-      background: var(--panel-dark);
-    }
-
-    /* 弹窗 */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal.hidden {
-      display: none;
-    }
-    .modal-content {
-      background: var(--panel);
-      border: 1px solid var(--panel-light);
-      border-radius: 16px;
-      padding: 24px;
-      min-width: 240px;
-      max-width: 90%;
-      text-align: center;
-    }
-    .modal-content p {
-      margin: 0 0 20px;
-      font-size: 16px;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: space-around;
-      gap: 20px;
-    }
-    .modal-actions button {
-      flex: 1 1 auto;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    #modal-cancel {
-      background: var(--panel-light);
-      color: var(--text);
-    }
-    #modal-cancel:hover {
-      background: var(--panel-dark);
-    }
-    #modal-confirm {
-      background: var(--accent);
-      color: #111318;
-    }
-    #modal-confirm:hover {
-      background: #f5f5f5;
-    }
-
-    /* 响应式布局 */
+    .study-row { display: grid; grid-template-columns: 50px 1fr 1fr 40px; align-items: stretch; border-bottom: 1px solid var(--panel-light); }
+    .study-row:last-child, .preview-row:last-child { border-bottom: none; }
+    .study-row span, .study-row div, .preview-row div { padding: 10px; word-break: break-word; width: 100%; }
+    .study-index { text-align: center; color: var(--muted); }
+    .study-prompt, .study-answer, .preview-en, .preview-zh { background: var(--panel-dark); }
+    .study-prompt, .study-answer { border-radius: 10px; min-height: 46px; }
+    .study-answer { cursor: pointer; color: var(--muted); }
+    .study-answer.show { color: var(--text); }
+    .ghost-btn { text-align: center; font-size: 20px; cursor: pointer; color: var(--muted); transition: color 0.2s ease; }
+    .ghost-btn:hover { color: var(--accent); }
+    .preview-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--panel-light); }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal.hidden { display: none; }
+    .modal-content { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 24px; min-width: 240px; max-width: 90%; text-align: center; }
+    .modal-content p { margin: 0 0 20px; font-size: 16px; }
+    .modal-actions { display: flex; justify-content: space-around; gap: 20px; }
+    .modal-actions button { flex: 1 1 auto; padding: 8px 12px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; transition: background 0.2s ease; }
+    #modal-cancel { background: var(--panel-light); color: var(--text); }
+    #modal-confirm { background: var(--accent); color: #111318; }
     @media (max-width: 768px) {
-      .ai-grid {
-        grid-template-columns: 1fr;
-      }
-      .lists-container {
-        flex-direction: column;
-      }
-      .list-column {
-        width: 100%;
-      }
-      .study-row {
-        grid-template-columns: 40px 1fr 1fr 30px;
-      }
+      .ai-grid, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
+      .list-column { width: 100%; }
+      .study-row { grid-template-columns: 40px 1fr 1fr 30px; }
     }
   </style>
 </head>
 <body>
-  <!-- 认证页：邮箱注册/登录 -->
   <div id="auth-page" class="view active">
     <div class="login-container">
       <h1>Justin专属单词背诵程序</h1>
@@ -479,7 +236,6 @@
     </div>
   </div>
 
-  <!-- 主页面 -->
   <div id="main-page" class="view">
     <header>
       <h1>Justin专属单词背诵程序</h1>
@@ -490,12 +246,10 @@
       <button id="open-ai-organizer" class="import-btn" style="margin-top:10px;">AI 单词整理</button>
     </div>
     <div class="lists-container">
-      <!-- 新单词栏 -->
       <div class="list-column">
         <h2>新单词</h2>
         <div id="new-lists" class="list-container"></div>
       </div>
-      <!-- 需巩固单词及终巩固单词栏 -->
       <div class="list-column">
         <h2>需巩固单词</h2>
         <div id="review-lists" class="list-container"></div>
@@ -505,7 +259,6 @@
     </div>
   </div>
 
-  <!-- 导入页面 -->
   <div id="import-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="import-back" class="back-btn">← 返回</button>
@@ -527,7 +280,6 @@
     </div>
   </div>
 
-  <!-- AI 单词整理页面 -->
   <div id="ai-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
@@ -575,14 +327,13 @@
     </div>
   </div>
 
-  <!-- AI 设置页面 -->
   <div id="ai-settings-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="ai-settings-back" class="back-btn">← 返回</button>
       <h2>DeepSeek 设置</h2>
     </header>
     <div class="ai-card">
-      <p class="ai-note">使用最低成本的 deepseek-v4-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
+      <p class="ai-note">使用 deepseek-v4-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
       <div class="ai-actions">
         <input id="deepseek-api-key" class="ai-input" type="password" placeholder="输入 DeepSeek API Key（sk-...）" style="flex:1; margin-bottom:0;" />
         <button id="save-api-key" class="ai-btn secondary">保存 Key</button>
@@ -591,7 +342,6 @@
     </div>
   </div>
 
-  <!-- 模式选择页面 -->
   <div id="mode-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="mode-back" class="back-btn">← 返回</button>
@@ -609,7 +359,6 @@
     </div>
   </div>
 
-  <!-- 学习页面 -->
   <div id="study-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="study-back" class="back-btn">← 返回</button>
@@ -618,7 +367,6 @@
     <div id="study-list"></div>
   </div>
 
-  <!-- 预览页面 -->
   <div id="preview-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="preview-back" class="back-btn">← 返回</button>
@@ -627,7 +375,6 @@
     <div id="preview-list"></div>
   </div>
 
-  <!-- 弹窗 -->
   <div id="modal" class="modal hidden">
     <div class="modal-content">
       <p id="modal-message"></p>
@@ -673,7 +420,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 数据结构
     let newLists = [];
     let reviewLists = [];
     let finalLists = [];
@@ -689,7 +435,6 @@
     let latestAiReport = '';
     let latestAiImport = '';
 
-    // 页面引用
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
     const importPage = document.getElementById('import-page');
@@ -702,27 +447,20 @@
     const modalMsg = document.getElementById('modal-message');
     const modalCancel = document.getElementById('modal-cancel');
     const modalConfirm = document.getElementById('modal-confirm');
-
-    // 认证页元素
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
     const loginButton = document.getElementById('login-btn');
     const registerButton = document.getElementById('register-btn');
     const logoutButton = document.getElementById('logout-btn');
 
-    // 显示页面
     function showPage(page) {
-      // 隐藏非认证页面
       [mainPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
         if (p) p.classList.remove('active');
       });
       if (page) page.classList.add('active');
-      if (page === mainPage) {
-        updateMainPage();
-      }
+      if (page === mainPage) updateMainPage();
     }
 
-    // 模态框
     function showModal(message, onConfirm) {
       modalMsg.textContent = message;
       modal.classList.remove('hidden');
@@ -730,19 +468,13 @@
         modal.classList.add('hidden');
         if (typeof onConfirm === 'function') onConfirm();
       };
-      modalCancel.onclick = () => {
-        modal.classList.add('hidden');
-      };
+      modalCancel.onclick = () => modal.classList.add('hidden');
     }
 
-    // 认证事件处理
     loginButton.addEventListener('click', async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value;
-      if (!email || !password) {
-        showModal('请输入邮箱和密码');
-        return;
-      }
+      if (!email || !password) return showModal('请输入邮箱和密码');
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (error) {
@@ -753,10 +485,7 @@
     registerButton.addEventListener('click', async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value;
-      if (!email || !password) {
-        showModal('请输入邮箱和密码');
-        return;
-      }
+      if (!email || !password) return showModal('请输入邮箱和密码');
       try {
         await createUserWithEmailAndPassword(auth, email, password);
       } catch (error) {
@@ -772,14 +501,12 @@
       }
     });
 
-    // 监听认证状态变化
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         authPage.style.display = 'none';
         await initUser(user.uid);
         showPage(mainPage);
       } else {
-        // 用户登出
         if (listsUnsubscribe) {
           listsUnsubscribe();
           listsUnsubscribe = null;
@@ -796,16 +523,11 @@
       }
     });
 
-    // 初始化用户数据
     async function initUser(uid) {
       const countersRef = doc(db, 'users', uid, 'metadata', 'counters');
       const countersSnap = await getDoc(countersRef);
       if (!countersSnap.exists()) {
-        await setDoc(countersRef, {
-          newListCounter: 1,
-          reviewListCounter: 1,
-          finalListCounter: 1
-        });
+        await setDoc(countersRef, { newListCounter: 1, reviewListCounter: 1, finalListCounter: 1 });
         newListCounter = 1;
         reviewListCounter = 1;
         finalListCounter = 1;
@@ -815,7 +537,6 @@
         reviewListCounter = data.reviewListCounter || 1;
         finalListCounter = data.finalListCounter || 1;
       }
-      // 监听列表
       const listsRef = collection(db, 'users', uid, 'lists');
       if (listsUnsubscribe) listsUnsubscribe();
       listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
@@ -824,10 +545,7 @@
         finalLists = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          const listObj = {
-            ...data,
-            docId: docSnap.id
-          };
+          const listObj = { ...data, docId: docSnap.id };
           if (data.type === 'new') newLists.push(listObj);
           else if (data.type === 'review') reviewLists.push(listObj);
           else if (data.type === 'final') finalLists.push(listObj);
@@ -836,142 +554,86 @@
       });
     }
 
-    // 新建新单词列表
     async function appendNewLists(words, groupSize) {
       const user = auth.currentUser;
       if (!user) return;
-      // Determine used IDs from existing new lists to reuse the smallest available ID.
       const usedIds = newLists.map((l) => l.id);
       for (let i = 0; i < words.length; i += groupSize) {
-        // Find smallest positive integer not in usedIds
         let newId = 1;
-        while (usedIds.includes(newId)) {
-          newId++;
-        }
+        while (usedIds.includes(newId)) newId++;
         usedIds.push(newId);
         const slice = words.slice(i, i + groupSize);
-        const docId = `new_${newId}`;
-        const listData = {
+        await setDoc(doc(db, 'users', user.uid, 'lists', `new_${newId}`), {
           id: newId,
           type: 'new',
           words: slice
-        };
-        await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
+        });
       }
-      // Update next newListCounter based on max used ID + 1
-      const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-      newListCounter = nextCounter;
-      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-        newListCounter: newListCounter
-      });
+      newListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { newListCounter });
     }
 
-    // 添加单词到需巩固
     async function addToReviewBuffer(word) {
       const user = auth.currentUser;
       if (!user) return;
-      let target = reviewLists.find(item => item.words && item.words.length < 20);
+      const target = reviewLists.find(item => item.words && item.words.length < 20);
       if (target) {
-        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
-          words: arrayUnion(word)
-        });
+        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
-    // When creating a new review list, reuse the smallest available ID
-    const usedIds = reviewLists.map((l) => l.id);
-    let newId = 1;
-    while (usedIds.includes(newId)) {
-      newId++;
-    }
-    usedIds.push(newId);
-    const docId = `review_${newId}`;
-    const listData = {
-      id: newId,
-      type: 'review',
-      words: [word]
-    };
-    await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-    // Update review list counter
-    const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-    reviewListCounter = nextCounter;
-    await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-      reviewListCounter: reviewListCounter
-    });
+        const usedIds = reviewLists.map((l) => l.id);
+        let newId = 1;
+        while (usedIds.includes(newId)) newId++;
+        usedIds.push(newId);
+        await setDoc(doc(db, 'users', user.uid, 'lists', `review_${newId}`), {
+          id: newId,
+          type: 'review',
+          words: [word]
+        });
+        reviewListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { reviewListCounter });
       }
     }
 
-    // 添加单词到终巩固
     async function addToFinalBuffer(word) {
       const user = auth.currentUser;
       if (!user) return;
-      let target = finalLists.find(item => item.words && item.words.length < 20);
+      const target = finalLists.find(item => item.words && item.words.length < 20);
       if (target) {
-        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
-          words: arrayUnion(word)
-        });
+        await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
-    // When creating a new final list, reuse the smallest available ID
-    const usedIds = finalLists.map((l) => l.id);
-    let newId = 1;
-    while (usedIds.includes(newId)) {
-      newId++;
-    }
-    usedIds.push(newId);
-    const docId = `final_${newId}`;
-    const listData = {
-      id: newId,
-      type: 'final',
-      words: [word]
-    };
-    await setDoc(doc(db, 'users', user.uid, 'lists', docId), listData);
-    // Update final list counter
-    const nextCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-    finalListCounter = nextCounter;
-    await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-      finalListCounter: finalListCounter
-    });
+        const usedIds = finalLists.map((l) => l.id);
+        let newId = 1;
+        while (usedIds.includes(newId)) newId++;
+        usedIds.push(newId);
+        await setDoc(doc(db, 'users', user.uid, 'lists', `final_${newId}`), {
+          id: newId,
+          type: 'final',
+          words: [word]
+        });
+        finalListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { finalListCounter });
       }
     }
 
-    // 删除列表
     async function deleteList(list) {
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
-    // Recalculate counters when a list is deleted so IDs can be reused
-    if (list.type === 'new') {
-      const remainingIds = newLists
-        .filter((l) => l.docId !== list.docId && l.type === 'new')
-        .map((l) => l.id);
-      const nextCounter =
-        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-      newListCounter = nextCounter;
-      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-        newListCounter: newListCounter
-      });
-    } else if (list.type === 'review') {
-      const remainingIds = reviewLists
-        .filter((l) => l.docId !== list.docId && l.type === 'review')
-        .map((l) => l.id);
-      const nextCounter =
-        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-      reviewListCounter = nextCounter;
-      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-        reviewListCounter: reviewListCounter
-      });
-    } else if (list.type === 'final') {
-      const remainingIds = finalLists
-        .filter((l) => l.docId !== list.docId && l.type === 'final')
-        .map((l) => l.id);
-      const nextCounter =
-        remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-      finalListCounter = nextCounter;
-      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), {
-        finalListCounter: finalListCounter
-      });
+      if (list.type === 'new') {
+        const remainingIds = newLists.filter((l) => l.docId !== list.docId && l.type === 'new').map((l) => l.id);
+        newListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { newListCounter });
+      } else if (list.type === 'review') {
+        const remainingIds = reviewLists.filter((l) => l.docId !== list.docId && l.type === 'review').map((l) => l.id);
+        reviewListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { reviewListCounter });
+      } else if (list.type === 'final') {
+        const remainingIds = finalLists.filter((l) => l.docId !== list.docId && l.type === 'final').map((l) => l.id);
+        finalListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
+        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { finalListCounter });
+      }
     }
-  }
 
-    // 更新主页面列表
     function updateMainPage() {
       const newContainer = document.getElementById('new-lists');
       const reviewContainer = document.getElementById('review-lists');
@@ -980,25 +642,11 @@
       newContainer.innerHTML = '';
       reviewContainer.innerHTML = '';
       finalContainer.innerHTML = '';
-      // sort lists by numeric id before rendering to ensure consistent order
-      const sortedNew = [...newLists].sort((a, b) => a.id - b.id);
-      const sortedReview = [...reviewLists].sort((a, b) => a.id - b.id);
-      const sortedFinal = [...finalLists].sort((a, b) => a.id - b.id);
-      sortedNew.forEach(list => {
-        const row = createListRow(list, 'new');
-        newContainer.appendChild(row);
-      });
-      sortedReview.forEach(list => {
-        const row = createListRow(list, 'review');
-        reviewContainer.appendChild(row);
-      });
-      sortedFinal.forEach(list => {
-        const row = createListRow(list, 'final');
-        finalContainer.appendChild(row);
-      });
+      [...newLists].sort((a, b) => a.id - b.id).forEach(list => newContainer.appendChild(createListRow(list, 'new')));
+      [...reviewLists].sort((a, b) => a.id - b.id).forEach(list => reviewContainer.appendChild(createListRow(list, 'review')));
+      [...finalLists].sort((a, b) => a.id - b.id).forEach(list => finalContainer.appendChild(createListRow(list, 'final')));
     }
 
-    // 创建列表行
     function createListRow(list, type) {
       const row = document.createElement('div');
       row.className = 'list-item';
@@ -1007,13 +655,9 @@
       leftWrap.style.alignItems = 'center';
       const nameSpan = document.createElement('span');
       nameSpan.className = 'list-name';
-      if (type === 'new') {
-        nameSpan.textContent = 'List ' + list.id;
-      } else if (type === 'review') {
-        nameSpan.textContent = '巩固单词list' + list.id;
-      } else {
-        nameSpan.textContent = '巩固单词final list' + list.id;
-      }
+      if (type === 'new') nameSpan.textContent = 'List ' + list.id;
+      else if (type === 'review') nameSpan.textContent = '巩固单词list' + list.id;
+      else nameSpan.textContent = '巩固单词final list' + list.id;
       const countSpan = document.createElement('span');
       countSpan.className = 'list-count';
       countSpan.textContent = list.words.length + '个';
@@ -1036,20 +680,15 @@
       deleteBtn.textContent = '×';
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        showModal('确定删除该列表吗？', () => {
-          deleteList(list);
-        });
+        showModal('确定删除该列表吗？', () => deleteList(list));
       });
       actions.appendChild(previewBtn);
       actions.appendChild(deleteBtn);
       row.appendChild(actions);
-      row.addEventListener('click', () => {
-        startModeSelection(list);
-      });
+      row.addEventListener('click', () => startModeSelection(list));
       return row;
     }
 
-    // 进入模式选择
     function startModeSelection(list) {
       currentList = list;
       currentListType = list.type;
@@ -1059,17 +698,12 @@
       document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById('mode-en2zh').classList.add('active');
       document.getElementById('order-normal').classList.add('active');
-      if (list.type === 'new') {
-        document.getElementById('mode-title').textContent = 'List ' + list.id;
-      } else if (list.type === 'review') {
-        document.getElementById('mode-title').textContent = '巩固单词list' + list.id;
-      } else {
-        document.getElementById('mode-title').textContent = '巩固单词final list' + list.id;
-      }
+      if (list.type === 'new') document.getElementById('mode-title').textContent = 'List ' + list.id;
+      else if (list.type === 'review') document.getElementById('mode-title').textContent = '巩固单词list' + list.id;
+      else document.getElementById('mode-title').textContent = '巩固单词final list' + list.id;
       showPage(modePage);
     }
 
-    // 模式按钮
     document.getElementById('mode-en2zh').addEventListener('click', function() {
       selectedMode = 'en2zh';
       setActiveModeBtn(this);
@@ -1098,11 +732,8 @@
       document.querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
-    document.getElementById('start-study').addEventListener('click', () => {
-      openStudyPage();
-    });
+    document.getElementById('start-study').addEventListener('click', openStudyPage);
 
-    // 打开学习页面
     function openStudyPage() {
       if (!currentList) return;
       let items = currentList.words.slice();
@@ -1116,13 +747,9 @@
       }
       const studyList = document.getElementById('study-list');
       studyList.innerHTML = '';
-      if (currentList.type === 'new') {
-        document.getElementById('study-title').textContent = 'List ' + currentList.id + ' 背诵';
-      } else if (currentList.type === 'review') {
-        document.getElementById('study-title').textContent = '巩固单词list' + currentList.id + ' 背诵';
-      } else {
-        document.getElementById('study-title').textContent = '巩固单词final list' + currentList.id + ' 背诵';
-      }
+      if (currentList.type === 'new') document.getElementById('study-title').textContent = 'List ' + currentList.id + ' 背诵';
+      else if (currentList.type === 'review') document.getElementById('study-title').textContent = '巩固单词list' + currentList.id + ' 背诵';
+      else document.getElementById('study-title').textContent = '巩固单词final list' + currentList.id + ' 背诵';
       items.forEach((word, idx) => {
         const row = document.createElement('div');
         row.className = 'study-row';
@@ -1131,11 +758,11 @@
         idxSpan.textContent = idx + 1;
         const promptDiv = document.createElement('div');
         promptDiv.className = 'study-prompt';
-        promptDiv.textContent = (selectedMode === 'en2zh' ? word.en : word.zh);
+        promptDiv.textContent = selectedMode === 'en2zh' ? word.en : word.zh;
         const ansDiv = document.createElement('div');
         ansDiv.className = 'study-answer';
         ansDiv.textContent = '点击显示';
-        ansDiv.dataset.answer = (selectedMode === 'en2zh' ? word.zh : word.en);
+        ansDiv.dataset.answer = selectedMode === 'en2zh' ? word.zh : word.en;
         ansDiv.addEventListener('click', () => {
           if (ansDiv.classList.contains('show')) {
             ansDiv.classList.remove('show');
@@ -1153,15 +780,8 @@
           ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入巩固单词final';
           ghost.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (currentList.type === 'new') {
-              showModal('是否添加至需巩固单词本？', () => {
-                addToReviewBuffer(word);
-              });
-            } else if (currentList.type === 'review') {
-              showModal('是否添加至巩固单词final本？', () => {
-                addToFinalBuffer(word);
-              });
-            }
+            if (currentList.type === 'new') showModal('是否添加至需巩固单词本？', () => addToReviewBuffer(word));
+            else if (currentList.type === 'review') showModal('是否添加至巩固单词final本？', () => addToFinalBuffer(word));
           });
         }
         row.appendChild(idxSpan);
@@ -1173,15 +793,10 @@
       showPage(studyPage);
     }
 
-    // 打开预览页面
     function openPreview(list) {
-      if (list.type === 'new') {
-        document.getElementById('preview-title').textContent = 'List ' + list.id + ' 预览';
-      } else if (list.type === 'review') {
-        document.getElementById('preview-title').textContent = '巩固单词list' + list.id + ' 预览';
-      } else {
-        document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
-      }
+      if (list.type === 'new') document.getElementById('preview-title').textContent = 'List ' + list.id + ' 预览';
+      else if (list.type === 'review') document.getElementById('preview-title').textContent = '巩固单词list' + list.id + ' 预览';
+      else document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
       const previewList = document.getElementById('preview-list');
       previewList.innerHTML = '';
       list.words.forEach(word => {
@@ -1200,40 +815,22 @@
       showPage(previewPage);
     }
 
-    // 页面导航按钮
-    document.getElementById('open-import').addEventListener('click', () => {
-      showPage(importPage);
-    });
-    document.getElementById('open-ai-organizer').addEventListener('click', () => {
-      showPage(aiPage);
-    });
-    document.getElementById('import-back').addEventListener('click', () => {
-      showPage(mainPage);
-    });
-    document.getElementById('ai-back').addEventListener('click', () => {
-      showPage(mainPage);
-    });
-    document.getElementById('mode-back').addEventListener('click', () => {
-      showPage(mainPage);
-    });
-    document.getElementById('study-back').addEventListener('click', () => {
-      showPage(modePage);
-    });
-    document.getElementById('preview-back').addEventListener('click', () => {
-      showPage(mainPage);
-    });
+    document.getElementById('open-import').addEventListener('click', () => showPage(importPage));
+    document.getElementById('open-ai-organizer').addEventListener('click', () => showPage(aiPage));
+    document.getElementById('import-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('ai-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('mode-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('study-back').addEventListener('click', () => showPage(modePage));
+    document.getElementById('preview-back').addEventListener('click', () => showPage(mainPage));
     document.getElementById('open-ai-settings').addEventListener('click', () => {
       document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
       showPage(aiSettingsPage);
     });
-    document.getElementById('ai-settings-back').addEventListener('click', () => {
-      showPage(aiPage);
-    });
+    document.getElementById('ai-settings-back').addEventListener('click', () => showPage(aiPage));
 
-    // DeepSeek AI 单词整理
     const AI_MODEL = 'deepseek-v4-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
-   const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。
+    const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。你必须先自动识别每条内容的语言和类型，再整理为最多30条可背诵内容。请完整覆盖用户输入，不遗漏信息。
 
 总原则：
@@ -1280,12 +877,20 @@ Final advice:
 
 多条内容时，每条都按同一模板输出；每条之间空一行，用 --- 分隔。
 
-importText 规则：
-1. importText 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
+IMPORT_TEXT 规则：
+1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
 2. 英文列不得出现英文逗号，请改用分号或省略逗号。
 3. 不要加序号、表头、代码块或额外说明。
 
-仅返回 JSON 对象：{"report":"按模板生成的完整报告","importText":"英文,中文\\n英文,中文","itemCount":数字}。`;
+不要返回 JSON。请严格按下面格式输出：
+
+===REPORT===
+这里输出完整口语报告
+
+===IMPORT_TEXT===
+英文,中文
+英文,中文`;
+
     function setAiStatus(id, text, isError = false) {
       const element = document.getElementById(id);
       element.textContent = text;
@@ -1303,7 +908,7 @@ importText 规则：
         model: AI_MODEL,
         messages,
         thinking: { type: 'disabled' },
-        max_tokens: 6000
+        max_tokens: 12000
       };
       if (jsonMode) body.response_format = { type: 'json_object' };
       let response;
@@ -1320,9 +925,7 @@ importText 规则：
         throw new Error('无法连接 DeepSeek。若浏览器拦截跨域请求，请用本地服务器打开网页，或为正式版本增加后端代理。');
       }
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.error?.message || `DeepSeek 请求失败（${response.status}）`);
-      }
+      if (!response.ok) throw new Error(data.error?.message || `DeepSeek 请求失败（${response.status}）`);
       return data.choices?.[0]?.message?.content || '';
     }
 
@@ -1336,6 +939,24 @@ importText 规则：
       }).filter(Boolean);
     }
 
+    function parseAiOrganizerResponse(content) {
+      try {
+        const json = JSON.parse(content);
+        if (json.report && json.importText) return json;
+      } catch (error) {
+        // Fall back to marker parsing below.
+      }
+      const reportMatch = content.match(/===REPORT===([\s\S]*?)===IMPORT_TEXT===/);
+      const importMatch = content.match(/===IMPORT_TEXT===([\s\S]*)/);
+      const report = reportMatch ? reportMatch[1].trim() : content.trim();
+      const importText = importMatch ? importMatch[1].trim() : '';
+      return {
+        report,
+        importText,
+        itemCount: parseImportLines(importText).length
+      };
+    }
+
     function appendChatBubble(role, text) {
       const bubble = document.createElement('div');
       bubble.className = `chat-bubble ${role}`;
@@ -1347,10 +968,7 @@ importText 规则：
 
     document.getElementById('save-api-key').addEventListener('click', () => {
       const key = document.getElementById('deepseek-api-key').value.trim();
-      if (!key) {
-        showModal('请输入 DeepSeek API Key');
-        return;
-      }
+      if (!key) return showModal('请输入 DeepSeek API Key');
       localStorage.setItem('deepseekApiKey', key);
       showModal('API Key 已保存到当前浏览器');
     });
@@ -1364,14 +982,8 @@ importText 规则：
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
       const source = document.getElementById('ai-source-input').value.trim();
       const sourceLines = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-      if (!source) {
-        showModal('请先输入需要整理的内容');
-        return;
-      }
-      if (sourceLines.length > 30) {
-        showModal('一次最多整理 30 行，请分批生成报告');
-        return;
-      }
+      if (!source) return showModal('请先输入需要整理的内容');
+      if (sourceLines.length > 30) return showModal('一次最多整理 30 行，请分批生成报告');
       const button = document.getElementById('generate-ai-report');
       button.disabled = true;
       setAiStatus('ai-generate-status', '正在整理，请稍等...');
@@ -1379,8 +991,8 @@ importText 规则：
         const content = await callDeepSeek([
           { role: 'system', content: organizerSystemPrompt },
           { role: 'user', content: source }
-        ], true);
-        const result = JSON.parse(content);
+        ], false);
+        const result = parseAiOrganizerResponse(content);
         const words = parseImportLines(result.importText || '');
         if (!result.report || words.length === 0) throw new Error('AI 返回格式不完整，请再生成一次');
         if (words.length > 30) throw new Error('AI 生成超过 30 条，请缩短输入后重试');
@@ -1456,36 +1068,17 @@ importText 规则：
       setAiStatus('ai-chat-status', '');
     });
 
-    // 导入文件
     document.getElementById('import-file-btn').addEventListener('click', async () => {
       const fileInput = document.getElementById('csv-file');
       const groupSizeInput = document.getElementById('csv-group-size');
       const groupSize = parseInt(groupSizeInput.value) || 50;
-      if (!fileInput.files || fileInput.files.length === 0) {
-        showModal('请选择CSV文件');
-        return;
-      }
+      if (!fileInput.files || fileInput.files.length === 0) return showModal('请选择CSV文件');
       const file = fileInput.files[0];
       const reader = new FileReader();
       reader.onload = async function(e) {
         const text = e.target.result;
-        const lines = text.split(/\r?\n/);
-        const words = [];
-        lines.forEach(line => {
-          if (!line.trim()) return;
-          const parts = line.split(',');
-          if (parts.length >= 2) {
-            const en = parts[0].trim();
-            const zh = parts.slice(1).join(',').trim();
-            if (en && zh) {
-              words.push({ en: en, zh: zh });
-            }
-          }
-        });
-        if (words.length === 0) {
-          showModal('文件内容为空或格式不正确');
-          return;
-        }
+        const words = parseImportLines(text);
+        if (words.length === 0) return showModal('文件内容为空或格式不正确');
         await appendNewLists(words, groupSize);
         fileInput.value = '';
         groupSizeInput.value = 50;
@@ -1494,31 +1087,14 @@ importText 规则：
       reader.readAsText(file, 'utf-8');
     });
 
-    // 导入粘贴内容
     document.getElementById('import-paste-btn').addEventListener('click', async () => {
       const textArea = document.getElementById('paste-area');
       const groupSizeInput = document.getElementById('paste-group-size');
       const groupSize = parseInt(groupSizeInput.value) || 50;
       const rawText = textArea.value.trim();
-      if (!rawText) {
-        showModal('请输入单词内容');
-        return;
-      }
-      const lines = rawText.split(/\r?\n/);
-      const words = [];
-      lines.forEach(line => {
-        if (!line.trim()) return;
-        const parts = line.split(',');
-        if (parts.length >= 2) {
-          const en = parts[0].trim();
-          const zh = parts.slice(1).join(',').trim();
-          if (en && zh) words.push({ en: en, zh: zh });
-        }
-      });
-      if (words.length === 0) {
-        showModal('内容格式不正确');
-        return;
-      }
+      if (!rawText) return showModal('请输入单词内容');
+      const words = parseImportLines(rawText);
+      if (words.length === 0) return showModal('内容格式不正确');
       await appendNewLists(words, groupSize);
       textArea.value = '';
       groupSizeInput.value = 50;
