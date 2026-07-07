@@ -13,7 +13,31 @@
       --text: #f4f7fb;
       --muted: #8691a2;
       --accent: #ffffff;
+      --accent-contrast: #111318;
       --danger: #e35d6a;
+      --button-hover: #f5f5f5;
+      --report-bg: #0b1018;
+      --report-item: #151c29;
+      --report-border: #344156;
+      --soft-border: rgba(255,255,255,0.1);
+      --shadow: rgba(0,0,0,0.2);
+    }
+    :root[data-theme="light"] {
+      --bg: #f3f5f8;
+      --panel: #ffffff;
+      --panel-light: #dbe2ec;
+      --panel-dark: #eef2f7;
+      --text: #18202c;
+      --muted: #667085;
+      --accent: #18202c;
+      --accent-contrast: #ffffff;
+      --danger: #c63f50;
+      --button-hover: #303b4d;
+      --report-bg: #f7f9fc;
+      --report-item: #ffffff;
+      --report-border: #cbd5e1;
+      --soft-border: rgba(24,32,44,0.12);
+      --shadow: rgba(15,23,42,0.1);
     }
     * { box-sizing: border-box; }
     body {
@@ -40,7 +64,7 @@
       max-width: 400px;
       width: 100%;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 30px var(--shadow);
     }
     .login-container h1 { margin: 0 0 16px; font-size: 22px; line-height: 1.4; }
     .login-container p { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
@@ -57,15 +81,16 @@
     }
     .login-container button, .ai-btn, #import-page button, #start-study {
       background: var(--accent);
-      color: #111318;
+      color: var(--accent-contrast);
       border: none;
       border-radius: 12px;
       cursor: pointer;
       transition: background 0.2s ease;
     }
     .login-container button { width: 100%; padding: 10px; font-size: 16px; }
-    button:hover { background: #f5f5f5; }
+    button:hover { background: var(--button-hover); }
     header { margin-bottom: 20px; }
+    .view > header { padding-right: 100px; }
     header h1, header h2 { margin: 0; font-size: 24px; }
     .back-btn {
       background: none;
@@ -75,13 +100,86 @@
       cursor: pointer;
       margin-right: 12px;
     }
-    #main-page header {
+    #main-page header, #wordbook-page header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 20px;
     }
     #main-page header h1 { font-size: 28px; }
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 900;
+      padding: 8px 11px;
+      border: 1px solid var(--panel-light);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 6px 18px var(--shadow);
+    }
+    .dashboard-header-actions { display: flex; gap: 10px; }
+    .dashboard-feature {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 22px;
+      margin-bottom: 24px;
+      border: 1px solid var(--panel-light);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: 0 10px 28px var(--shadow);
+    }
+    .dashboard-feature h2 { margin: 0 0 8px; font-size: 20px; }
+    .dashboard-feature p { margin: 0; color: var(--muted); line-height: 1.6; }
+    .dashboard-feature .ai-btn { min-width: 150px; }
+    .wordbook-section {
+      padding: 22px;
+      border: 1px solid var(--panel-light);
+      border-radius: 20px;
+      background: var(--panel);
+    }
+    .wordbook-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .wordbook-section-header h2 { margin: 0; }
+    .wordbook-create-row { display: flex; gap: 8px; flex: 1; max-width: 430px; }
+    .wordbook-create-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--panel-light);
+      border-radius: 11px;
+      background: var(--panel-dark);
+      color: var(--text);
+      font: inherit;
+    }
+    .wordbook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .wordbook-card {
+      padding: 18px;
+      border: 1px solid var(--panel-light);
+      border-radius: 16px;
+      background: var(--panel-dark);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .wordbook-card:hover { transform: translateY(-2px); border-color: var(--muted); }
+    .wordbook-card-header { display: flex; justify-content: space-between; gap: 12px; }
+    .wordbook-card h3 { margin: 0; font-size: 18px; word-break: break-word; }
+    .wordbook-card-meta { margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .wordbook-card-actions { display: flex; gap: 7px; }
+    .wordbook-empty { color: var(--muted); padding: 18px 0; }
     .import-section { margin-bottom: 24px; }
     .import-btn {
       display: block;
@@ -124,7 +222,10 @@
       cursor: pointer;
       padding: 4px;
     }
-    .icon-btn:hover { color: var(--accent); }
+    .icon-btn:hover, .back-btn:hover, .theme-toggle:hover {
+      background: var(--panel-light);
+      color: var(--text);
+    }
     #import-page .import-form, .ai-card, #mode-page .mode-select {
       background: var(--panel);
       border: 1px solid var(--panel-light);
@@ -183,7 +284,7 @@
       height: 10px;
       flex: 1;
       overflow: hidden;
-      border: 1px solid #344156;
+      border: 1px solid var(--report-border);
       border-radius: 999px;
       background: var(--panel-dark);
     }
@@ -191,7 +292,7 @@
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #ffffff 0%, #b9c8e8 100%);
+      background: linear-gradient(90deg, var(--accent) 0%, var(--muted) 100%);
       transition: width 0.3s ease;
     }
     .ai-progress-label {
@@ -205,29 +306,29 @@
       max-height: 560px;
       overflow-y: auto;
       padding: 18px;
-      border: 1px solid #344156;
+      border: 1px solid var(--report-border);
       border-radius: 18px;
-      background: linear-gradient(180deg, #0f151f 0%, #0b1018 100%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      background: var(--report-bg);
+      box-shadow: inset 0 1px 0 var(--soft-border);
       line-height: 1.65;
       font-size: 14px;
     }
     .ai-report.empty { color: var(--muted); }
     .report-item {
-      background: #151c29;
-      border: 1px solid #2f3b50;
+      background: var(--report-item);
+      border: 1px solid var(--report-border);
       border-radius: 18px;
       padding: 18px;
       margin-bottom: 16px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+      box-shadow: 0 10px 24px var(--shadow);
     }
     .report-item:last-child { margin-bottom: 0; }
     .report-input-section {
       margin-bottom: 14px;
       padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--soft-border);
       border-radius: 12px;
-      background: #0f151f;
+      background: var(--panel-dark);
     }
     .report-input-section .report-section-title {
       margin-bottom: 5px;
@@ -257,7 +358,7 @@
       height: 30px;
       border-radius: 999px;
       background: var(--accent);
-      color: #111318;
+      color: var(--accent-contrast);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -268,11 +369,11 @@
     .report-section {
       margin-top: 14px;
       padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid var(--soft-border);
     }
     .report-section-title {
       margin-bottom: 8px;
-      color: #fff;
+      color: var(--text);
       font-size: 16px;
       font-weight: 800;
     }
@@ -322,7 +423,7 @@
       font-size: 14px;
       transition: background 0.2s ease;
     }
-    .mode-btn.active, .order-btn.active { background: var(--accent); color: #111318; }
+    .mode-btn.active, .order-btn.active { background: var(--accent); color: var(--accent-contrast); }
     #start-study { margin-top: 16px; width: 100%; }
     #study-page #study-list, #preview-page #preview-list {
       background: var(--panel);
@@ -349,16 +450,21 @@
     .modal-actions { display: flex; justify-content: space-around; gap: 20px; }
     .modal-actions button { flex: 1 1 auto; padding: 8px 12px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; transition: background 0.2s ease; }
     #modal-cancel { background: var(--panel-light); color: var(--text); }
-    #modal-confirm { background: var(--accent); color: #111318; }
+    #modal-confirm { background: var(--accent); color: var(--accent-contrast); }
     @media (max-width: 768px) {
       .ai-grid, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
       .list-column { width: 100%; }
       .study-row { grid-template-columns: 40px 1fr 1fr 30px; }
       .ai-progress-wrap { max-width: none; flex-basis: 100%; }
+      .dashboard-feature { grid-template-columns: 1fr; }
+      .wordbook-section-header { align-items: stretch; flex-direction: column; }
+      .wordbook-create-row { max-width: none; }
     }
   </style>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" type="button" hidden>切换浅色</button>
+
   <div id="auth-page" class="view active">
     <div class="login-container">
       <h1>Justin专属单词背诵程序</h1>
@@ -375,11 +481,38 @@
   <div id="main-page" class="view">
     <header>
       <h1>Justin专属单词背诵程序</h1>
-      <button id="logout-btn" class="icon-btn" title="退出">退出</button>
+      <div class="dashboard-header-actions">
+        <button id="logout-btn" class="icon-btn" title="退出">退出</button>
+      </div>
+    </header>
+    <div class="dashboard-feature">
+      <div>
+        <h2>AI 单词整理</h2>
+        <p>翻译、润色和整理口语表达，生成报告后可选择导入到任意单词本。</p>
+      </div>
+      <button id="open-ai-organizer" class="ai-btn">打开 AI 单词整理</button>
+    </div>
+    <section class="wordbook-section">
+      <div class="wordbook-section-header">
+        <h2>我的单词本</h2>
+        <div class="wordbook-create-row">
+          <input id="new-wordbook-name" type="text" maxlength="30" placeholder="例如：GRE 单词本" />
+          <button id="create-wordbook" class="ai-btn">新建单词本</button>
+        </div>
+      </div>
+      <div id="wordbooks-container" class="wordbook-grid"></div>
+    </section>
+  </div>
+
+  <div id="wordbook-page" class="view">
+    <header>
+      <div style="display:flex; align-items:center;">
+        <button id="wordbook-back" class="back-btn">← 返回</button>
+        <h1 id="active-wordbook-title">单词本</h1>
+      </div>
     </header>
     <div class="import-section">
-      <button id="open-import" class="import-btn">导入单词</button>
-      <button id="open-ai-organizer" class="import-btn" style="margin-top:10px;">AI 单词整理</button>
+      <button id="open-import" class="import-btn">手动导入单词</button>
     </div>
     <div class="lists-container">
       <div class="list-column">
@@ -398,7 +531,7 @@
   <div id="import-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="import-back" class="back-btn">← 返回</button>
-      <h2>导入单词</h2>
+      <h2>手动导入单词</h2>
     </header>
     <div class="import-form">
       <h3>通过文件导入 CSV</h3>
@@ -452,6 +585,8 @@
           <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
           <div class="ai-actions">
             <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
+            <label for="ai-target-wordbook" class="ai-note" style="margin:0;">选择目标单词本</label>
+            <select id="ai-target-wordbook" class="ai-input" style="width:auto; min-width:150px; margin:0;"></select>
             <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
           </div>
         </div>
@@ -530,6 +665,9 @@
     </div>
   </div>
 
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem('vocabTheme') || 'dark';
+  </script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
     import {
@@ -544,6 +682,7 @@
       doc,
       collection,
       getDoc,
+      getDocs,
       setDoc,
       updateDoc,
       deleteDoc,
@@ -565,17 +704,20 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const DEFAULT_BOOK_ID = 'default';
+    let wordbooks = [];
+    let allLists = [];
     let newLists = [];
     let reviewLists = [];
     let finalLists = [];
-    let newListCounter = 1;
-    let reviewListCounter = 1;
-    let finalListCounter = 1;
+    let activeWordbookId = DEFAULT_BOOK_ID;
     let currentList = null;
     let currentListType = null;
     let selectedMode = 'en2zh';
     let selectedOrder = 'normal';
     let listsUnsubscribe = null;
+    let wordbooksUnsubscribe = null;
+    let preferencesUnsubscribe = null;
     let aiChatMessages = [];
     let latestAiReport = '';
     let latestAiImport = '';
@@ -584,6 +726,7 @@
 
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
+    const wordbookPage = document.getElementById('wordbook-page');
     const importPage = document.getElementById('import-page');
     const aiPage = document.getElementById('ai-page');
     const aiSettingsPage = document.getElementById('ai-settings-page');
@@ -599,13 +742,15 @@
     const loginButton = document.getElementById('login-btn');
     const registerButton = document.getElementById('register-btn');
     const logoutButton = document.getElementById('logout-btn');
+    const themeToggle = document.getElementById('theme-toggle');
 
     function showPage(page) {
-      [mainPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
+      [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
         if (p) p.classList.remove('active');
       });
       if (page) page.classList.add('active');
-      if (page === mainPage) updateMainPage();
+      if (page === mainPage) updateWordbookDashboard();
+      if (page === wordbookPage) updateWordbookPage();
     }
 
     function showModal(message, onConfirm) {
@@ -617,6 +762,28 @@
       };
       modalCancel.onclick = () => modal.classList.add('hidden');
     }
+
+    function applyTheme(theme) {
+      const safeTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = safeTheme;
+      localStorage.setItem('vocabTheme', safeTheme);
+      themeToggle.textContent = safeTheme === 'dark' ? '切换浅色' : '切换深色';
+      themeToggle.setAttribute('aria-label', themeToggle.textContent);
+    }
+
+    applyTheme(localStorage.getItem('vocabTheme') || 'dark');
+
+    themeToggle.addEventListener('click', async () => {
+      const nextTheme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      applyTheme(nextTheme);
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        await setDoc(doc(db, 'users', user.uid, 'preferences', 'ui'), { theme: nextTheme }, { merge: true });
+      } catch (error) {
+        showModal(error.message || '主题同步失败');
+      }
+    });
 
     loginButton.addEventListener('click', async () => {
       const email = emailInput.value.trim();
@@ -651,114 +818,297 @@
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         authPage.style.display = 'none';
+        themeToggle.hidden = false;
         await initUser(user.uid);
         showPage(mainPage);
       } else {
-        if (listsUnsubscribe) {
-          listsUnsubscribe();
-          listsUnsubscribe = null;
-        }
+        if (listsUnsubscribe) listsUnsubscribe();
+        if (wordbooksUnsubscribe) wordbooksUnsubscribe();
+        if (preferencesUnsubscribe) preferencesUnsubscribe();
+        listsUnsubscribe = null;
+        wordbooksUnsubscribe = null;
+        preferencesUnsubscribe = null;
+        wordbooks = [];
+        allLists = [];
         newLists = [];
         reviewLists = [];
         finalLists = [];
+        activeWordbookId = DEFAULT_BOOK_ID;
         currentList = null;
         currentListType = null;
+        themeToggle.hidden = true;
         authPage.style.display = 'flex';
-        [mainPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
+        [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
           if (p) p.classList.remove('active');
         });
       }
     });
 
     async function initUser(uid) {
-      const countersRef = doc(db, 'users', uid, 'metadata', 'counters');
-      const countersSnap = await getDoc(countersRef);
-      if (!countersSnap.exists()) {
-        await setDoc(countersRef, { newListCounter: 1, reviewListCounter: 1, finalListCounter: 1 });
-        newListCounter = 1;
-        reviewListCounter = 1;
-        finalListCounter = 1;
-      } else {
-        const data = countersSnap.data();
-        newListCounter = data.newListCounter || 1;
-        reviewListCounter = data.reviewListCounter || 1;
-        finalListCounter = data.finalListCounter || 1;
+      const wordbooksRef = collection(db, 'users', uid, 'wordbooks');
+      const existingWordbooks = await getDocs(wordbooksRef);
+      if (existingWordbooks.empty) {
+        const now = Date.now();
+        await setDoc(doc(db, 'users', uid, 'wordbooks', DEFAULT_BOOK_ID), {
+          name: '口语单词本',
+          createdAt: now,
+          updatedAt: now
+        });
       }
+
+      if (wordbooksUnsubscribe) wordbooksUnsubscribe();
+      wordbooksUnsubscribe = onSnapshot(wordbooksRef, (snapshot) => {
+        wordbooks = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        if (!wordbooks.some(book => book.id === activeWordbookId) && wordbooks.length > 0) {
+          activeWordbookId = wordbooks[0].id;
+        }
+        refreshActiveLists();
+        updateWordbookDashboard();
+        renderAiWordbookOptions();
+      });
+
       const listsRef = collection(db, 'users', uid, 'lists');
       if (listsUnsubscribe) listsUnsubscribe();
       listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
-        newLists = [];
-        reviewLists = [];
-        finalLists = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          const listObj = { ...data, docId: docSnap.id };
-          if (data.type === 'new') newLists.push(listObj);
-          else if (data.type === 'review') reviewLists.push(listObj);
-          else if (data.type === 'final') finalLists.push(listObj);
-        });
-        updateMainPage();
+        allLists = snapshot.docs.map(docSnap => ({ ...docSnap.data(), docId: docSnap.id }));
+        refreshActiveLists();
+        updateWordbookDashboard();
+        updateWordbookPage();
+      });
+
+      const preferenceRef = doc(db, 'users', uid, 'preferences', 'ui');
+      const preferenceSnap = await getDoc(preferenceRef);
+      if (!preferenceSnap.exists()) {
+        await setDoc(preferenceRef, { theme: localStorage.getItem('vocabTheme') || 'dark' });
+      }
+      if (preferencesUnsubscribe) preferencesUnsubscribe();
+      preferencesUnsubscribe = onSnapshot(preferenceRef, (snapshot) => {
+        if (snapshot.exists()) applyTheme(snapshot.data().theme);
       });
     }
 
-    async function appendNewLists(words, groupSize) {
+    function getListBookId(list) {
+      return list.bookId || DEFAULT_BOOK_ID;
+    }
+
+    function getActiveBookLists() {
+      return allLists.filter(list => getListBookId(list) === activeWordbookId);
+    }
+
+    function getBookLists(bookId) {
+      return allLists.filter(list => getListBookId(list) === bookId);
+    }
+
+    function refreshActiveLists() {
+      const activeLists = getActiveBookLists();
+      newLists = activeLists.filter(list => list.type === 'new');
+      reviewLists = activeLists.filter(list => list.type === 'review');
+      finalLists = activeLists.filter(list => list.type === 'final');
+    }
+
+    function nextListId(lists, type) {
+      const usedIds = lists.filter(list => list.type === type).map(list => Number(list.id)).filter(Number.isFinite);
+      let nextId = 1;
+      while (usedIds.includes(nextId)) nextId++;
+      return nextId;
+    }
+
+    function validateWordbookName(rawName, currentId = null) {
+      const name = String(rawName || '').trim();
+      if (!name) return { error: '请输入单词本名称' };
+      if (name.length > 30) return { error: '单词本名称最多 30 个字' };
+      const duplicate = wordbooks.some(book => book.id !== currentId && String(book.name || '').trim() === name);
+      if (duplicate) return { error: '已经有同名的单词本' };
+      return { name };
+    }
+
+    async function createWordbook(rawName) {
       const user = auth.currentUser;
       if (!user) return;
-      const usedIds = newLists.map((l) => l.id);
+      const input = document.getElementById('new-wordbook-name');
+      const validated = validateWordbookName(rawName ?? input.value);
+      if (validated.error) return showModal(validated.error);
+      const bookId = `book_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const now = Date.now();
+      try {
+        await setDoc(doc(db, 'users', user.uid, 'wordbooks', bookId), {
+          name: validated.name,
+          createdAt: now,
+          updatedAt: now
+        });
+        input.value = '';
+      } catch (error) {
+        showModal(error.message || '新建单词本失败');
+      }
+    }
+
+    async function renameWordbook(wordbook, proposedName) {
+      const user = auth.currentUser;
+      if (!user) return;
+      const rawName = proposedName ?? window.prompt('输入新的单词本名称', wordbook.name || '');
+      if (rawName === null) return;
+      const validated = validateWordbookName(rawName, wordbook.id);
+      if (validated.error) return showModal(validated.error);
+      try {
+        await updateDoc(doc(db, 'users', user.uid, 'wordbooks', wordbook.id), {
+          name: validated.name,
+          updatedAt: Date.now()
+        });
+      } catch (error) {
+        showModal(error.message || '重命名单词本失败');
+      }
+    }
+
+    async function requestDeleteWordbook(wordbook) {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (wordbooks.length <= 1) return showModal('最后一个单词本不能删除');
+      showModal(`删除“${wordbook.name}”会永久删除里面的全部单词，确定继续吗？`, () => {
+        showModal(`再次确认：永久删除“${wordbook.name}”及其中全部列表？`, async () => {
+          try {
+            const matchingLists = getBookLists(wordbook.id);
+            for (const list of matchingLists) {
+              await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+            }
+            await deleteDoc(doc(db, 'users', user.uid, 'wordbooks', wordbook.id));
+            if (activeWordbookId === wordbook.id) {
+              activeWordbookId = wordbooks.find(book => book.id !== wordbook.id)?.id || DEFAULT_BOOK_ID;
+            }
+            showPage(mainPage);
+          } catch (error) {
+            showModal(error.message || '删除单词本失败，请重试');
+          }
+        });
+      });
+    }
+
+    function updateWordbookDashboard() {
+      const container = document.getElementById('wordbooks-container');
+      if (!container) return;
+      container.innerHTML = '';
+      if (wordbooks.length === 0) {
+        container.innerHTML = '<div class="wordbook-empty">正在加载单词本...</div>';
+        return;
+      }
+      wordbooks.forEach(wordbook => {
+        const lists = getBookLists(wordbook.id);
+        const wordCount = lists.reduce((total, list) => total + (Array.isArray(list.words) ? list.words.length : 0), 0);
+        const card = document.createElement('article');
+        card.className = 'wordbook-card';
+        const header = document.createElement('div');
+        header.className = 'wordbook-card-header';
+        const name = document.createElement('h3');
+        name.textContent = wordbook.name || '未命名单词本';
+        const actions = document.createElement('div');
+        actions.className = 'wordbook-card-actions';
+        const renameButton = document.createElement('button');
+        renameButton.className = 'icon-btn';
+        renameButton.textContent = '重命名';
+        renameButton.addEventListener('click', event => {
+          event.stopPropagation();
+          renameWordbook(wordbook);
+        });
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'icon-btn';
+        deleteButton.textContent = '删除';
+        deleteButton.addEventListener('click', event => {
+          event.stopPropagation();
+          requestDeleteWordbook(wordbook);
+        });
+        actions.appendChild(renameButton);
+        actions.appendChild(deleteButton);
+        header.appendChild(name);
+        header.appendChild(actions);
+        const meta = document.createElement('div');
+        meta.className = 'wordbook-card-meta';
+        meta.textContent = `${lists.length} 个列表 · ${wordCount} 个单词`;
+        card.appendChild(header);
+        card.appendChild(meta);
+        card.addEventListener('click', () => openWordbook(wordbook.id));
+        container.appendChild(card);
+      });
+    }
+
+    function renderAiWordbookOptions() {
+      const select = document.getElementById('ai-target-wordbook');
+      if (!select) return;
+      const previousValue = select.value;
+      select.innerHTML = '';
+      wordbooks.forEach(wordbook => {
+        const option = document.createElement('option');
+        option.value = wordbook.id;
+        option.textContent = wordbook.name;
+        select.appendChild(option);
+      });
+      const preferredValue = wordbooks.some(book => book.id === previousValue)
+        ? previousValue
+        : (wordbooks.some(book => book.id === activeWordbookId) ? activeWordbookId : wordbooks[0]?.id);
+      if (preferredValue) select.value = preferredValue;
+    }
+
+    function openWordbook(bookId) {
+      if (!wordbooks.some(book => book.id === bookId)) return;
+      activeWordbookId = bookId;
+      currentList = null;
+      refreshActiveLists();
+      updateWordbookPage();
+      showPage(wordbookPage);
+    }
+
+    async function appendNewLists(words, groupSize, bookId = activeWordbookId) {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (!wordbooks.some(book => book.id === bookId)) throw new Error('目标单词本不存在');
+      const bookLists = getBookLists(bookId);
+      const usedIds = bookLists.filter(list => list.type === 'new').map(list => Number(list.id));
       for (let i = 0; i < words.length; i += groupSize) {
-        let newId = 1;
+        let newId = nextListId(bookLists, 'new');
         while (usedIds.includes(newId)) newId++;
         usedIds.push(newId);
         const slice = words.slice(i, i + groupSize);
-        await setDoc(doc(db, 'users', user.uid, 'lists', `new_${newId}`), {
+        await setDoc(doc(db, 'users', user.uid, 'lists', `${bookId}_new_${newId}`), {
           id: newId,
           type: 'new',
+          bookId,
           words: slice
         });
       }
-      newListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-      await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { newListCounter });
     }
 
-    async function addToReviewBuffer(word) {
+    async function addToReviewBuffer(word, bookId = activeWordbookId) {
       const user = auth.currentUser;
       if (!user) return;
-      const target = reviewLists.find(item => item.words && item.words.length < 20);
+      const bookLists = getBookLists(bookId);
+      const target = bookLists.find(item => item.type === 'review' && item.words && item.words.length < 20);
       if (target) {
         await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
-        const usedIds = reviewLists.map((l) => l.id);
-        let newId = 1;
-        while (usedIds.includes(newId)) newId++;
-        usedIds.push(newId);
-        await setDoc(doc(db, 'users', user.uid, 'lists', `review_${newId}`), {
+        const newId = nextListId(bookLists, 'review');
+        await setDoc(doc(db, 'users', user.uid, 'lists', `${bookId}_review_${newId}`), {
           id: newId,
           type: 'review',
+          bookId,
           words: [word]
         });
-        reviewListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { reviewListCounter });
       }
     }
 
-    async function addToFinalBuffer(word) {
+    async function addToFinalBuffer(word, bookId = activeWordbookId) {
       const user = auth.currentUser;
       if (!user) return;
-      const target = finalLists.find(item => item.words && item.words.length < 20);
+      const bookLists = getBookLists(bookId);
+      const target = bookLists.find(item => item.type === 'final' && item.words && item.words.length < 20);
       if (target) {
         await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
-        const usedIds = finalLists.map((l) => l.id);
-        let newId = 1;
-        while (usedIds.includes(newId)) newId++;
-        usedIds.push(newId);
-        await setDoc(doc(db, 'users', user.uid, 'lists', `final_${newId}`), {
+        const newId = nextListId(bookLists, 'final');
+        await setDoc(doc(db, 'users', user.uid, 'lists', `${bookId}_final_${newId}`), {
           id: newId,
           type: 'final',
+          bookId,
           words: [word]
         });
-        finalListCounter = usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { finalListCounter });
       }
     }
 
@@ -766,22 +1116,13 @@
       const user = auth.currentUser;
       if (!user) return;
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
-      if (list.type === 'new') {
-        const remainingIds = newLists.filter((l) => l.docId !== list.docId && l.type === 'new').map((l) => l.id);
-        newListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { newListCounter });
-      } else if (list.type === 'review') {
-        const remainingIds = reviewLists.filter((l) => l.docId !== list.docId && l.type === 'review').map((l) => l.id);
-        reviewListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { reviewListCounter });
-      } else if (list.type === 'final') {
-        const remainingIds = finalLists.filter((l) => l.docId !== list.docId && l.type === 'final').map((l) => l.id);
-        finalListCounter = remainingIds.length > 0 ? Math.max(...remainingIds) + 1 : 1;
-        await updateDoc(doc(db, 'users', user.uid, 'metadata', 'counters'), { finalListCounter });
-      }
     }
 
-    function updateMainPage() {
+    function updateWordbookPage() {
+      refreshActiveLists();
+      const activeBook = wordbooks.find(book => book.id === activeWordbookId);
+      const title = document.getElementById('active-wordbook-title');
+      if (title) title.textContent = activeBook?.name || '单词本';
       const newContainer = document.getElementById('new-lists');
       const reviewContainer = document.getElementById('review-lists');
       const finalContainer = document.getElementById('final-lists');
@@ -927,8 +1268,9 @@
           ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入巩固单词final';
           ghost.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (currentList.type === 'new') showModal('是否添加至需巩固单词本？', () => addToReviewBuffer(word));
-            else if (currentList.type === 'review') showModal('是否添加至巩固单词final本？', () => addToFinalBuffer(word));
+            const bookId = getListBookId(currentList);
+            if (currentList.type === 'new') showModal('是否添加至需巩固单词本？', () => addToReviewBuffer(word, bookId));
+            else if (currentList.type === 'review') showModal('是否添加至巩固单词final本？', () => addToFinalBuffer(word, bookId));
           });
         }
         row.appendChild(idxSpan);
@@ -962,13 +1304,21 @@
       showPage(previewPage);
     }
 
+    document.getElementById('create-wordbook').addEventListener('click', () => createWordbook());
+    document.getElementById('new-wordbook-name').addEventListener('keydown', event => {
+      if (event.key === 'Enter') createWordbook();
+    });
+    document.getElementById('wordbook-back').addEventListener('click', () => showPage(mainPage));
     document.getElementById('open-import').addEventListener('click', () => showPage(importPage));
-    document.getElementById('open-ai-organizer').addEventListener('click', () => showPage(aiPage));
-    document.getElementById('import-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('open-ai-organizer').addEventListener('click', () => {
+      renderAiWordbookOptions();
+      showPage(aiPage);
+    });
+    document.getElementById('import-back').addEventListener('click', () => showPage(wordbookPage));
     document.getElementById('ai-back').addEventListener('click', () => showPage(mainPage));
-    document.getElementById('mode-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('mode-back').addEventListener('click', () => showPage(wordbookPage));
     document.getElementById('study-back').addEventListener('click', () => showPage(modePage));
-    document.getElementById('preview-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('preview-back').addEventListener('click', () => showPage(wordbookPage));
     document.getElementById('open-ai-settings').addEventListener('click', () => {
       document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
       showPage(aiSettingsPage);
@@ -1356,8 +1706,15 @@ IMPORT_TEXT 规则：
     document.getElementById('import-ai-output').addEventListener('click', async () => {
       const words = parseImportLines(document.getElementById('ai-import-output').value.trim());
       if (words.length === 0) return showModal('导入段落为空或格式不正确');
-      await appendNewLists(words, 30);
-      showModal(`已导入 ${words.length} 条表达`);
+      const targetBookId = document.getElementById('ai-target-wordbook').value;
+      if (!wordbooks.some(book => book.id === targetBookId)) return showModal('请选择有效的目标单词本');
+      try {
+        await appendNewLists(words, 30, targetBookId);
+        const targetBook = wordbooks.find(book => book.id === targetBookId);
+        showModal(`已导入 ${words.length} 条表达至“${targetBook?.name || '目标单词本'}”`);
+      } catch (error) {
+        showModal(error.message || '导入失败');
+      }
     });
 
     document.getElementById('send-ai-chat').addEventListener('click', async () => {
@@ -1404,10 +1761,14 @@ IMPORT_TEXT 规则：
         const text = e.target.result;
         const words = parseImportLines(text);
         if (words.length === 0) return showModal('文件内容为空或格式不正确');
-        await appendNewLists(words, groupSize);
-        fileInput.value = '';
-        groupSizeInput.value = 50;
-        showPage(mainPage);
+        try {
+          await appendNewLists(words, groupSize, activeWordbookId);
+          fileInput.value = '';
+          groupSizeInput.value = 50;
+          showPage(wordbookPage);
+        } catch (error) {
+          showModal(error.message || '导入失败');
+        }
       };
       reader.readAsText(file, 'utf-8');
     });
@@ -1420,10 +1781,14 @@ IMPORT_TEXT 规则：
       if (!rawText) return showModal('请输入单词内容');
       const words = parseImportLines(rawText);
       if (words.length === 0) return showModal('内容格式不正确');
-      await appendNewLists(words, groupSize);
-      textArea.value = '';
-      groupSizeInput.value = 50;
-      showPage(mainPage);
+      try {
+        await appendNewLists(words, groupSize, activeWordbookId);
+        textArea.value = '';
+        groupSizeInput.value = 50;
+        showPage(wordbookPage);
+      } catch (error) {
+        showModal(error.message || '导入失败');
+      }
     });
   </script>
 </body>
