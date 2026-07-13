@@ -1327,7 +1327,7 @@
 
     const AI_MODEL = 'deepseek-v4-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
-    const AI_BATCH_SIZE = 8;
+    const AI_BATCH_SIZE = 5;
     const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。每个非空行是一条独立输入。你必须逐条识别语言和类型，并按原顺序完整整理，不遗漏、不合并。
 
@@ -1378,10 +1378,11 @@ Final advice:
 
 多条内容时，每条都按同一模板输出；每条之间空一行，用 --- 分隔。
 
-IMPORT_TEXT 规则：
+IMPORT_TEXT 规则，非常重要：
 1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
 2. 英文列不得出现英文逗号，请改用分号或省略逗号。
 3. 不要加序号、表头、代码块或额外说明。
+4. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1461,6 +1462,25 @@ IMPORT_TEXT 规则：
       }).filter(Boolean);
     }
 
+    function firstUsefulMeaning(text) {
+      return text
+        .split(/\r?\n/)
+        .map(line => line.replace(/^[-•]\s+/, '').trim())
+        .find(line => line && !line.includes('|')) || '口语表达';
+    }
+
+    function buildImportTextFromReport(report) {
+      const items = report.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
+      return items.map(item => {
+        const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
+        if (!titleMatch) return '';
+        const en = titleMatch[1].trim().replace(/,/g, ';');
+        const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
+        const zh = firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
+        return en && zh ? `${en},${zh}` : '';
+      }).filter(Boolean).join('\n');
+    }
+
     function parseAiOrganizerResponse(content) {
       try {
         const json = JSON.parse(content);
@@ -1468,10 +1488,15 @@ IMPORT_TEXT 规则：
       } catch (error) {
         // Fall back to marker parsing below.
       }
-      const reportMatch = content.match(/===REPORT===([\s\S]*?)===IMPORT_TEXT===/);
-      const importMatch = content.match(/===IMPORT_TEXT===([\s\S]*)/);
-      const report = reportMatch ? reportMatch[1].trim() : content.trim();
-      const importText = importMatch ? importMatch[1].trim() : '';
+      const cleanedContent = content.replace(/^```(?:\w+)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const reportMatch = cleanedContent.match(/===REPORT===([\s\S]*?)===IMPORT_TEXT===/);
+      const reportOnlyMatch = cleanedContent.match(/===REPORT===([\s\S]*)/);
+      const importMatch = cleanedContent.match(/===IMPORT_TEXT===([\s\S]*)/);
+      const report = reportMatch ? reportMatch[1].trim() : (reportOnlyMatch ? reportOnlyMatch[1].trim() : cleanedContent.trim());
+      let importText = importMatch ? importMatch[1].trim() : '';
+      if (parseImportLines(importText).length === 0 && report) {
+        importText = buildImportTextFromReport(report);
+      }
       return {
         report,
         importText,
@@ -1649,8 +1674,11 @@ IMPORT_TEXT 规则：
             ], false);
             result = parseAiOrganizerResponse(content);
             const batchWords = parseImportLines(result.importText || '');
-            if (!result.report || batchWords.length === 0) {
-              throw new Error('AI 返回格式不完整');
+            if (!result.report) {
+              throw new Error('AI 没有返回报告内容');
+            }
+            if (batchWords.length === 0) {
+              throw new Error('AI 没有返回可导入段落，请再点一次生成');
             }
           } catch (error) {
             throw new Error(`第 ${batchIndex + 1}/${batches.length} 批失败：${error.message || '生成失败'}`);
