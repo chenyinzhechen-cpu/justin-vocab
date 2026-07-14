@@ -259,10 +259,30 @@
       line-height: 1.55;
     }
     #import-page button { padding: 10px; font-size: 14px; }
-    .ai-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr); gap: 18px; }
+    .ai-workspace { display: grid; gap: 18px; }
+    .ai-top-row,
+    .ai-bottom-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      gap: 18px;
+    }
+    .ai-bottom-row { align-items: stretch; }
+    .ai-workspace .ai-card { margin-bottom: 0; }
     .ai-note, .ai-status { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
     .ai-status.error { color: var(--danger); }
     #ai-import-output { min-height: 190px; }
+    .ai-report-card,
+    .ai-import-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 620px;
+    }
+    .ai-report-card .ai-report,
+    .ai-import-card #ai-import-output {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .ai-import-card .ai-actions { margin-top: 12px; }
     .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .ai-btn { padding: 10px 14px; font-size: 14px; }
     .ai-btn.secondary, .mode-btn, .order-btn {
@@ -452,7 +472,8 @@
     #modal-cancel { background: var(--panel-light); color: var(--text); }
     #modal-confirm { background: var(--accent); color: var(--accent-contrast); }
     @media (max-width: 768px) {
-      .ai-grid, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
+      .ai-top-row, .ai-bottom-row, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
+      .ai-report-card, .ai-import-card { min-height: 520px; }
       .list-column { width: 100%; }
       .study-row { grid-template-columns: 40px 1fr 1fr 30px; }
       .ai-progress-wrap { max-width: none; flex-basis: 100%; }
@@ -555,9 +576,9 @@
       <h2>AI 单词整理</h2>
       <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
     </header>
-    <div class="ai-grid">
-      <div>
-        <div class="ai-card">
+    <div class="ai-workspace">
+      <div class="ai-top-row">
+        <div class="ai-card ai-generate-card">
           <h3>生成口语整理报告</h3>
           <p class="ai-note">粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。</p>
           <textarea id="ai-source-input" class="ai-textarea" placeholder="例如：&#10;我需要出去逛逛 I need to touch grass&#10;look up&#10;这周末我只想在家休息"></textarea>
@@ -572,27 +593,7 @@
             <span id="ai-generate-status" class="ai-status" style="margin:0;"></span>
           </div>
         </div>
-        <div class="ai-card">
-          <h3>整理报告（结构化阅读版）</h3>
-          <div class="ai-actions" style="margin-bottom:10px;">
-            <button id="format-ai-report" class="ai-btn secondary">重新排版当前报告</button>
-          </div>
-          <div id="ai-report" class="ai-report empty">生成后，这里会显示每条表达的简短说明。</div>
-        </div>
-        <div class="ai-card">
-          <h3>可直接导入单词本的完整段落</h3>
-          <p class="ai-note">格式固定为每行 <code>英文,中文</code>。可先修改，再一键导入；内容较多时会自动拆成多个单词列表。</p>
-          <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
-          <div class="ai-actions">
-            <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
-            <label for="ai-target-wordbook" class="ai-note" style="margin:0;">选择目标单词本</label>
-            <select id="ai-target-wordbook" class="ai-input" style="width:auto; min-width:150px; margin:0;"></select>
-            <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="ai-card">
+        <div class="ai-card ai-chat-card">
           <h3>进一步追问</h3>
           <p class="ai-note">可以继续问语气、使用场景、替代表达或练习例句。助手会自动带上刚才的整理内容。</p>
           <div id="ai-chat-log" class="chat-log"></div>
@@ -601,6 +602,26 @@
             <button id="send-ai-chat" class="ai-btn">发送</button>
             <button id="clear-ai-chat" class="ai-btn secondary">清空对话</button>
             <span id="ai-chat-status" class="ai-status" style="margin:0;"></span>
+          </div>
+        </div>
+      </div>
+      <div class="ai-bottom-row">
+        <div class="ai-card ai-report-card">
+          <h3>整理报告（结构化阅读版）</h3>
+          <div class="ai-actions" style="margin-bottom:10px;">
+            <button id="format-ai-report" class="ai-btn secondary">重新排版当前报告</button>
+          </div>
+          <div id="ai-report" class="ai-report empty">生成后，这里会显示每条表达的简短说明。</div>
+        </div>
+        <div class="ai-card ai-import-card">
+          <h3>可直接导入单词本的完整段落</h3>
+          <p class="ai-note">格式固定为每行 <code>英文,中文</code>。可先修改，再一键导入；内容较多时会自动拆成多个单词列表。</p>
+          <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
+          <div class="ai-actions">
+            <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
+            <label for="ai-target-wordbook" class="ai-note" style="margin:0;">选择目标单词本</label>
+            <select id="ai-target-wordbook" class="ai-input" style="width:auto; min-width:150px; margin:0;"></select>
+            <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
           </div>
         </div>
       </div>
