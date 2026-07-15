@@ -284,6 +284,17 @@
     }
     .ai-import-card .ai-actions { margin-top: 12px; }
     .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .ai-history-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .ai-history-indicator {
+      color: var(--muted);
+      font-size: 13px;
+    }
     .ai-btn { padding: 10px 14px; font-size: 14px; }
     .ai-btn.secondary, .mode-btn, .order-btn {
       border: 1px solid var(--panel-light);
@@ -608,6 +619,11 @@
       <div class="ai-bottom-row">
         <div class="ai-card ai-report-card">
           <h3>整理报告（结构化阅读版）</h3>
+          <div class="ai-history-bar">
+            <button id="ai-history-prev" class="ai-btn secondary" type="button">上一份</button>
+            <span id="ai-history-indicator" class="ai-history-indicator">暂无历史记录</span>
+            <button id="ai-history-next" class="ai-btn secondary" type="button">下一份</button>
+          </div>
           <div class="ai-actions" style="margin-bottom:10px;">
             <button id="format-ai-report" class="ai-btn secondary">重新排版当前报告</button>
           </div>
@@ -619,6 +635,7 @@
           <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
           <div class="ai-actions">
             <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
+            <button id="save-ai-output" class="ai-btn secondary">保存修改</button>
             <label for="ai-target-wordbook" class="ai-note" style="margin:0;">选择目标单词本</label>
             <select id="ai-target-wordbook" class="ai-input" style="width:auto; min-width:150px; margin:0;"></select>
             <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
@@ -744,6 +761,10 @@
     let latestAiImport = '';
     let latestRawReport = '';
     let latestSourceItems = [];
+    const AI_HISTORY_KEY = 'aiOrganizerHistory';
+    const AI_HISTORY_LIMIT = 30;
+    let aiHistory = [];
+    let activeAiHistoryIndex = -1;
 
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
@@ -1333,6 +1354,8 @@
     document.getElementById('open-import').addEventListener('click', () => showPage(importPage));
     document.getElementById('open-ai-organizer').addEventListener('click', () => {
       renderAiWordbookOptions();
+      loadAiHistory();
+      if (!latestAiReport && aiHistory.length > 0) showAiHistoryEntry(0);
       showPage(aiPage);
     });
     document.getElementById('import-back').addEventListener('click', () => showPage(wordbookPage));
@@ -1359,6 +1382,8 @@
 4. 如果输入是单词、词组或句子，都使用同一套报告模板。不要因为是句子就省略模板。
 5. 这是口语表达软件，重点是自然、实用、能直接开口说。
 6. 如果输入在提问、确认理解、比较区别或询问如何表达，必须先直接回答这个问题；不能只解释最终英文。
+7. 判断问题的信号包括但不限于：什么意思、啥意思、怎么说、如何表达、哪个对、对吗、是吗、是否、能不能、为什么、区别、还是、?、？、what does、which one、is it correct。
+8. 只要 Input 有任何提问或确认意图，必须输出独立的 Answer the input question section。不要把直接答案塞进 Spoken meaning。
 
 每一条 report 都必须严格按下面模板输出，标题和顺序不要改：
 
@@ -1370,10 +1395,12 @@ Word / Phrase / Sentence: 最终英文表达
 如果 Input 包含问题或询问意图，在这里加入下面这个 section：
 Answer the input question:
 用中文直接回答用户的问题。先给明确结论，再用一两句话解释。标题必须保留英文。
+这一段只回答用户问的具体问题，例如“ATP/atp 是什么意思”“Heading home 和 going back home 哪个对”“lock in 怎么用”。不要在这里泛泛解释最终表达。
 如果 Input 只是普通单词、词组或陈述句，完全省略这个 section，连标题也不要输出。
 
 Spoken meaning:
 用中文解释它在口语里的真实意思、语感和适合表达的情绪。
+这里不要回答 Input 的问题，只解释 Word / Phrase / Sentence 那一行最终英文表达本身的口语意思。
 
 Naturalness:
 Daily conversation: high / medium / low
@@ -1583,6 +1610,92 @@ IMPORT_TEXT 规则，非常重要：
       return lines.map(line => `<p class="report-line">${escapeHtml(line)}</p>`).join('');
     }
 
+    function loadAiHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]');
+        aiHistory = Array.isArray(saved) ? saved.filter(entry => entry && entry.report && entry.importText).slice(0, AI_HISTORY_LIMIT) : [];
+      } catch (error) {
+        aiHistory = [];
+      }
+      activeAiHistoryIndex = aiHistory.length > 0 ? 0 : -1;
+      updateAiHistoryControls();
+    }
+
+    function persistAiHistory() {
+      localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory.slice(0, AI_HISTORY_LIMIT)));
+      updateAiHistoryControls();
+    }
+
+    function updateAiHistoryControls() {
+      const indicator = document.getElementById('ai-history-indicator');
+      const prevButton = document.getElementById('ai-history-prev');
+      const nextButton = document.getElementById('ai-history-next');
+      if (!indicator || !prevButton || !nextButton) return;
+      if (aiHistory.length === 0 || activeAiHistoryIndex < 0) {
+        indicator.textContent = '暂无历史记录';
+        prevButton.disabled = true;
+        nextButton.disabled = true;
+        return;
+      }
+      const entry = aiHistory[activeAiHistoryIndex];
+      const dateText = entry.createdAt ? new Date(entry.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      indicator.textContent = `第 ${activeAiHistoryIndex + 1}/${aiHistory.length} 份${dateText ? ` · ${dateText}` : ''}`;
+      prevButton.disabled = activeAiHistoryIndex <= 0;
+      nextButton.disabled = activeAiHistoryIndex >= aiHistory.length - 1;
+    }
+
+    function showAiHistoryEntry(index) {
+      if (index < 0 || index >= aiHistory.length) return;
+      activeAiHistoryIndex = index;
+      const entry = aiHistory[index];
+      latestAiReport = entry.report || '';
+      latestAiImport = entry.importText || '';
+      latestRawReport = entry.report || '';
+      latestSourceItems = Array.isArray(entry.sourceItems) ? [...entry.sourceItems] : [];
+      renderAiReport(latestAiReport, []);
+      document.getElementById('ai-import-output').value = latestAiImport;
+      aiChatMessages = latestAiReport ? [
+        { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
+        { role: 'user', content: `这是本次整理内容：\n${latestAiReport}\n\n可导入表达：\n${latestAiImport}` },
+        { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
+      ] : [];
+      document.getElementById('ai-chat-log').innerHTML = '';
+      if (latestAiReport) appendChatBubble('assistant', '已切换到这份整理记录。你可以继续围绕它追问。');
+      updateAiHistoryControls();
+    }
+
+    function addAiHistoryEntry(report, importText, sourceItems) {
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        report,
+        importText,
+        sourceItems: Array.isArray(sourceItems) ? [...sourceItems] : []
+      };
+      aiHistory.unshift(entry);
+      aiHistory = aiHistory.slice(0, AI_HISTORY_LIMIT);
+      activeAiHistoryIndex = 0;
+      persistAiHistory();
+    }
+
+    function saveCurrentAiHistoryEdit() {
+      const currentImport = document.getElementById('ai-import-output').value.trim();
+      if (!currentImport) return showModal('没有可以保存的导入段落');
+      latestAiImport = currentImport;
+      if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
+        if (!latestAiReport) return showModal('请先生成一次整理报告');
+        addAiHistoryEntry(latestAiReport, currentImport, latestSourceItems);
+      } else {
+        aiHistory[activeAiHistoryIndex] = {
+          ...aiHistory[activeAiHistoryIndex],
+          importText: currentImport,
+          updatedAt: new Date().toISOString()
+        };
+        persistAiHistory();
+      }
+      showModal('已保存当前导入段落修改');
+    }
+
     function renderAiReport(report, sourceInputs = latestSourceItems) {
       const container = document.getElementById('ai-report');
       const normalized = report.trim();
@@ -1595,13 +1708,20 @@ IMPORT_TEXT 规则，非常重要：
       }
       const rawItems = normalized.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
       const items = rawItems.length > 0 ? rawItems : [normalized];
+      const generatedInputs = items.map(item => {
+        const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
+        const withoutTitle = titleMatch ? item.replace(titleMatch[0], '').trim() : item;
+        return splitReportSections(withoutTitle).find(section => section.title.toLowerCase() === 'input')?.body || '';
+      });
+      const hasRepeatedGeneratedInput = generatedInputs.some((input, index) => input && generatedInputs.indexOf(input) !== index);
+      const shouldTrustReportInputs = sourceInputs.length === 0 || items.length !== sourceInputs.length || hasRepeatedGeneratedInput;
       const html = items.map((item, index) => {
         const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
         const title = titleMatch ? titleMatch[1].trim() : `表达 ${index + 1}`;
         const withoutTitle = titleMatch ? item.replace(titleMatch[0], '').trim() : item;
         const sections = splitReportSections(withoutTitle);
         const generatedInput = sections.find(section => section.title.toLowerCase() === 'input')?.body || '';
-        const originalInput = sourceInputs[index] || generatedInput;
+        const originalInput = shouldTrustReportInputs ? (generatedInput || sourceInputs[index] || '') : (sourceInputs[index] || generatedInput);
         const contentSections = sections.filter(section => section.title.toLowerCase() !== 'input');
         const inputHtml = originalInput ? `
           <section class="report-input-section">
@@ -1725,6 +1845,7 @@ IMPORT_TEXT 规则，非常重要：
         latestAiImport = combinedImport;
         renderAiReport(combinedReport, sourceItems);
         document.getElementById('ai-import-output').value = combinedImport;
+        addAiHistoryEntry(combinedReport, combinedImport, sourceItems);
         aiChatMessages = [
           { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
           { role: 'user', content: `这是本次整理内容：\n${combinedReport}\n\n可导入表达：\n${combinedImport}` },
@@ -1750,6 +1871,16 @@ IMPORT_TEXT 规则，非常重要：
       } catch (error) {
         showModal('浏览器未允许自动复制，请手动选中复制');
       }
+    });
+
+    document.getElementById('save-ai-output').addEventListener('click', saveCurrentAiHistoryEdit);
+
+    document.getElementById('ai-history-prev').addEventListener('click', () => {
+      showAiHistoryEntry(activeAiHistoryIndex - 1);
+    });
+
+    document.getElementById('ai-history-next').addEventListener('click', () => {
+      showAiHistoryEntry(activeAiHistoryIndex + 1);
     });
 
     document.getElementById('import-ai-output').addEventListener('click', async () => {
