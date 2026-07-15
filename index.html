@@ -260,13 +260,31 @@
     }
     #import-page button { padding: 10px; font-size: 14px; }
     .ai-workspace { display: grid; gap: 18px; }
-    .ai-top-row,
-    .ai-bottom-row {
+    .ai-report-package {
+      background: var(--panel);
+      border: 1px solid var(--panel-light);
+      border-radius: 20px;
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+    .ai-package-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .ai-package-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+    .ai-report-pair {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
       gap: 18px;
     }
-    .ai-bottom-row { align-items: stretch; }
     .ai-workspace .ai-card { margin-bottom: 0; }
     .ai-note, .ai-status { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 10px; }
     .ai-status.error { color: var(--danger); }
@@ -283,6 +301,12 @@
       min-height: 0;
     }
     .ai-import-card .ai-actions { margin-top: 12px; }
+    .ai-chat-card.collapsed .chat-log,
+    .ai-chat-card.collapsed #ai-chat-input,
+    .ai-chat-card.collapsed #send-ai-chat,
+    .ai-chat-card.collapsed #clear-ai-chat {
+      display: none;
+    }
     .ai-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .ai-history-bar {
       display: flex;
@@ -483,7 +507,7 @@
     #modal-cancel { background: var(--panel-light); color: var(--text); }
     #modal-confirm { background: var(--accent); color: var(--accent-contrast); }
     @media (max-width: 768px) {
-      .ai-top-row, .ai-bottom-row, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
+      .ai-report-pair, .lists-container { grid-template-columns: 1fr; flex-direction: column; }
       .ai-report-card, .ai-import-card { min-height: 520px; }
       .list-column { width: 100%; }
       .study-row { grid-template-columns: 40px 1fr 1fr 30px; }
@@ -588,45 +612,32 @@
       <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
     </header>
     <div class="ai-workspace">
-      <div class="ai-top-row">
-        <div class="ai-card ai-generate-card">
-          <h3>生成口语整理报告</h3>
-          <p class="ai-note">粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。</p>
-          <textarea id="ai-source-input" class="ai-textarea" placeholder="例如：&#10;我需要出去逛逛 I need to touch grass&#10;look up&#10;这周末我只想在家休息"></textarea>
-          <div class="ai-actions">
-            <button id="generate-ai-report" class="ai-btn">生成报告</button>
-            <div id="ai-progress-wrap" class="ai-progress-wrap" hidden>
-              <div id="ai-progress" class="ai-progress" role="progressbar" aria-label="报告生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div id="ai-progress-bar" class="ai-progress-bar"></div>
-              </div>
-              <span id="ai-progress-label" class="ai-progress-label">0%</span>
+      <div class="ai-card ai-generate-card">
+        <h3>生成口语整理报告</h3>
+        <p class="ai-note">粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。</p>
+        <textarea id="ai-source-input" class="ai-textarea" placeholder="例如：&#10;我需要出去逛逛 I need to touch grass&#10;look up&#10;这周末我只想在家休息"></textarea>
+        <div class="ai-actions">
+          <button id="generate-ai-report" class="ai-btn">生成报告</button>
+          <div id="ai-progress-wrap" class="ai-progress-wrap" hidden>
+            <div id="ai-progress" class="ai-progress" role="progressbar" aria-label="报告生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="ai-progress-bar" class="ai-progress-bar"></div>
             </div>
-            <span id="ai-generate-status" class="ai-status" style="margin:0;"></span>
+            <span id="ai-progress-label" class="ai-progress-label">0%</span>
           </div>
-        </div>
-        <div class="ai-card ai-chat-card">
-          <h3>进一步追问</h3>
-          <p class="ai-note">可以继续问语气、使用场景、替代表达或练习例句。助手会自动带上刚才的整理内容。</p>
-          <div id="ai-chat-log" class="chat-log"></div>
-          <textarea id="ai-chat-input" class="ai-textarea" style="min-height:90px;" placeholder="例如：touch grass 是开玩笑还是正式表达？"></textarea>
-          <div class="ai-actions">
-            <button id="send-ai-chat" class="ai-btn">发送</button>
-            <button id="clear-ai-chat" class="ai-btn secondary">清空对话</button>
-            <span id="ai-chat-status" class="ai-status" style="margin:0;"></span>
-          </div>
+          <span id="ai-generate-status" class="ai-status" style="margin:0;"></span>
         </div>
       </div>
-      <div class="ai-bottom-row">
-        <div class="ai-card ai-report-card">
-          <h3>整理报告（结构化阅读版）</h3>
+      <section class="ai-report-package">
+        <div class="ai-package-header">
+          <h3 class="ai-package-title">结构化单词报告</h3>
           <div class="ai-history-bar">
             <button id="ai-history-prev" class="ai-btn secondary" type="button">上一份</button>
             <span id="ai-history-indicator" class="ai-history-indicator">暂无历史记录</span>
             <button id="ai-history-next" class="ai-btn secondary" type="button">下一份</button>
           </div>
-          <div class="ai-actions" style="margin-bottom:10px;">
-            <button id="format-ai-report" class="ai-btn secondary">重新排版当前报告</button>
-          </div>
+        </div>
+        <div class="ai-report-pair">
+        <div class="ai-card ai-report-card">
           <div id="ai-report" class="ai-report empty">生成后，这里会显示每条表达的简短说明。</div>
         </div>
         <div class="ai-card ai-import-card">
@@ -641,7 +652,22 @@
             <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
           </div>
         </div>
-      </div>
+        </div>
+        <div id="ai-chat-card" class="ai-card ai-chat-card collapsed">
+          <h3>进一步追问</h3>
+          <p class="ai-note">默认不会读取报告，避免浪费 token。需要追问时，先启用当前报告追问。</p>
+          <div class="ai-actions" style="margin-bottom:10px;">
+            <button id="enable-ai-chat" class="ai-btn secondary" type="button">启用本报告追问</button>
+            <span id="ai-chat-status" class="ai-status" style="margin:0;"></span>
+          </div>
+          <div id="ai-chat-log" class="chat-log"></div>
+          <textarea id="ai-chat-input" class="ai-textarea" style="min-height:90px;" placeholder="例如：touch grass 是开玩笑还是正式表达？"></textarea>
+          <div class="ai-actions">
+            <button id="send-ai-chat" class="ai-btn">发送</button>
+            <button id="clear-ai-chat" class="ai-btn secondary">清空对话</button>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -761,6 +787,7 @@
     let latestAiImport = '';
     let latestRawReport = '';
     let latestSourceItems = [];
+    let aiChatEnabled = false;
     const AI_HISTORY_KEY = 'aiOrganizerHistory';
     const AI_HISTORY_LIMIT = 30;
     let aiHistory = [];
@@ -1372,20 +1399,24 @@
     const AI_MODEL = 'deepseek-v4-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
     const AI_BATCH_SIZE = 5;
-    const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。
+    const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。默认输出 British spoken English，除非用户明确要求美式或其他风格。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。每个非空行是一条独立输入。你必须逐条识别语言和类型，并按原顺序完整整理，不遗漏、不合并。
 
 总原则：
-1. 如果输入是中文：给出自然、可直接说出口的英文表达。
-2. 如果输入是英文：给出中文意思，并判断是否自然；如果不够自然，用更地道的英文作为最终表达。
+1. 如果输入是中文：先判断中文背后的真实表达意图，再给出自然、可直接说出口的英式口语表达；不要机械直译。
+2. 如果输入是英文：给出中文意思，并判断是否自然；如果不够自然或有语法错误，用更地道的英文作为最终表达。
 3. 如果输入是中英混合：判断英文是否正确、自然、是否符合中文语境；必要时润色。
 4. 如果输入是单词、词组或句子，都使用同一套报告模板。不要因为是句子就省略模板。
 5. 这是口语表达软件，重点是自然、实用、能直接开口说。
 6. 如果输入在提问、确认理解、比较区别或询问如何表达，必须先直接回答这个问题；不能只解释最终英文。
 7. 判断问题的信号包括但不限于：什么意思、啥意思、怎么说、如何表达、哪个对、对吗、是吗、是否、能不能、为什么、区别、还是、?、？、what does、which one、is it correct。
 8. 只要 Input 有任何提问或确认意图，必须输出独立的 Answer the input question section。不要把直接答案塞进 Spoken meaning。
+9. Word / Phrase / Sentence 必须是修正后的自然最终表达。不要把错误或不自然的原句放在 Word / Phrase / Sentence；原错误句应放入 Common mistake。
+10. 如果用户输入类似 “I wish poorly on you” 这种不自然英文，最终表达必须改成自然英文，例如 “I hope things go badly for you.” 或按语境选择更自然的表达。
 
-每一条 report 都必须严格按下面模板输出，标题和顺序不要改：
+每一条 report 都必须严格按下面模板输出，标题和顺序不要改。每条 report 必须用 <<<ITEM_START>>> 和 <<<ITEM_END>>> 包住：
+
+<<<ITEM_START>>>
 
 Input:
 原封不动复制用户这一行输入，不得翻译、润色、删减或修正。
@@ -1412,7 +1443,11 @@ Formal speaking: high / medium / low
 Better spoken alternatives:
 用 markdown 表格输出，表头必须是：
 中文意思 | 更自然英文
-给 3-6 个更自然、更口语的替代表达。优先口语和实用表达，不要太学术。
+只在最终表达不够自然、不够口语、或确实有更常用说法时才给替代表达。
+不要为了凑数量给偏离原意的表达。
+替代表达必须比最终表达更自然、更准确或更贴合语境；否则不要放。
+如果最终表达已经很好，直接写：No better alternative needed — this is already natural.
+如果只是语气不同，不要说它 better，要明确说明这是 tone difference。
 
 Example:
 只给 1-2 个最实用、自然、可直接复用的英文例句。每句后面用中文简单说明场景或含义。
@@ -1424,7 +1459,9 @@ Common mistake:
 Final advice:
 用中文告诉用户这个表达该不该主动用、什么场景适合用、有没有更常用的替换说法。
 
-多条内容时，每条都按同一模板输出；每条之间空一行，用 --- 分隔。
+<<<ITEM_END>>>
+
+多条内容时，每条都按同一模板输出；每条之间可以额外空一行，但必须保留 <<<ITEM_START>>> 和 <<<ITEM_END>>>。
 
 IMPORT_TEXT 规则，非常重要：
 1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
@@ -1518,7 +1555,7 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function buildImportTextFromReport(report) {
-      const items = report.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
+      const items = splitAiReportItems(report);
       return items.map(item => {
         const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
         if (!titleMatch) return '';
@@ -1540,7 +1577,8 @@ IMPORT_TEXT 规则，非常重要：
       const reportMatch = cleanedContent.match(/===REPORT===([\s\S]*?)===IMPORT_TEXT===/);
       const reportOnlyMatch = cleanedContent.match(/===REPORT===([\s\S]*)/);
       const importMatch = cleanedContent.match(/===IMPORT_TEXT===([\s\S]*)/);
-      const report = reportMatch ? reportMatch[1].trim() : (reportOnlyMatch ? reportOnlyMatch[1].trim() : cleanedContent.trim());
+      const rawReport = reportMatch ? reportMatch[1].trim() : (reportOnlyMatch ? reportOnlyMatch[1].trim() : cleanedContent.trim());
+      const report = normalizeAiReport(rawReport);
       let importText = importMatch ? importMatch[1].trim() : '';
       if (parseImportLines(importText).length === 0 && report) {
         importText = buildImportTextFromReport(report);
@@ -1559,6 +1597,24 @@ IMPORT_TEXT 规则，非常重要：
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    function splitAiReportItems(report) {
+      const normalized = report.trim();
+      if (!normalized) return [];
+      const markerMatches = [...normalized.matchAll(/<<<ITEM_START>>>\s*([\s\S]*?)\s*<<<ITEM_END>>>/g)];
+      if (markerMatches.length > 0) {
+        return markerMatches.map(match => match[1].trim()).filter(Boolean);
+      }
+      const dashItems = normalized.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
+      if (dashItems.length > 1) return dashItems;
+      const inputSplit = normalized.split(/(?=^Input:\s*$)/gmi).map(item => item.trim()).filter(Boolean);
+      if (inputSplit.length > 1) return inputSplit;
+      return [normalized];
+    }
+
+    function normalizeAiReport(report) {
+      return splitAiReportItems(report).join('\n\n---\n\n');
     }
 
     function splitReportSections(itemText) {
@@ -1640,8 +1696,40 @@ IMPORT_TEXT 规则，非常重要：
       const entry = aiHistory[activeAiHistoryIndex];
       const dateText = entry.createdAt ? new Date(entry.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
       indicator.textContent = `第 ${activeAiHistoryIndex + 1}/${aiHistory.length} 份${dateText ? ` · ${dateText}` : ''}`;
-      prevButton.disabled = activeAiHistoryIndex <= 0;
-      nextButton.disabled = activeAiHistoryIndex >= aiHistory.length - 1;
+      prevButton.disabled = activeAiHistoryIndex >= aiHistory.length - 1;
+      nextButton.disabled = activeAiHistoryIndex <= 0;
+    }
+
+    function resetAiChat() {
+      aiChatEnabled = false;
+      aiChatMessages = [];
+      const card = document.getElementById('ai-chat-card');
+      const log = document.getElementById('ai-chat-log');
+      const input = document.getElementById('ai-chat-input');
+      const enableButton = document.getElementById('enable-ai-chat');
+      if (card) card.classList.add('collapsed');
+      if (log) log.innerHTML = '';
+      if (input) input.value = '';
+      if (enableButton) enableButton.textContent = '启用本报告追问';
+      setAiStatus('ai-chat-status', '');
+    }
+
+    function enableAiChatForCurrentReport() {
+      if (!latestAiReport) return showModal('请先生成或选择一份整理报告');
+      aiChatEnabled = true;
+      aiChatMessages = [
+        { role: 'system', content: '你是英语口语学习助手。请围绕用户当前这份整理报告回答后续问题，简洁、实用，并提示英式口语语气和使用场景。' },
+        { role: 'user', content: `这是当前整理报告：\n${latestAiReport}\n\n可导入表达：\n${document.getElementById('ai-import-output').value.trim() || latestAiImport}` },
+        { role: 'assistant', content: '好的。我会基于当前这份整理报告回答后续问题。' }
+      ];
+      const card = document.getElementById('ai-chat-card');
+      const log = document.getElementById('ai-chat-log');
+      const enableButton = document.getElementById('enable-ai-chat');
+      if (card) card.classList.remove('collapsed');
+      if (log) log.innerHTML = '';
+      appendChatBubble('assistant', '已启用当前报告追问。你可以继续问语气、用法或替代表达。');
+      if (enableButton) enableButton.textContent = '已启用本报告';
+      setAiStatus('ai-chat-status', '');
     }
 
     function showAiHistoryEntry(index) {
@@ -1654,13 +1742,7 @@ IMPORT_TEXT 规则，非常重要：
       latestSourceItems = Array.isArray(entry.sourceItems) ? [...entry.sourceItems] : [];
       renderAiReport(latestAiReport, []);
       document.getElementById('ai-import-output').value = latestAiImport;
-      aiChatMessages = latestAiReport ? [
-        { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
-        { role: 'user', content: `这是本次整理内容：\n${latestAiReport}\n\n可导入表达：\n${latestAiImport}` },
-        { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
-      ] : [];
-      document.getElementById('ai-chat-log').innerHTML = '';
-      if (latestAiReport) appendChatBubble('assistant', '已切换到这份整理记录。你可以继续围绕它追问。');
+      resetAiChat();
       updateAiHistoryControls();
     }
 
@@ -1706,7 +1788,7 @@ IMPORT_TEXT 规则，非常重要：
         container.classList.add('empty');
         return;
       }
-      const rawItems = normalized.split(/\n\s*---\s*\n/g).map(item => item.trim()).filter(Boolean);
+      const rawItems = splitAiReportItems(normalized);
       const items = rawItems.length > 0 ? rawItems : [normalized];
       const generatedInputs = items.map(item => {
         const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
@@ -1775,15 +1857,6 @@ IMPORT_TEXT 规则，非常重要：
       showModal('API Key 已清除');
     });
 
-    document.getElementById('format-ai-report').addEventListener('click', () => {
-      const currentReport = latestRawReport || document.getElementById('ai-report').textContent.trim();
-      if (!currentReport || currentReport === '生成后，这里会显示每条表达的简短说明。') {
-        showModal('还没有可以重新排版的报告');
-        return;
-      }
-      renderAiReport(currentReport);
-    });
-
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
       const source = document.getElementById('ai-source-input').value.trim();
       if (!source) return showModal('请先输入需要整理的内容');
@@ -1846,13 +1919,7 @@ IMPORT_TEXT 规则，非常重要：
         renderAiReport(combinedReport, sourceItems);
         document.getElementById('ai-import-output').value = combinedImport;
         addAiHistoryEntry(combinedReport, combinedImport, sourceItems);
-        aiChatMessages = [
-          { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
-          { role: 'user', content: `这是本次整理内容：\n${combinedReport}\n\n可导入表达：\n${combinedImport}` },
-          { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
-        ];
-        document.getElementById('ai-chat-log').innerHTML = '';
-        appendChatBubble('assistant', `已整理完成，共 ${words.length} 条。你可以在这里继续问我。`);
+        resetAiChat();
         setAiProgress(100, sourceItems.length, sourceItems.length);
         setAiStatus('ai-generate-status', `已生成 ${words.length} 条`);
       } catch (error) {
@@ -1876,12 +1943,14 @@ IMPORT_TEXT 规则，非常重要：
     document.getElementById('save-ai-output').addEventListener('click', saveCurrentAiHistoryEdit);
 
     document.getElementById('ai-history-prev').addEventListener('click', () => {
-      showAiHistoryEntry(activeAiHistoryIndex - 1);
+      showAiHistoryEntry(activeAiHistoryIndex + 1);
     });
 
     document.getElementById('ai-history-next').addEventListener('click', () => {
-      showAiHistoryEntry(activeAiHistoryIndex + 1);
+      showAiHistoryEntry(activeAiHistoryIndex - 1);
     });
+
+    document.getElementById('enable-ai-chat').addEventListener('click', enableAiChatForCurrentReport);
 
     document.getElementById('import-ai-output').addEventListener('click', async () => {
       const words = parseImportLines(document.getElementById('ai-import-output').value.trim());
@@ -1902,6 +1971,7 @@ IMPORT_TEXT 规则，非常重要：
       const question = input.value.trim();
       if (!question) return;
       if (!latestAiReport) return showModal('请先生成一次整理报告');
+      if (!aiChatEnabled) return showModal('请先启用本报告追问');
       const button = document.getElementById('send-ai-chat');
       button.disabled = true;
       input.value = '';
@@ -1921,13 +1991,7 @@ IMPORT_TEXT 规则，非常重要：
     });
 
     document.getElementById('clear-ai-chat').addEventListener('click', () => {
-      aiChatMessages = latestAiReport ? [
-        { role: 'system', content: '你是英语口语学习助手。请围绕用户刚整理的表达回答后续问题，简洁、实用，并提示语气和使用场景。' },
-        { role: 'user', content: `这是本次整理内容：\n${latestAiReport}\n\n可导入表达：\n${latestAiImport}` },
-        { role: 'assistant', content: '好的。我会基于这次整理内容回答后续问题。' }
-      ] : [];
-      document.getElementById('ai-chat-log').innerHTML = '';
-      setAiStatus('ai-chat-status', '');
+      resetAiChat();
     });
 
     document.getElementById('import-file-btn').addEventListener('click', async () => {
