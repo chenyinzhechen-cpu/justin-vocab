@@ -1130,12 +1130,28 @@
       if (!user) return;
       if (!wordbooks.some(book => book.id === bookId)) throw new Error('目标单词本不存在');
       const bookLists = getBookLists(bookId);
-      const usedIds = bookLists.filter(list => list.type === 'new').map(list => Number(list.id));
-      for (let i = 0; i < words.length; i += groupSize) {
+      const usedIds = bookLists.filter(list => list.type === 'new').map(list => Number(list.id)).filter(Number.isFinite);
+      const openLists = bookLists
+        .filter(list => list.type === 'new' && Array.isArray(list.words) && list.words.length < groupSize)
+        .sort((a, b) => Number(a.id) - Number(b.id));
+      let remainingWords = words.slice();
+
+      for (const list of openLists) {
+        if (remainingWords.length === 0) break;
+        const availableSlots = groupSize - list.words.length;
+        if (availableSlots <= 0) continue;
+        const slice = remainingWords.slice(0, availableSlots);
+        remainingWords = remainingWords.slice(availableSlots);
+        await updateDoc(doc(db, 'users', user.uid, 'lists', list.docId), {
+          words: [...list.words, ...slice]
+        });
+      }
+
+      for (let i = 0; i < remainingWords.length; i += groupSize) {
         let newId = nextListId(bookLists, 'new');
         while (usedIds.includes(newId)) newId++;
         usedIds.push(newId);
-        const slice = words.slice(i, i + groupSize);
+        const slice = remainingWords.slice(i, i + groupSize);
         await setDoc(doc(db, 'users', user.uid, 'lists', `${bookId}_new_${newId}`), {
           id: newId,
           type: 'new',
