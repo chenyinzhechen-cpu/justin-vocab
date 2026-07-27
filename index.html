@@ -197,7 +197,25 @@
     .import-btn:hover { background: var(--panel-light); }
     .lists-container { display: flex; flex-wrap: wrap; gap: 20px; }
     .list-column { flex: 1 1 320px; min-width: 260px; }
-    .list-column h2 { margin: 0 0 12px; font-size: 18px; color: var(--muted); }
+    .list-column h2 { margin: 0; font-size: 18px; color: var(--muted); }
+    .list-column-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 12px;
+    }
+    .rebalance-btn {
+      border: 1px solid var(--panel-light);
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: var(--panel-dark);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .rebalance-btn:hover { background: var(--panel-light); }
     .list-container { display: flex; flex-direction: column; gap: 8px; }
     .list-item {
       background: var(--panel);
@@ -497,7 +515,19 @@
     .study-answer.show { color: var(--text); }
     .ghost-btn { text-align: center; font-size: 20px; cursor: pointer; color: var(--muted); transition: color 0.2s ease; }
     .ghost-btn:hover { color: var(--accent); }
-    .preview-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--panel-light); }
+    .preview-row { display: grid; grid-template-columns: 1fr 1fr 44px; border-bottom: 1px solid var(--panel-light); }
+    .preview-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-left: 1px solid var(--panel-light);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .preview-delete:hover { color: var(--danger); background: var(--panel-light); }
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     .modal.hidden { display: none; }
     .modal-content { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 24px; min-width: 240px; max-width: 90%; text-align: center; }
@@ -572,13 +602,22 @@
     </div>
     <div class="lists-container">
       <div class="list-column">
-        <h2>新单词</h2>
+        <div class="list-column-heading">
+          <h2>新单词</h2>
+          <button id="rebalance-new" class="rebalance-btn" type="button">重新排列单词</button>
+        </div>
         <div id="new-lists" class="list-container"></div>
       </div>
       <div class="list-column">
-        <h2>需巩固单词</h2>
+        <div class="list-column-heading">
+          <h2>需巩固单词</h2>
+          <button id="rebalance-review" class="rebalance-btn" type="button">重新排列单词</button>
+        </div>
         <div id="review-lists" class="list-container"></div>
-        <h2 style="margin-top:24px;">巩固单词 final</h2>
+        <div class="list-column-heading" style="margin-top:24px;">
+          <h2>巩固单词 final</h2>
+          <button id="rebalance-final" class="rebalance-btn" type="button">重新排列单词</button>
+        </div>
         <div id="final-lists" class="list-container"></div>
       </div>
     </div>
@@ -1203,6 +1242,60 @@
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
     }
 
+    function getListGroupSize(type) {
+      return LIST_GROUP_SIZES[type] || 50;
+    }
+
+    function getTypeLabel(type) {
+      if (type === 'new') return '新单词';
+      if (type === 'review') return '需巩固单词';
+      return '巩固单词 final';
+    }
+
+    async function deleteWordFromList(list, wordIndex) {
+      const user = auth.currentUser;
+      if (!user || !list?.docId || !Array.isArray(list.words)) return;
+      const nextWords = list.words.filter((_, index) => index !== wordIndex);
+      await updateDoc(doc(db, 'users', user.uid, 'lists', list.docId), { words: nextWords });
+      openPreview({ ...list, words: nextWords });
+    }
+
+    async function rebalanceLists(type) {
+      const user = auth.currentUser;
+      if (!user) return;
+      const typeLists = getActiveBookLists()
+        .filter(list => list.type === type)
+        .sort((a, b) => Number(a.id) - Number(b.id));
+      if (typeLists.length === 0) return showModal(`${getTypeLabel(type)}里还没有列表`);
+      const groupSize = getListGroupSize(type);
+      const words = typeLists.flatMap(list => Array.isArray(list.words) ? list.words : []);
+      const chunks = [];
+      for (let index = 0; index < words.length; index += groupSize) {
+        chunks.push(words.slice(index, index + groupSize));
+      }
+      const usedIds = typeLists.map(list => Number(list.id)).filter(Number.isFinite);
+      for (let index = 0; index < typeLists.length; index++) {
+        const list = typeLists[index];
+        if (index < chunks.length) {
+          await updateDoc(doc(db, 'users', user.uid, 'lists', list.docId), { words: chunks[index] });
+        } else {
+          await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+        }
+      }
+      for (let index = typeLists.length; index < chunks.length; index++) {
+        let newId = nextListId(getActiveBookLists(), type);
+        while (usedIds.includes(newId)) newId++;
+        usedIds.push(newId);
+        await setDoc(doc(db, 'users', user.uid, 'lists', `${activeWordbookId}_${type}_${newId}`), {
+          id: newId,
+          type,
+          bookId: activeWordbookId,
+          words: chunks[index]
+        });
+      }
+      showModal(`${getTypeLabel(type)}已重新排列`);
+    }
+
     function updateWordbookPage() {
       refreshActiveLists();
       const activeBook = wordbooks.find(book => book.id === activeWordbookId);
@@ -1373,7 +1466,7 @@
       else document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
       const previewList = document.getElementById('preview-list');
       previewList.innerHTML = '';
-      list.words.forEach(word => {
+      list.words.forEach((word, index) => {
         const row = document.createElement('div');
         row.className = 'preview-row';
         const enDiv = document.createElement('div');
@@ -1382,8 +1475,17 @@
         const zhDiv = document.createElement('div');
         zhDiv.className = 'preview-zh';
         zhDiv.textContent = word.zh;
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'preview-delete';
+        deleteBtn.type = 'button';
+        deleteBtn.title = '删除这一条';
+        deleteBtn.textContent = '×';
+        deleteBtn.addEventListener('click', () => {
+          showModal('确定删除这一条单词和翻译吗？', () => deleteWordFromList(list, index));
+        });
         row.appendChild(enDiv);
         row.appendChild(zhDiv);
+        row.appendChild(deleteBtn);
         previewList.appendChild(row);
       });
       showPage(previewPage);
@@ -1406,6 +1508,15 @@
     document.getElementById('mode-back').addEventListener('click', () => showPage(wordbookPage));
     document.getElementById('study-back').addEventListener('click', () => showPage(modePage));
     document.getElementById('preview-back').addEventListener('click', () => showPage(wordbookPage));
+    document.getElementById('rebalance-new').addEventListener('click', () => {
+      showModal('确定重新排列新单词列表吗？', () => rebalanceLists('new'));
+    });
+    document.getElementById('rebalance-review').addEventListener('click', () => {
+      showModal('确定重新排列需巩固单词列表吗？', () => rebalanceLists('review'));
+    });
+    document.getElementById('rebalance-final').addEventListener('click', () => {
+      showModal('确定重新排列巩固单词 final 列表吗？', () => rebalanceLists('final'));
+    });
     document.getElementById('open-ai-settings').addEventListener('click', () => {
       document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
       showPage(aiSettingsPage);
@@ -1416,6 +1527,7 @@
     const AI_URL = 'https://api.deepseek.com/chat/completions';
     const AI_BATCH_SIZE = 5;
     const AI_IMPORT_GROUP_SIZE = 50;
+    const LIST_GROUP_SIZES = { new: 50, review: 20, final: 20 };
     const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。默认输出 British spoken English，除非用户明确要求美式或其他风格。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。每个非空行是一条独立输入。你必须逐条识别语言和类型，并按原顺序完整整理，不遗漏、不合并。
 
