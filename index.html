@@ -615,7 +615,7 @@
         </div>
         <div id="review-lists" class="list-container"></div>
         <div class="list-column-heading" style="margin-top:24px;">
-          <h2>巩固单词 final</h2>
+          <h2>Final巩固单词</h2>
           <button id="rebalance-final" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="final-lists" class="list-container"></div>
@@ -641,6 +641,20 @@
       <label for="paste-group-size">每个列表单词数</label>
       <input type="number" id="paste-group-size" min="1" value="50" />
       <button id="import-paste-btn">导入粘贴内容并分组</button>
+    </div>
+    <div class="import-form">
+      <h3>导入单词到指定 List</h3>
+      <p class="ai-note">格式同样是每行：英文,中文。会直接追加到你选择的具体 List 末尾。</p>
+      <textarea id="specific-list-area" placeholder="look up,查词\nscroll down,向下滚动"></textarea>
+      <label for="specific-list-type">选择列表类型</label>
+      <select id="specific-list-type" class="ai-input">
+        <option value="new">新单词</option>
+        <option value="review">需巩固单词</option>
+        <option value="final">Final巩固单词</option>
+      </select>
+      <label for="specific-list-target">选择具体 List</label>
+      <select id="specific-list-target" class="ai-input"></select>
+      <button id="import-specific-list-btn">导入指定list</button>
     </div>
   </div>
 
@@ -966,8 +980,7 @@
 
       if (wordbooksUnsubscribe) wordbooksUnsubscribe();
       wordbooksUnsubscribe = onSnapshot(wordbooksRef, (snapshot) => {
-        wordbooks = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
-          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        wordbooks = sortWordbooksForDisplay(snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
         if (!wordbooks.some(book => book.id === activeWordbookId) && wordbooks.length > 0) {
           activeWordbookId = wordbooks[0].id;
         }
@@ -1013,6 +1026,14 @@
       newLists = activeLists.filter(list => list.type === 'new');
       reviewLists = activeLists.filter(list => list.type === 'review');
       finalLists = activeLists.filter(list => list.type === 'final');
+    }
+
+    function sortWordbooksForDisplay(books) {
+      return [...books].sort((a, b) => {
+        if (a.id === DEFAULT_BOOK_ID && b.id !== DEFAULT_BOOK_ID) return -1;
+        if (b.id === DEFAULT_BOOK_ID && a.id !== DEFAULT_BOOK_ID) return 1;
+        return (a.createdAt || 0) - (b.createdAt || 0);
+      });
     }
 
     function nextListId(lists, type) {
@@ -1099,7 +1120,7 @@
         container.innerHTML = '<div class="wordbook-empty">正在加载单词本...</div>';
         return;
       }
-      wordbooks.forEach(wordbook => {
+      sortWordbooksForDisplay(wordbooks).forEach(wordbook => {
         const lists = getBookLists(wordbook.id);
         const wordCount = lists.reduce((total, list) => total + (Array.isArray(list.words) ? list.words.length : 0), 0);
         const card = document.createElement('article');
@@ -1143,7 +1164,7 @@
       if (!select) return;
       const previousValue = select.value;
       select.innerHTML = '';
-      wordbooks.forEach(wordbook => {
+      sortWordbooksForDisplay(wordbooks).forEach(wordbook => {
         const option = document.createElement('option');
         option.value = wordbook.id;
         option.textContent = wordbook.name;
@@ -1153,6 +1174,43 @@
         ? previousValue
         : (wordbooks.some(book => book.id === activeWordbookId) ? activeWordbookId : wordbooks[0]?.id);
       if (preferredValue) select.value = preferredValue;
+    }
+
+    function renderSpecificListOptions() {
+      const typeSelect = document.getElementById('specific-list-type');
+      const targetSelect = document.getElementById('specific-list-target');
+      if (!typeSelect || !targetSelect) return;
+      const type = typeSelect.value || 'new';
+      const previousValue = targetSelect.value;
+      const lists = getActiveBookLists()
+        .filter(list => list.type === type)
+        .sort((a, b) => Number(a.id) - Number(b.id));
+      targetSelect.innerHTML = '';
+      if (lists.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = `暂无${getTypeLabel(type)}列表`;
+        targetSelect.appendChild(option);
+        return;
+      }
+      lists.forEach(list => {
+        const option = document.createElement('option');
+        option.value = list.docId;
+        option.textContent = `${getListDisplayName(list, type)}（${Array.isArray(list.words) ? list.words.length : 0}个）`;
+        targetSelect.appendChild(option);
+      });
+      if (lists.some(list => list.docId === previousValue)) targetSelect.value = previousValue;
+    }
+
+    async function appendWordsToSpecificList(listDocId, words) {
+      const user = auth.currentUser;
+      if (!user) return;
+      const target = getActiveBookLists().find(list => list.docId === listDocId);
+      if (!target) throw new Error('请选择有效的目标 List');
+      const currentWords = Array.isArray(target.words) ? target.words : [];
+      await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
+        words: [...currentWords, ...words]
+      });
     }
 
     function openWordbook(bookId) {
@@ -1249,7 +1307,14 @@
     function getTypeLabel(type) {
       if (type === 'new') return '新单词';
       if (type === 'review') return '需巩固单词';
-      return '巩固单词 final';
+      return 'Final巩固单词';
+    }
+
+    function getListDisplayName(listOrId, type) {
+      const id = typeof listOrId === 'object' ? listOrId.id : listOrId;
+      if (type === 'new') return `新单词list${id}`;
+      if (type === 'review') return `需巩固单词list${id}`;
+      return `Final巩固单词list${id}`;
     }
 
     async function deleteWordFromList(list, wordIndex) {
@@ -1311,6 +1376,7 @@
       [...newLists].sort((a, b) => a.id - b.id).forEach(list => newContainer.appendChild(createListRow(list, 'new')));
       [...reviewLists].sort((a, b) => a.id - b.id).forEach(list => reviewContainer.appendChild(createListRow(list, 'review')));
       [...finalLists].sort((a, b) => a.id - b.id).forEach(list => finalContainer.appendChild(createListRow(list, 'final')));
+      renderSpecificListOptions();
     }
 
     function createListRow(list, type) {
@@ -1321,9 +1387,7 @@
       leftWrap.style.alignItems = 'center';
       const nameSpan = document.createElement('span');
       nameSpan.className = 'list-name';
-      if (type === 'new') nameSpan.textContent = 'List ' + list.id;
-      else if (type === 'review') nameSpan.textContent = '巩固单词list' + list.id;
-      else nameSpan.textContent = '巩固单词final list' + list.id;
+      nameSpan.textContent = getListDisplayName(list, type);
       const countSpan = document.createElement('span');
       countSpan.className = 'list-count';
       countSpan.textContent = list.words.length + '个';
@@ -1364,9 +1428,7 @@
       document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById('mode-en2zh').classList.add('active');
       document.getElementById('order-normal').classList.add('active');
-      if (list.type === 'new') document.getElementById('mode-title').textContent = 'List ' + list.id;
-      else if (list.type === 'review') document.getElementById('mode-title').textContent = '巩固单词list' + list.id;
-      else document.getElementById('mode-title').textContent = '巩固单词final list' + list.id;
+      document.getElementById('mode-title').textContent = getListDisplayName(list, list.type);
       showPage(modePage);
     }
 
@@ -1413,9 +1475,7 @@
       }
       const studyList = document.getElementById('study-list');
       studyList.innerHTML = '';
-      if (currentList.type === 'new') document.getElementById('study-title').textContent = 'List ' + currentList.id + ' 背诵';
-      else if (currentList.type === 'review') document.getElementById('study-title').textContent = '巩固单词list' + currentList.id + ' 背诵';
-      else document.getElementById('study-title').textContent = '巩固单词final list' + currentList.id + ' 背诵';
+      document.getElementById('study-title').textContent = getListDisplayName(currentList, currentList.type) + ' 背诵';
       items.forEach((word, idx) => {
         const row = document.createElement('div');
         row.className = 'study-row';
@@ -1443,12 +1503,12 @@
           ghost = document.createElement('span');
           ghost.className = 'ghost-btn';
           ghost.textContent = '👻';
-          ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入巩固单词final';
+          ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入Final巩固单词';
           ghost.addEventListener('click', (e) => {
             e.stopPropagation();
             const bookId = getListBookId(currentList);
             if (currentList.type === 'new') showModal('是否添加至需巩固单词本？', () => addToReviewBuffer(word, bookId));
-            else if (currentList.type === 'review') showModal('是否添加至巩固单词final本？', () => addToFinalBuffer(word, bookId));
+            else if (currentList.type === 'review') showModal('是否添加至Final巩固单词？', () => addToFinalBuffer(word, bookId));
           });
         }
         row.appendChild(idxSpan);
@@ -1461,9 +1521,7 @@
     }
 
     function openPreview(list) {
-      if (list.type === 'new') document.getElementById('preview-title').textContent = 'List ' + list.id + ' 预览';
-      else if (list.type === 'review') document.getElementById('preview-title').textContent = '巩固单词list' + list.id + ' 预览';
-      else document.getElementById('preview-title').textContent = '巩固单词final list' + list.id + ' 预览';
+      document.getElementById('preview-title').textContent = getListDisplayName(list, list.type) + ' 预览';
       const previewList = document.getElementById('preview-list');
       previewList.innerHTML = '';
       list.words.forEach((word, index) => {
@@ -1496,7 +1554,10 @@
       if (event.key === 'Enter') createWordbook();
     });
     document.getElementById('wordbook-back').addEventListener('click', () => showPage(mainPage));
-    document.getElementById('open-import').addEventListener('click', () => showPage(importPage));
+    document.getElementById('open-import').addEventListener('click', () => {
+      renderSpecificListOptions();
+      showPage(importPage);
+    });
     document.getElementById('open-ai-organizer').addEventListener('click', () => {
       renderAiWordbookOptions();
       loadAiHistory();
@@ -1515,8 +1576,9 @@
       showModal('确定重新排列需巩固单词列表吗？', () => rebalanceLists('review'));
     });
     document.getElementById('rebalance-final').addEventListener('click', () => {
-      showModal('确定重新排列巩固单词 final 列表吗？', () => rebalanceLists('final'));
+      showModal('确定重新排列 Final巩固单词列表吗？', () => rebalanceLists('final'));
     });
+    document.getElementById('specific-list-type').addEventListener('change', renderSpecificListOptions);
     document.getElementById('open-ai-settings').addEventListener('click', () => {
       document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
       showPage(aiSettingsPage);
@@ -2191,6 +2253,24 @@ IMPORT_TEXT 规则，非常重要：
         textArea.value = '';
         groupSizeInput.value = 50;
         showPage(wordbookPage);
+      } catch (error) {
+        showModal(error.message || '导入失败');
+      }
+    });
+
+    document.getElementById('import-specific-list-btn').addEventListener('click', async () => {
+      const textArea = document.getElementById('specific-list-area');
+      const targetSelect = document.getElementById('specific-list-target');
+      const rawText = textArea.value.trim();
+      if (!rawText) return showModal('请输入要导入的单词内容');
+      const words = parseImportLines(rawText);
+      if (words.length === 0) return showModal('内容格式不正确');
+      if (!targetSelect.value) return showModal('请选择具体 List');
+      try {
+        await appendWordsToSpecificList(targetSelect.value, words);
+        textArea.value = '';
+        renderSpecificListOptions();
+        showModal(`已导入 ${words.length} 条到指定 List`);
       } catch (error) {
         showModal(error.message || '导入失败');
       }
