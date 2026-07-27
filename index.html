@@ -1415,6 +1415,7 @@
     const AI_MODEL = 'deepseek-v4-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
     const AI_BATCH_SIZE = 5;
+    const AI_IMPORT_GROUP_SIZE = 50;
     const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。默认输出 British spoken English，除非用户明确要求美式或其他风格。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。每个非空行是一条独立输入。你必须逐条识别语言和类型，并按原顺序完整整理，不遗漏、不合并。
 
@@ -1482,8 +1483,10 @@ Final advice:
 IMPORT_TEXT 规则，非常重要：
 1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
 2. 英文列不得出现英文逗号，请改用分号或省略逗号。
-3. 不要加序号、表头、代码块或额外说明。
-4. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+3. 中文列必须是最终英文表达的中文意思或使用场景，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。
+4. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit,英国口语里表示“对吧/不是吗”的语气词。不要写成：innit,innit 是啥的缩写 isn't it 吗。
+5. 不要加序号、表头、代码块或额外说明。
+6. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1570,16 +1573,44 @@ IMPORT_TEXT 规则，非常重要：
         .find(line => line && !line.includes('|')) || '口语表达';
     }
 
-    function buildImportTextFromReport(report) {
+    function isBadImportMeaning(en, zh) {
+      const compactZh = String(zh || '').trim();
+      if (!compactZh) return true;
+      const questionLike = /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|\?|？)/.test(compactZh);
+      const hasEnglish = /[A-Za-z]{2,}/.test(compactZh);
+      const repeatsEnglish = en && compactZh.toLowerCase().includes(String(en).toLowerCase().replace(/[.,!?;:]+$/g, ''));
+      return questionLike || repeatsEnglish || (hasEnglish && compactZh.length < 80);
+    }
+
+    function getImportRowsFromReport(report) {
       const items = splitAiReportItems(report);
       return items.map(item => {
         const titleMatch = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
-        if (!titleMatch) return '';
+        if (!titleMatch) return null;
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
         const zh = firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
-        return en && zh ? `${en},${zh}` : '';
-      }).filter(Boolean).join('\n');
+        return en && zh ? { en, zh } : null;
+      }).filter(Boolean);
+    }
+
+    function buildImportTextFromReport(report) {
+      return getImportRowsFromReport(report)
+        .map(row => `${row.en},${row.zh}`)
+        .join('\n');
+    }
+
+    function cleanImportTextWithReport(importText, report) {
+      const importRows = parseImportLines(importText);
+      const reportRows = getImportRowsFromReport(report);
+      if (reportRows.length === 0) return importText;
+      if (importRows.length === 0) return buildImportTextFromReport(report);
+      const cleanedRows = importRows.map((row, index) => {
+        const fallback = reportRows[index];
+        if (!fallback) return row;
+        return isBadImportMeaning(row.en, row.zh) ? { en: row.en || fallback.en, zh: fallback.zh } : row;
+      });
+      return cleanedRows.map(row => `${row.en.replace(/,/g, ';')},${row.zh}`).join('\n');
     }
 
     function parseAiOrganizerResponse(content) {
@@ -1598,6 +1629,8 @@ IMPORT_TEXT 规则，非常重要：
       let importText = importMatch ? importMatch[1].trim() : '';
       if (parseImportLines(importText).length === 0 && report) {
         importText = buildImportTextFromReport(report);
+      } else if (report) {
+        importText = cleanImportTextWithReport(importText, report);
       }
       return {
         report,
@@ -1974,7 +2007,7 @@ IMPORT_TEXT 规则，非常重要：
       const targetBookId = document.getElementById('ai-target-wordbook').value;
       if (!wordbooks.some(book => book.id === targetBookId)) return showModal('请选择有效的目标单词本');
       try {
-        await appendNewLists(words, 30, targetBookId);
+        await appendNewLists(words, AI_IMPORT_GROUP_SIZE, targetBookId);
         const targetBook = wordbooks.find(book => book.id === targetBookId);
         showModal(`已导入 ${words.length} 条表达至“${targetBook?.name || '目标单词本'}”`);
       } catch (error) {
