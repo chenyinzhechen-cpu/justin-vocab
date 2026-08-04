@@ -1918,7 +1918,8 @@ IMPORT_TEXT 规则，非常重要：
       }
       const entry = aiHistory[activeAiHistoryIndex];
       const dateText = entry.createdAt ? new Date(entry.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      indicator.textContent = `第 ${activeAiHistoryIndex + 1}/${aiHistory.length} 份${dateText ? ` · ${dateText}` : ''}`;
+      const displayNumber = aiHistory.length - activeAiHistoryIndex;
+      indicator.textContent = `第 ${displayNumber}/${aiHistory.length} 份${dateText ? ` · ${dateText}` : ''}`;
       prevButton.disabled = activeAiHistoryIndex >= aiHistory.length - 1;
       nextButton.disabled = activeAiHistoryIndex <= 0;
     }
