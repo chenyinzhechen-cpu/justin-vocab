@@ -1656,11 +1656,12 @@ Final advice:
 
 IMPORT_TEXT 规则，非常重要：
 1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
-2. 英文列不得出现英文逗号，请改用分号或省略逗号。
-3. 中文列必须是最终英文表达的中文意思或使用场景，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。
-4. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit,英国口语里表示“对吧/不是吗”的语气词。不要写成：innit,innit 是啥的缩写 isn't it 吗。
-5. 不要加序号、表头、代码块或额外说明。
-6. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+2. 每一行只能出现一个英文逗号，只能用来分隔英文和中文。
+3. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
+4. 中文列必须是最终英文表达的中文意思或使用场景，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。
+5. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit,英国口语里表示“对吧/不是吗”的语气词。不要写成：innit,innit 是啥的缩写 isn't it 吗。
+6. 不要加序号、表头、代码块或额外说明。
+7. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1732,12 +1733,23 @@ IMPORT_TEXT 规则，非常重要：
 
     function parseImportLines(text) {
       return text.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
-        const commaIndex = line.indexOf(',');
+        const commaIndex = line.lastIndexOf(',');
         if (commaIndex < 1) return null;
-        const en = line.slice(0, commaIndex).trim();
+        const en = line.slice(0, commaIndex).trim().replace(/,+/g, ';');
         const zh = line.slice(commaIndex + 1).trim();
         return en && zh ? { en, zh } : null;
       }).filter(Boolean);
+    }
+
+    function formatImportRows(rows) {
+      return rows
+        .map(row => ({
+          en: String(row.en || '').trim().replace(/,+/g, ';'),
+          zh: String(row.zh || '').trim().replace(/\r?\n/g, ' ')
+        }))
+        .filter(row => row.en && row.zh)
+        .map(row => `${row.en},${row.zh}`)
+        .join('\n');
     }
 
     function firstUsefulMeaning(text) {
@@ -1769,9 +1781,7 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function buildImportTextFromReport(report) {
-      return getImportRowsFromReport(report)
-        .map(row => `${row.en},${row.zh}`)
-        .join('\n');
+      return formatImportRows(getImportRowsFromReport(report));
     }
 
     function cleanImportTextWithReport(importText, report) {
@@ -1784,7 +1794,7 @@ IMPORT_TEXT 规则，非常重要：
         if (!fallback) return row;
         return isBadImportMeaning(row.en, row.zh) ? { en: row.en || fallback.en, zh: fallback.zh } : row;
       });
-      return cleanedRows.map(row => `${row.en.replace(/,/g, ';')},${row.zh}`).join('\n');
+      return formatImportRows(cleanedRows);
     }
 
     function parseAiOrganizerResponse(content) {
