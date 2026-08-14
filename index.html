@@ -1660,9 +1660,11 @@ IMPORT_TEXT 规则，非常重要：
 2. 每一行只能出现一个英文逗号，只能用来分隔英文和中文。
 3. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
 4. 中文列必须是最终英文表达的中文意思或使用场景，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。
-5. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit,英国口语里表示“对吧/不是吗”的语气词。不要写成：innit,innit 是啥的缩写 isn't it 吗。
-6. 不要加序号、表头、代码块或额外说明。
-7. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+5. 如果最终英文表达是单词或短语，而不是完整句子，IMPORT_TEXT 的英文列要写成“单词或短语; 一个最常用例句”，中文列要写成“中文意思; 例句中文翻译”。例：line; I still remember my first line in the play.,台词; 我还记得我在剧里的第一句台词。
+6. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。
+7. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit; That's true innit?,英国口语里表示“对吧/不是吗”的语气词; 这是真的对吧。不要写成：innit,innit 是啥的缩写 isn't it 吗。
+8. 不要加序号、表头、代码块或额外说明。
+9. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1767,6 +1769,59 @@ IMPORT_TEXT 规则，非常重要：
         .join('\n');
     }
 
+    function looksLikeShortExpression(en) {
+      const text = String(en || '').trim();
+      if (!text) return false;
+      if (/[.!?。！？]$/.test(text)) return false;
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      return wordCount <= 5;
+    }
+
+    function cleanExampleLine(line) {
+      return String(line || '')
+        .replace(/^[-•]\s+/, '')
+        .replace(/^\d+[.)]\s+/, '')
+        .trim();
+    }
+
+    function splitExampleTranslation(exampleText) {
+      const text = cleanExampleLine(exampleText);
+      if (!text) return null;
+      const parenMatch = text.match(/^(.*?)[（(]\s*([^()（）]+?)\s*[）)]\s*$/);
+      if (parenMatch) {
+        return {
+          en: parenMatch[1].trim(),
+          zh: parenMatch[2].trim()
+        };
+      }
+      const sentenceEnd = text.search(/[.!?。！？]/);
+      if (sentenceEnd >= 0) {
+        const en = text.slice(0, sentenceEnd + 1).trim();
+        const zh = text.slice(sentenceEnd + 1).trim();
+        if (en && zh && /[\u4e00-\u9fff]/.test(zh)) return { en, zh };
+      }
+      return { en: text, zh: '' };
+    }
+
+    function getFirstExamplePair(item) {
+      const exampleMatch = item.match(/^Example:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
+      if (!exampleMatch) return null;
+      const line = exampleMatch[1].split(/\r?\n/).map(cleanExampleLine).find(Boolean);
+      const pair = splitExampleTranslation(line);
+      return pair?.en ? pair : null;
+    }
+
+    function combineExpressionWithExample(en, zh, examplePair) {
+      if (!looksLikeShortExpression(en) || !examplePair?.en) return { en, zh };
+      const safeExampleEn = examplePair.en.replace(/,+/g, ';');
+      const safeExampleZh = examplePair.zh || '例句';
+      const conciseZh = String(zh || '').split(/[，。；;,.]/)[0].trim() || zh;
+      return {
+        en: `${en}; ${safeExampleEn}`,
+        zh: `${conciseZh}; ${safeExampleZh}`
+      };
+    }
+
     function firstUsefulMeaning(text) {
       return text
         .split(/\r?\n/)
@@ -1791,7 +1846,8 @@ IMPORT_TEXT 规则，非常重要：
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
         const zh = firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
-        return en && zh ? { en, zh } : null;
+        const examplePair = getFirstExamplePair(item);
+        return en && zh ? combineExpressionWithExample(en, zh, examplePair) : null;
       }).filter(Boolean);
     }
 
@@ -1807,7 +1863,8 @@ IMPORT_TEXT 规则，非常重要：
       const cleanedRows = importRows.map((row, index) => {
         const fallback = reportRows[index];
         if (!fallback) return row;
-        return isBadImportMeaning(row.en, row.zh) ? { en: row.en || fallback.en, zh: fallback.zh } : row;
+        if (isBadImportMeaning(row.en, row.zh)) return { en: row.en || fallback.en, zh: fallback.zh };
+        return looksLikeShortExpression(row.en) && !row.en.includes(';') ? fallback : row;
       });
       return formatImportRows(cleanedRows);
     }
