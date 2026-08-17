@@ -1798,17 +1798,35 @@ IMPORT_TEXT 规则，非常重要：
     function formatImportRows(rows) {
       return rows
         .map(row => ({
-          en: String(row.en || '').trim().replace(/,+/g, ';'),
-          zh: String(row.zh || '').trim().replace(/\r?\n/g, ' ')
+          en: cleanImportEnglish(row.en),
+          zh: sanitizeImportMeaning(row.zh)
         }))
         .filter(row => row.en && row.zh)
         .map(row => `${row.en},${row.zh}`)
         .join('\n');
     }
 
+    function cleanImportEnglish(en) {
+      const text = String(en || '').trim().replace(/,+/g, ';');
+      const parts = text.split(';').map(part => part.trim()).filter(Boolean);
+      if (parts.length > 1 && looksLikeCompleteEnglishSentence(parts[0])) return parts[0];
+      return text;
+    }
+
+    function looksLikeCompleteEnglishSentence(en) {
+      const text = String(en || '').trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '');
+      if (!text) return false;
+      const words = text.split(/\s+/).filter(Boolean);
+      if (words.length < 3) return false;
+      if (/[.!?]$/.test(text)) return true;
+      if (/^(what|why|when|where|who|whose|which|how|do|does|did|is|are|am|was|were|can|could|would|should|will|won't|can't|have|has|had)\b/i.test(text)) return true;
+      return /^(i|you|we|they|he|she|it|this|that|there|someone|somebody|people|my|your|his|her|their|our|the|a|an)\b\s+(?:am|are|is|was|were|have|has|had|do|does|did|can|could|would|should|will|won't|can't|need|want|keep|feel|think|make|made|get|got|go|went|come|came|take|took|tell|told|say|said|look|looks|seem|seems|mean|means|[a-z]+ed|[a-z]+ing|[a-z]+s)\b/i.test(text);
+    }
+
     function looksLikeShortExpression(en) {
       const text = String(en || '').trim();
       if (!text) return false;
+      if (looksLikeCompleteEnglishSentence(text)) return false;
       if (/[.!?。！？]$/.test(text)) return false;
       const wordCount = text.split(/\s+/).filter(Boolean).length;
       return wordCount <= 5;
@@ -1859,11 +1877,27 @@ IMPORT_TEXT 规则，非常重要：
       };
     }
 
+    function sanitizeImportMeaning(zh) {
+      const text = String(zh || '').trim().replace(/\r?\n/g, ' ');
+      const parts = text.split(';').map(part => part.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        const meaning = conciseImportMeaning(parts[0]);
+        const exampleZh = parts.slice(1).join('; ').trim();
+        if (/(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着)/.test(meaning)) return meaning;
+        return exampleZh ? `${meaning}; ${exampleZh}` : meaning;
+      }
+      return conciseImportMeaning(text);
+    }
+
     function conciseImportMeaning(zh) {
       const text = String(zh || '')
         .replace(/^["“”'‘’]+|["“”'‘’]+$/g, '')
+        .replace(/^在[^，。；;,.]{0,40}(?:里|中)\s*(?:指|表示|意思是)\s*/, '')
+        .replace(/^(?:这个词|这个表达|它)(?:在[^，。；;,.]{0,40})?(?:指|表示|意思是)\s*/, '')
         .replace(/^(表示|意思是|指的是|中文意思是)\s*/, '')
         .trim();
+      const quotedMeaning = text.match(/(?:意思是|表示|指的是)[^“”"'‘’]{0,20}[“"'‘’]([^“”"'‘’]{1,40})[”"'‘’]/);
+      if (quotedMeaning?.[1]) return quotedMeaning[1].trim();
       const usageIndex = text.search(/(，|。|；|;|,|\(|（)?\s*(口语里|口语中|常用|用于|用来|强调|语气|意思是|指的是|表示)/);
       const sliced = usageIndex > 0 ? text.slice(0, usageIndex) : text;
       return sliced.split(/[，。；;,.]/)[0].trim() || text || '中文意思';
@@ -1881,8 +1915,9 @@ IMPORT_TEXT 规则，非常重要：
       if (!compactZh) return true;
       const questionLike = /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|\?|？)/.test(compactZh);
       const hasEnglish = /[A-Za-z]{2,}/.test(compactZh);
+      const usageExplanation = /(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着|学术语境)/.test(compactZh);
       const repeatsEnglish = en && compactZh.toLowerCase().includes(String(en).toLowerCase().replace(/[.,!?;:]+$/g, ''));
-      return questionLike || repeatsEnglish || (hasEnglish && compactZh.length < 80);
+      return questionLike || usageExplanation || repeatsEnglish || (hasEnglish && compactZh.length < 80);
     }
 
     function getImportRowsFromReport(report) {
@@ -1910,7 +1945,8 @@ IMPORT_TEXT 规则，非常重要：
       const cleanedRows = importRows.map((row, index) => {
         const fallback = reportRows[index];
         if (!fallback) return row;
-        if (looksLikeShortExpression(fallback.en)) return fallback;
+        if (fallback.en.includes(';') || looksLikeShortExpression(fallback.en)) return fallback;
+        if (row.en.includes(';') && looksLikeCompleteEnglishSentence(row.en.split(';')[0])) return fallback;
         if (isBadImportMeaning(row.en, row.zh)) return { en: row.en || fallback.en, zh: fallback.zh };
         return looksLikeShortExpression(row.en) && !row.en.includes(';') ? fallback : row;
       });
