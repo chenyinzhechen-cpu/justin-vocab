@@ -1642,6 +1642,7 @@
 8. 只要 Input 有任何提问或确认意图，必须输出独立的 Answer the input question section。不要把直接答案塞进 Spoken meaning。
 9. Word / Phrase / Sentence 必须是修正后的自然最终表达。不要把错误或不自然的原句放在 Word / Phrase / Sentence；原错误句应放入 Common mistake。
 10. 如果用户输入类似 “I wish poorly on you” 这种不自然英文，最终表达必须改成自然英文，例如 “I hope things go badly for you.” 或按语境选择更自然的表达。
+11. 如果 Input 是在确认某个英文词是否对应某个中文意思，例如“愿望是wish吗”“很火 很出名 fire 吗”，Word / Phrase / Sentence 必须写被问到的英文词本身（wish / fire），不要写回答这个问题的完整句子。完整回答只放在 Answer the input question 里。
 
 每一条 report 都必须严格按下面模板输出，标题和顺序不要改。每条 report 必须用 <<<ITEM_START>>> 和 <<<ITEM_END>>> 包住：
 
@@ -1651,6 +1652,8 @@ Input:
 原封不动复制用户这一行输入，不得翻译、润色、删减或修正。
 
 Word / Phrase / Sentence: 最终英文表达
+
+注意：如果 Input 是“中文意思 + 英文词 + 吗/对吗/是吗”这种确认题，Word / Phrase / Sentence 只写被确认的英文词或短语，不要写成完整回答句。
 
 如果 Input 包含问题或询问意图，在这里加入下面这个 section：
 Answer the input question:
@@ -2057,7 +2060,34 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function normalizeAiReport(report) {
-      return splitAiReportItems(report).join('\n\n---\n\n');
+      return splitAiReportItems(report).map(normalizeQuestionTargetItem).join('\n\n---\n\n');
+    }
+
+    function normalizeQuestionTargetItem(itemText) {
+      const inputMatch = itemText.match(/^Input:\s*([\s\S]*?)(?=^Word\s*\/\s*Phrase\s*\/\s*Sentence:)/im);
+      const titleMatch = itemText.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im);
+      if (!inputMatch || !titleMatch) return itemText;
+      const input = inputMatch[1].trim();
+      const title = titleMatch[1].trim();
+      const target = extractAskedEnglishTermFromInput(input);
+      if (!target || !looksLikeCompleteEnglishSentence(title)) return itemText;
+      return itemText.replace(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*.+$/im, `Word / Phrase / Sentence: ${target}`);
+    }
+
+    function extractAskedEnglishTermFromInput(input) {
+      const text = String(input || '').replace(/[？?]/g, '吗').trim();
+      const directMatch = text.match(/(?:是|叫|用|说成|翻成)\s*([A-Za-z][A-Za-z'’ -]{0,40})\s*(?:吗|嘛|么|对吗|是吗)\s*$/i);
+      if (directMatch?.[1]) return cleanAskedEnglishTerm(directMatch[1]);
+      const mixedMatch = text.match(/[\u4e00-\u9fff][^A-Za-z\r\n]{0,30}\s*([A-Za-z][A-Za-z'’ -]{0,40})\s*(?:吗|嘛|么|对吗|是吗)\s*$/i);
+      if (mixedMatch?.[1]) return cleanAskedEnglishTerm(mixedMatch[1]);
+      return '';
+    }
+
+    function cleanAskedEnglishTerm(term) {
+      return String(term || '')
+        .replace(/\b(is|are|am|was|were|do|does|did|can|could|would|should|will|shall)\s+$/i, '')
+        .replace(/["“”'‘’]+/g, '')
+        .trim();
     }
 
     function splitReportSections(itemText) {
