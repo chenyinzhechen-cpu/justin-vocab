@@ -1701,7 +1701,8 @@ IMPORT_TEXT 规则，非常重要：
 6. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。
 7. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit; That's true innit?,对吧/不是吗; 这是真的对吧。不要写成：innit,innit 是啥的缩写 isn't it 吗。
 8. 不要加序号、表头、代码块或额外说明。
-9. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+9. 每一行到中文翻译结束就停止，不要在行尾追加 “wish 在 / fire 在 / xxx 是” 这类未完成解释。
+10. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1787,12 +1788,19 @@ IMPORT_TEXT 规则，非常重要：
 
     function parseImportLines(text) {
       return text.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
-        const commaIndex = line.lastIndexOf(',');
+        const commaIndex = findImportDelimiterIndex(line);
         if (commaIndex < 1) return null;
         const en = line.slice(0, commaIndex).trim().replace(/,+/g, ';');
         const zh = line.slice(commaIndex + 1).trim();
         return en && zh ? { en, zh } : null;
       }).filter(Boolean);
+    }
+
+    function findImportDelimiterIndex(line) {
+      const text = String(line || '');
+      const commaIndexes = [...text.matchAll(/,/g)].map(match => match.index);
+      const directChineseComma = commaIndexes.find(index => /[\u4e00-\u9fff]/.test(text.slice(index + 1).trim().charAt(0)));
+      return directChineseComma ?? text.lastIndexOf(',');
     }
 
     function formatImportRows(rows) {
@@ -1878,15 +1886,21 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function sanitizeImportMeaning(zh) {
-      const text = String(zh || '').trim().replace(/\r?\n/g, ' ');
+      const text = stripTrailingImportFragment(String(zh || '').trim().replace(/\r?\n/g, ' '));
       const parts = text.split(';').map(part => part.trim()).filter(Boolean);
       if (parts.length > 1) {
         const meaning = conciseImportMeaning(parts[0]);
-        const exampleZh = parts.slice(1).join('; ').trim();
+        const exampleZh = stripTrailingImportFragment(parts.slice(1).join('; ').trim()).replace(/,/g, '，');
         if (/(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着)/.test(meaning)) return meaning;
         return exampleZh ? `${meaning}; ${exampleZh}` : meaning;
       }
-      return conciseImportMeaning(text);
+      return conciseImportMeaning(text).replace(/,/g, '，');
+    }
+
+    function stripTrailingImportFragment(text) {
+      return String(text || '')
+        .replace(/[,，]\s*[A-Za-z][A-Za-z\s'’.-]{0,60}\s*(?:在|是|指|表示|意思是)?\s*$/i, '')
+        .trim();
     }
 
     function conciseImportMeaning(zh) {
@@ -1942,6 +1956,7 @@ IMPORT_TEXT 规则，非常重要：
       const reportRows = getImportRowsFromReport(report);
       if (reportRows.length === 0) return importText;
       if (importRows.length === 0) return buildImportTextFromReport(report);
+      if (importRows.length !== reportRows.length) return buildImportTextFromReport(report);
       const cleanedRows = importRows.map((row, index) => {
         const fallback = reportRows[index];
         if (!fallback) return row;
@@ -1956,7 +1971,15 @@ IMPORT_TEXT 规则，非常重要：
     function parseAiOrganizerResponse(content) {
       try {
         const json = JSON.parse(content);
-        if (json.report && json.importText) return json;
+        if (json.report && json.importText) {
+          const report = normalizeAiReport(String(json.report || ''));
+          const importText = cleanImportTextWithReport(String(json.importText || '').trim(), report);
+          return {
+            report,
+            importText,
+            itemCount: parseImportLines(importText).length
+          };
+        }
       } catch (error) {
         // Fall back to marker parsing below.
       }
