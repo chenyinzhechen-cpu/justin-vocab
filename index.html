@@ -2109,10 +2109,24 @@ IMPORT_TEXT 规则，非常重要：
       return lines.map(line => `<p class="report-line">${escapeHtml(line)}</p>`).join('');
     }
 
+    function normalizeAiHistoryEntry(entry) {
+      if (!entry || !entry.report) return null;
+      const report = normalizeAiReport(String(entry.report || ''));
+      const importText = cleanImportTextWithReport(String(entry.importText || '').trim(), report);
+      if (!importText) return null;
+      return {
+        ...entry,
+        report,
+        importText,
+        sourceItems: Array.isArray(entry.sourceItems) ? [...entry.sourceItems] : []
+      };
+    }
+
     function loadAiHistory() {
       try {
         const saved = JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]');
-        aiHistory = Array.isArray(saved) ? saved.filter(entry => entry && entry.report && entry.importText).slice(0, AI_HISTORY_LIMIT) : [];
+        aiHistory = Array.isArray(saved) ? saved.map(normalizeAiHistoryEntry).filter(Boolean).slice(0, AI_HISTORY_LIMIT) : [];
+        if (aiHistory.length > 0) localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory));
       } catch (error) {
         aiHistory = [];
       }
@@ -2179,7 +2193,10 @@ IMPORT_TEXT 规则，非常重要：
     function showAiHistoryEntry(index) {
       if (index < 0 || index >= aiHistory.length) return;
       activeAiHistoryIndex = index;
-      const entry = aiHistory[index];
+      const entry = normalizeAiHistoryEntry(aiHistory[index]);
+      if (!entry) return clearAiReportDisplay();
+      aiHistory[index] = entry;
+      persistAiHistory();
       latestAiReport = entry.report || '';
       latestAiImport = entry.importText || '';
       latestRawReport = entry.report || '';
@@ -2224,11 +2241,13 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function addAiHistoryEntry(report, importText, sourceItems) {
+      const normalizedReport = normalizeAiReport(String(report || ''));
+      const normalizedImport = cleanImportTextWithReport(String(importText || '').trim(), normalizedReport);
       const entry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         createdAt: new Date().toISOString(),
-        report,
-        importText,
+        report: normalizedReport,
+        importText: normalizedImport,
         sourceItems: Array.isArray(sourceItems) ? [...sourceItems] : []
       };
       aiHistory.unshift(entry);
@@ -2240,14 +2259,16 @@ IMPORT_TEXT 规则，非常重要：
     function saveCurrentAiHistoryEdit() {
       const currentImport = document.getElementById('ai-import-output').value.trim();
       if (!currentImport) return showModal('没有可以保存的导入段落');
-      latestAiImport = currentImport;
+      const normalizedImport = cleanImportTextWithReport(currentImport, latestAiReport);
+      latestAiImport = normalizedImport;
+      document.getElementById('ai-import-output').value = normalizedImport;
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
         if (!latestAiReport) return showModal('请先生成一次整理报告');
-        addAiHistoryEntry(latestAiReport, currentImport, latestSourceItems);
+        addAiHistoryEntry(latestAiReport, normalizedImport, latestSourceItems);
       } else {
         aiHistory[activeAiHistoryIndex] = {
           ...aiHistory[activeAiHistoryIndex],
-          importText: currentImport,
+          importText: normalizedImport,
           updatedAt: new Date().toISOString()
         };
         persistAiHistory();
