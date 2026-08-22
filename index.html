@@ -1920,6 +1920,21 @@ IMPORT_TEXT 规则，非常重要：
         .trim();
     }
 
+    function normalizeManualImportText(text) {
+      return String(text || '')
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+          const commaIndex = findImportDelimiterIndex(line);
+          if (commaIndex < 1) return line;
+          const en = line.slice(0, commaIndex).trim().replace(/,+/g, ';');
+          const zh = normalizeImportChinesePunctuation(line.slice(commaIndex + 1).trim());
+          return en && zh ? `${en},${zh}` : line;
+        })
+        .join('\n');
+    }
+
     function stripLooseImportFragments(text) {
       return stripLeadingImportFragment(stripTrailingImportFragment(text));
     }
@@ -2142,7 +2157,9 @@ IMPORT_TEXT 规则，非常重要：
     function normalizeAiHistoryEntry(entry) {
       if (!entry || !entry.report) return null;
       const report = normalizeAiReport(String(entry.report || ''));
-      const importText = cleanImportTextWithReport(String(entry.importText || '').trim(), report);
+      const importText = entry.importEdited
+        ? normalizeManualImportText(String(entry.importText || '').trim())
+        : cleanImportTextWithReport(String(entry.importText || '').trim(), report);
       if (!importText) return null;
       return {
         ...entry,
@@ -2278,6 +2295,7 @@ IMPORT_TEXT 规则，非常重要：
         createdAt: new Date().toISOString(),
         report: normalizedReport,
         importText: normalizedImport,
+        importEdited: false,
         sourceItems: Array.isArray(sourceItems) ? [...sourceItems] : []
       };
       aiHistory.unshift(entry);
@@ -2289,16 +2307,19 @@ IMPORT_TEXT 规则，非常重要：
     function saveCurrentAiHistoryEdit() {
       const currentImport = document.getElementById('ai-import-output').value.trim();
       if (!currentImport) return showModal('没有可以保存的导入段落');
-      const normalizedImport = cleanImportTextWithReport(currentImport, latestAiReport);
+      const normalizedImport = normalizeManualImportText(currentImport);
       latestAiImport = normalizedImport;
       document.getElementById('ai-import-output').value = normalizedImport;
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
         if (!latestAiReport) return showModal('请先生成一次整理报告');
         addAiHistoryEntry(latestAiReport, normalizedImport, latestSourceItems);
+        aiHistory[activeAiHistoryIndex].importEdited = true;
+        persistAiHistory();
       } else {
         aiHistory[activeAiHistoryIndex] = {
           ...aiHistory[activeAiHistoryIndex],
           importText: normalizedImport,
+          importEdited: true,
           updatedAt: new Date().toISOString()
         };
         persistAiHistory();
