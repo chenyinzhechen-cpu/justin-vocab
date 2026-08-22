@@ -1697,16 +1697,19 @@ Final advice:
 
 IMPORT_TEXT 规则，非常重要：
 1. IMPORT_TEXT 必须完整覆盖所有最终表达，每行严格使用“英文,中文”。
-2. 每一行只能出现一个英文逗号，只能用来分隔英文和中文。
-3. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
-4. 中文列必须是最终英文表达的简短中文翻译，必须包含中文，不能只写英文；不能写用法说明、语气说明、场景说明，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。中文列内部不要使用中文逗号“，”，例句翻译内部如果有两个分句，用中文分号“；”连接。
-5. 如果最终英文表达是单词或短语，而不是完整句子，IMPORT_TEXT 的英文列要写成“单词或短语: 一个最常用英文例句”，中文列要写成“简短中文翻译: 例句中文翻译”。例：line: I still remember my first line in the play.,台词: 我还记得我在剧里的第一句台词。
-6. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。
-7. 如果英文例句里需要连接多个分句，可以在例句内部使用分号；中文例句翻译内部对应使用中文分号。例如：deserve: It's a great film; but it doesn't deserve to be the fourth highest-grossing film worldwide.,值得: 这是一部很棒的电影；但它不配成为全球票房第四高的电影。
-8. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit: That's true innit?,对吧/不是吗: 这是真的对吧。不要写成：innit,innit 是啥的缩写 isn't it 吗。
-9. 不要加序号、表头、代码块或额外说明。
-10. 每一行到中文翻译结束就停止，不要在行首或行尾追加 “wish 在 / fire 在 / xxx 是 / xxx 表示” 这类未完成解释。
-11. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+2. 每一条表达只能占一行，英文和中文必须用同一个英文逗号直接连接，绝对不能在英文和中文之间换行。
+3. 每一行只能出现一个英文逗号，只能用来分隔英文和中文。
+4. 英文列只能包含英文表达和英文例句，绝对不能出现任何中文字符、中文原句或中文问题。如果 Input 是中文，英文列也只能写最终英文表达。
+5. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
+6. 中文列必须是最终英文表达的简短中文翻译，必须包含中文，不能只写英文；不能写用法说明、语气说明、场景说明，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。中文列内部不要使用中文逗号“，”，例句翻译内部如果有两个分句，用中文分号“；”连接。
+7. 如果最终英文表达是单词或短语，而不是完整句子，IMPORT_TEXT 的英文列要写成“单词或短语: 一个最常用英文例句”，中文列要写成“简短中文翻译: 例句中文翻译”。例：line: I still remember my first line in the play.,台词: 我还记得我在剧里的第一句台词。
+8. 冒号后面的“例句中文翻译”只能是英文例句的逐句中文翻译，绝不能写解释、用法、场景、评价或说明。例如不要写“这句话适合在中国的生活环境”“口语里这是很常见的开场问题”，必须只翻译英文例句本身。
+9. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。中文意思也只能翻译这句英文，不要解释使用场景。
+10. 如果英文例句里需要连接多个分句，可以在例句内部使用分号；中文例句翻译内部对应使用中文分号。例如：deserve: It's a great film; but it doesn't deserve to be the fourth highest-grossing film worldwide.,值得: 这是一部很棒的电影；但它不配成为全球票房第四高的电影。
+11. 如果 Input 是问题，例如“innit 是啥的缩写 isn't it 吗”，IMPORT_TEXT 应该写类似：innit: That's true innit?,对吧/不是吗: 这是真的对吧。不要写成：innit,innit 是啥的缩写 isn't it 吗。
+12. 不要加序号、表头、代码块或额外说明。
+13. 每一行到中文翻译结束就停止，不要在行首或行尾追加 “wish 在 / fire 在 / xxx 是 / xxx 表示” 这类未完成解释。
+14. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1809,24 +1812,42 @@ IMPORT_TEXT 规则，非常重要：
 
     function formatImportRows(rows) {
       return rows
-        .map(row => ({
-          en: cleanImportEnglish(row.en),
-          zh: sanitizeImportMeaning(row.zh)
-        }))
+        .map(row => {
+          const en = cleanImportEnglish(row.en);
+          const zh = looksLikeCompleteEnglishSentence(en)
+            ? sanitizeImportSentenceTranslation(row.zh)
+            : sanitizeImportMeaning(row.zh);
+          return { en, zh };
+        })
         .filter(row => row.en && row.zh)
         .map(row => `${row.en},${row.zh}`)
         .join('\n');
     }
 
+    function toSingleLineImportField(text) {
+      return String(text || '').replace(/\s*\r?\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    }
+
     function cleanImportEnglish(en) {
-      const text = String(en || '').trim().replace(/,+/g, ';');
+      const rawText = toSingleLineImportField(en);
+      if (/[\u4e00-\u9fff]/.test(rawText)) {
+        const colonIndex = rawText.search(/[:：]/);
+        if (colonIndex > 0) {
+          const beforeColon = rawText.slice(0, colonIndex).trim();
+          const afterColon = rawText.slice(colonIndex + 1).trim();
+          if (/[\u4e00-\u9fff]/.test(beforeColon) && /[A-Za-z]/.test(afterColon)) {
+            return cleanImportEnglish(afterColon);
+          }
+        }
+      }
+      const text = rawText.replace(/,+/g, ';');
       if (looksLikeCompleteEnglishSentence(text)) return text;
       const colonIndex = text.search(/[:：]/);
       if (colonIndex > 0) {
         const expression = text.slice(0, colonIndex).trim();
         const example = text.slice(colonIndex + 1).trim();
-        if (looksLikeShortExpression(expression) && example) return `${expression}: ${example}`;
         if (looksLikeCompleteEnglishSentence(expression)) return expression;
+        if (looksLikeShortExpression(expression) && example) return `${expression}: ${example}`;
       }
       const parts = text.split(';').map(part => part.trim()).filter(Boolean);
       if (parts.length > 1 && looksLikeCompleteEnglishSentence(parts[0])) return parts[0];
@@ -1835,12 +1856,13 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function looksLikeCompleteEnglishSentence(en) {
-      const text = String(en || '').trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '');
+      const text = String(en || '').trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '').replace(/[’]/g, "'");
       if (!text) return false;
       const words = text.split(/\s+/).filter(Boolean);
       if (words.length < 3) return false;
       if (/[.!?]$/.test(text)) return true;
       if (/^(what|why|when|where|who|whose|which|how|do|does|did|is|are|am|was|were|can|could|would|should|will|won't|can't|have|has|had)\b/i.test(text)) return true;
+      if (/^(i'm|i've|i'd|you're|you've|we're|we've|they're|they've|he's|she's|it's|that's|there's)\b/i.test(text)) return true;
       return /^(i|you|we|they|he|she|it|this|that|there|someone|somebody|people|my|your|his|her|their|our|the|a|an)\b\s+(?:am|are|is|was|were|have|has|had|do|does|did|can|could|would|should|will|won't|can't|need|want|keep|feel|think|make|made|get|got|go|went|come|came|take|took|tell|told|say|said|look|looks|seem|seems|mean|means|[a-z]+ed|[a-z]+ing|[a-z]+s)\b/i.test(text);
     }
 
@@ -1899,7 +1921,7 @@ IMPORT_TEXT 规则，非常重要：
     }
 
     function sanitizeImportMeaning(zh) {
-      const text = stripLooseImportFragments(String(zh || '').trim().replace(/\r?\n/g, ' '));
+      const text = stripLooseImportFragments(toSingleLineImportField(zh));
       const colonIndex = text.search(/[:：]/);
       const parts = colonIndex > 0
         ? [text.slice(0, colonIndex), text.slice(colonIndex + 1)].map(part => part.trim()).filter(Boolean)
@@ -1911,6 +1933,14 @@ IMPORT_TEXT 规则，非常重要：
         return exampleZh ? `${meaning}: ${exampleZh}` : meaning;
       }
       return normalizeImportChinesePunctuation(conciseImportMeaning(text));
+    }
+
+    function sanitizeImportSentenceTranslation(zh) {
+      const text = stripLooseImportFragments(toSingleLineImportField(zh));
+      if (/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(text)) {
+        return normalizeImportChinesePunctuation(conciseImportMeaning(text));
+      }
+      return normalizeImportChinesePunctuation(text);
     }
 
     function normalizeImportChinesePunctuation(text) {
@@ -1978,7 +2008,7 @@ IMPORT_TEXT 规则，非常重要：
       const questionLike = /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|\?|？)/.test(compactZh);
       const hasEnglish = /[A-Za-z]{2,}/.test(compactZh);
       const hasChinese = /[\u4e00-\u9fff]/.test(compactZh);
-      const usageExplanation = /(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着|学术语境)/.test(compactZh);
+      const usageExplanation = /(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(compactZh);
       const repeatsEnglish = en && compactZh.toLowerCase().includes(String(en).toLowerCase().replace(/[.,!?;:]+$/g, ''));
       return !hasChinese || questionLike || usageExplanation || repeatsEnglish || (hasEnglish && compactZh.length < 80);
     }
@@ -1990,8 +2020,10 @@ IMPORT_TEXT 规则，非常重要：
         if (!titleMatch) return null;
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
-        const zh = firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
         const examplePair = getFirstExamplePair(item);
+        const zh = looksLikeCompleteEnglishSentence(en) && examplePair?.zh
+          ? examplePair.zh
+          : firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
         return en && zh ? combineExpressionWithExample(en, zh, examplePair) : null;
       }).filter(Boolean);
     }
@@ -2010,8 +2042,9 @@ IMPORT_TEXT 规则，非常重要：
         const fallback = reportRows[index];
         if (!fallback) return row;
         if (fallback.en.includes(':') || looksLikeShortExpression(fallback.en)) return fallback;
+        if (/[\u4e00-\u9fff]/.test(row.en)) return fallback;
+        if (isBadImportMeaning(row.en, row.zh)) return fallback;
         if (row.en.includes(';') && looksLikeCompleteEnglishSentence(row.en.split(';')[0])) return fallback;
-        if (isBadImportMeaning(row.en, row.zh)) return { en: row.en || fallback.en, zh: fallback.zh };
         return looksLikeShortExpression(row.en) && !row.en.includes(';') ? fallback : row;
       });
       return formatImportRows(cleanedRows);
