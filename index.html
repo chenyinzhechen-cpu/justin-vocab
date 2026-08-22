@@ -873,6 +873,8 @@
     let listsUnsubscribe = null;
     let wordbooksUnsubscribe = null;
     let preferencesUnsubscribe = null;
+    let aiReportsUnsubscribe = null;
+    let aiReportsLoaded = false;
     let aiChatMessages = [];
     let latestAiReport = '';
     let latestAiImport = '';
@@ -985,9 +987,12 @@
         if (listsUnsubscribe) listsUnsubscribe();
         if (wordbooksUnsubscribe) wordbooksUnsubscribe();
         if (preferencesUnsubscribe) preferencesUnsubscribe();
+        if (aiReportsUnsubscribe) aiReportsUnsubscribe();
         listsUnsubscribe = null;
         wordbooksUnsubscribe = null;
         preferencesUnsubscribe = null;
+        aiReportsUnsubscribe = null;
+        aiReportsLoaded = false;
         wordbooks = [];
         allLists = [];
         newLists = [];
@@ -996,6 +1001,9 @@
         activeWordbookId = DEFAULT_BOOK_ID;
         currentList = null;
         currentListType = null;
+        aiHistory = [];
+        activeAiHistoryIndex = -1;
+        clearAiReportDisplay();
         themeToggle.hidden = true;
         authPage.style.display = 'flex';
         [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
@@ -1045,6 +1053,8 @@
       preferencesUnsubscribe = onSnapshot(preferenceRef, (snapshot) => {
         if (snapshot.exists()) applyTheme(snapshot.data().theme);
       });
+
+      await initAiReports(uid);
     }
 
     function getListBookId(list) {
@@ -2196,27 +2206,80 @@ IMPORT_TEXT 规则，非常重要：
       if (!importText) return null;
       return {
         ...entry,
+        id: entry.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: entry.createdAt || new Date().toISOString(),
         report,
         importText,
         sourceItems: Array.isArray(entry.sourceItems) ? [...entry.sourceItems] : []
       };
     }
 
-    function loadAiHistory() {
+    function sortAiHistoryEntries(entries) {
+      return entries.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+
+    function getAiReportsRef(uid) {
+      return collection(db, 'users', uid, 'aiReports');
+    }
+
+    function getAiReportDocRef(uid, entryId) {
+      return doc(db, 'users', uid, 'aiReports', entryId);
+    }
+
+    function getLocalAiHistorySnapshot() {
       try {
         const saved = JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]');
-        aiHistory = Array.isArray(saved) ? saved.map(normalizeAiHistoryEntry).filter(Boolean).slice(0, AI_HISTORY_LIMIT) : [];
-        if (aiHistory.length > 0) localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory));
+        return Array.isArray(saved) ? saved.map(normalizeAiHistoryEntry).filter(Boolean).slice(0, AI_HISTORY_LIMIT) : [];
       } catch (error) {
-        aiHistory = [];
+        return [];
       }
-      activeAiHistoryIndex = aiHistory.length > 0 ? 0 : -1;
+    }
+
+    async function migrateLocalAiHistoryToFirebase(uid) {
+      const localEntries = getLocalAiHistorySnapshot();
+      if (localEntries.length === 0) return;
+      await Promise.all(localEntries.map(entry => setDoc(getAiReportDocRef(uid, entry.id), entry, { merge: true })));
+      localStorage.removeItem(AI_HISTORY_KEY);
+    }
+
+    async function initAiReports(uid) {
+      await migrateLocalAiHistoryToFirebase(uid);
+      const reportsRef = getAiReportsRef(uid);
+      if (aiReportsUnsubscribe) aiReportsUnsubscribe();
+      aiReportsLoaded = false;
+      aiReportsUnsubscribe = onSnapshot(reportsRef, (snapshot) => {
+        const nextHistory = snapshot.docs
+          .map(docSnap => normalizeAiHistoryEntry({ id: docSnap.id, ...docSnap.data() }))
+          .filter(Boolean);
+        aiHistory = sortAiHistoryEntries(nextHistory).slice(0, AI_HISTORY_LIMIT);
+        aiReportsLoaded = true;
+        if (aiHistory.length === 0) {
+          activeAiHistoryIndex = -1;
+          clearAiReportDisplay();
+          return;
+        }
+        if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) activeAiHistoryIndex = 0;
+        if (!latestAiReport) showAiHistoryEntry(activeAiHistoryIndex, { skipNormalizeSave: true });
+        updateAiHistoryControls();
+      }, (error) => {
+        aiReportsLoaded = false;
+        console.error(error);
+        showModal(error.message || '报告同步失败');
+      });
+    }
+
+    function loadAiHistory() {
       updateAiHistoryControls();
     }
 
     function persistAiHistory() {
-      localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(aiHistory.slice(0, AI_HISTORY_LIMIT)));
       updateAiHistoryControls();
+    }
+
+    async function saveAiHistoryEntryToFirebase(entry) {
+      const user = auth.currentUser;
+      if (!user || !entry?.id) return;
+      await setDoc(getAiReportDocRef(user.uid, entry.id), entry, { merge: true });
     }
 
     function updateAiHistoryControls() {
@@ -2224,6 +2287,12 @@ IMPORT_TEXT 规则，非常重要：
       const prevButton = document.getElementById('ai-history-prev');
       const nextButton = document.getElementById('ai-history-next');
       if (!indicator || !prevButton || !nextButton) return;
+      if (!aiReportsLoaded && auth.currentUser) {
+        indicator.textContent = '正在同步报告...';
+        prevButton.disabled = true;
+        nextButton.disabled = true;
+        return;
+      }
       if (aiHistory.length === 0 || activeAiHistoryIndex < 0) {
         indicator.textContent = '暂无历史记录';
         prevButton.disabled = true;
@@ -2270,13 +2339,13 @@ IMPORT_TEXT 规则，非常重要：
       setAiStatus('ai-chat-status', '');
     }
 
-    function showAiHistoryEntry(index) {
+    function showAiHistoryEntry(index, options = {}) {
       if (index < 0 || index >= aiHistory.length) return;
       activeAiHistoryIndex = index;
       const entry = normalizeAiHistoryEntry(aiHistory[index]);
       if (!entry) return clearAiReportDisplay();
       aiHistory[index] = entry;
-      persistAiHistory();
+      if (!options.skipNormalizeSave) saveAiHistoryEntryToFirebase(entry).catch(error => console.error(error));
       latestAiReport = entry.report || '';
       latestAiImport = entry.importText || '';
       latestRawReport = entry.report || '';
@@ -2303,24 +2372,33 @@ IMPORT_TEXT 规则，非常重要：
       updateAiHistoryControls();
     }
 
-    function deleteCurrentAiReport() {
+    async function deleteCurrentAiReport() {
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
         clearAiReportDisplay();
         return;
       }
+      const entry = aiHistory[activeAiHistoryIndex];
+      const user = auth.currentUser;
       aiHistory.splice(activeAiHistoryIndex, 1);
       if (aiHistory.length === 0) {
         activeAiHistoryIndex = -1;
         persistAiHistory();
         clearAiReportDisplay();
-        return;
+      } else {
+        if (activeAiHistoryIndex >= aiHistory.length) activeAiHistoryIndex = aiHistory.length - 1;
+        persistAiHistory();
+        showAiHistoryEntry(activeAiHistoryIndex, { skipNormalizeSave: true });
       }
-      if (activeAiHistoryIndex >= aiHistory.length) activeAiHistoryIndex = aiHistory.length - 1;
-      persistAiHistory();
-      showAiHistoryEntry(activeAiHistoryIndex);
+      if (user && entry?.id) {
+        try {
+          await deleteDoc(getAiReportDocRef(user.uid, entry.id));
+        } catch (error) {
+          showModal(error.message || '删除报告失败');
+        }
+      }
     }
 
-    function addAiHistoryEntry(report, importText, sourceItems) {
+    async function addAiHistoryEntry(report, importText, sourceItems) {
       const normalizedReport = normalizeAiReport(String(report || ''));
       const normalizedImport = cleanImportTextWithReport(String(importText || '').trim(), normalizedReport);
       const entry = {
@@ -2335,9 +2413,14 @@ IMPORT_TEXT 规则，非常重要：
       aiHistory = aiHistory.slice(0, AI_HISTORY_LIMIT);
       activeAiHistoryIndex = 0;
       persistAiHistory();
+      try {
+        await saveAiHistoryEntryToFirebase(entry);
+      } catch (error) {
+        showModal(error.message || '报告已生成，但同步到 Firebase 失败');
+      }
     }
 
-    function saveCurrentAiHistoryEdit() {
+    async function saveCurrentAiHistoryEdit() {
       const currentImport = document.getElementById('ai-import-output').value.trim();
       if (!currentImport) return showModal('没有可以保存的导入段落');
       const normalizedImport = normalizeManualImportText(currentImport);
@@ -2357,6 +2440,11 @@ IMPORT_TEXT 规则，非常重要：
         aiHistory = aiHistory.slice(0, AI_HISTORY_LIMIT);
         activeAiHistoryIndex = 0;
         persistAiHistory();
+        try {
+          await saveAiHistoryEntryToFirebase(entry);
+        } catch (error) {
+          return showModal(error.message || '保存失败');
+        }
       } else {
         aiHistory[activeAiHistoryIndex] = {
           ...aiHistory[activeAiHistoryIndex],
@@ -2365,6 +2453,11 @@ IMPORT_TEXT 规则，非常重要：
           updatedAt: new Date().toISOString()
         };
         persistAiHistory();
+        try {
+          await saveAiHistoryEntryToFirebase(aiHistory[activeAiHistoryIndex]);
+        } catch (error) {
+          return showModal(error.message || '保存失败');
+        }
       }
       showModal('已保存当前导入段落修改');
     }
@@ -2515,7 +2608,7 @@ IMPORT_TEXT 规则，非常重要：
         latestAiImport = combinedImport;
         renderAiReport(combinedReport, sourceItems);
         document.getElementById('ai-import-output').value = combinedImport;
-        addAiHistoryEntry(combinedReport, combinedImport, sourceItems);
+        await addAiHistoryEntry(combinedReport, combinedImport, sourceItems);
         resetAiChat();
         setAiProgress(100, sourceItems.length, sourceItems.length);
         setAiStatus('ai-generate-status', `已生成 ${words.length} 条`);
