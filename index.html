@@ -1653,6 +1653,7 @@
 9. Word / Phrase / Sentence 必须是修正后的自然最终表达。不要把错误或不自然的原句放在 Word / Phrase / Sentence；原错误句应放入 Common mistake。
 10. 如果用户输入类似 “I wish poorly on you” 这种不自然英文，最终表达必须改成自然英文，例如 “I hope things go badly for you.” 或按语境选择更自然的表达。
 11. 如果 Input 是在确认某个英文词是否对应某个中文意思，例如“愿望是wish吗”“很火 很出名 fire 吗”，Word / Phrase / Sentence 必须写被问到的英文词本身（wish / fire），不要写回答这个问题的完整句子。完整回答只放在 Answer the input question 里。
+12. 如果 Input 里出现类似 “Justin: Why can't I name myself Justin?” 这种格式，冒号前的 Justin 只是说话人、名字或标签，不是要学习的单词；Word / Phrase / Sentence 必须写冒号后的完整英文句子或你润色后的最终表达。
 
 每一条 report 都必须严格按下面模板输出，标题和顺序不要改。每条 report 必须用 <<<ITEM_START>>> 和 <<<ITEM_END>>> 包住：
 
@@ -1720,6 +1721,8 @@ IMPORT_TEXT 规则，非常重要：
 12. 不要加序号、表头、代码块或额外说明。
 13. 每一行到中文翻译结束就停止，不要在行首或行尾追加 “wish 在 / fire 在 / xxx 是 / xxx 表示” 这类未完成解释。
 14. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
+15. 如果 Input 本身包含“英文表达 + 中文意思”，并且你判断这个中文意思是正确的，IMPORT_TEXT 中文列优先使用用户给的这个中文意思，不要额外扩写成别的意思。比如 Input 是 “we shall see 走着瞧”，IMPORT_TEXT 应该是 “We shall see.,走着瞧”，不要写成“计划能不能成；我们走着瞧”。如果用户是在问“这个英文是不是这个中文”，答案是对的才用用户中文；如果不对，再给正确中文。
+16. IMPORT_TEXT 的英文列和中文列必须一一对应：中文只能翻译逗号前这一条英文，不能把用户问题、上下文或另一个表达的意思混进去。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1919,6 +1922,11 @@ IMPORT_TEXT 规则，非常重要：
       return pair?.en ? pair : null;
     }
 
+    function getReportInputText(item) {
+      const inputMatch = item.match(/^Input:\s*([\s\S]*?)(?=^Word\s*\/\s*Phrase\s*\/\s*Sentence:)/im);
+      return inputMatch ? inputMatch[1].trim() : '';
+    }
+
     function combineExpressionWithExample(en, zh, examplePair) {
       if (!looksLikeShortExpression(en) || !examplePair?.en) return { en, zh };
       const safeExampleEn = examplePair.en.replace(/,+/g, ';');
@@ -2012,6 +2020,27 @@ IMPORT_TEXT 规则，非常重要：
         .find(line => line && !line.includes('|')) || '口语表达';
     }
 
+    function stripExpressionFromInput(input, en) {
+      const expression = String(en || '').replace(/[:：].*$/, '').replace(/[.,!?;:]+$/g, '').trim();
+      if (!expression) return String(input || '');
+      return String(input || '').replace(new RegExp(expression.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ');
+    }
+
+    function extractInputMeaningForExpression(input, en) {
+      const rawInput = toSingleLineImportField(input);
+      if (!rawInput || !/[\u4e00-\u9fff]/.test(rawInput) || !/[A-Za-z]/.test(rawInput)) return '';
+      const withoutExpression = stripExpressionFromInput(rawInput, en)
+        .replace(/[?？]/g, ' ')
+        .replace(/\b(is|are|am|was|were|do|does|did|can|could|would|should|will|shall|or|and|vs)\b/ig, ' ')
+        .replace(/(?:是|叫|用|说成|翻成|这个|这个英文|英文|中文|意思|啥意思|什么意思|对吗|是吗|是不是|吗|嘛|么|呢|哪个|还是|如何表达|怎么说)/g, ' ')
+        .replace(/["'“”‘’（）()[\]{}:：;；,，.。!！/\\-]+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (!withoutExpression || !/[\u4e00-\u9fff]/.test(withoutExpression)) return '';
+      if (withoutExpression.length > 24) return '';
+      return normalizeImportChinesePunctuation(withoutExpression);
+    }
+
     function isBadImportMeaning(en, zh) {
       const compactZh = String(zh || '').trim();
       if (!compactZh) return true;
@@ -2031,9 +2060,13 @@ IMPORT_TEXT 规则，非常重要：
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
         const examplePair = getFirstExamplePair(item);
-        const zh = looksLikeCompleteEnglishSentence(en) && examplePair?.zh
+        const inputMeaning = looksLikeCompleteEnglishSentence(en)
+          ? extractInputMeaningForExpression(getReportInputText(item), en)
+          : '';
+        const zh = inputMeaning
+          || (looksLikeCompleteEnglishSentence(en) && examplePair?.zh
           ? examplePair.zh
-          : firstUsefulMeaning(spokenMatch ? spokenMatch[1] : '');
+          : firstUsefulMeaning(spokenMatch ? spokenMatch[1] : ''));
         return en && zh ? combineExpressionWithExample(en, zh, examplePair) : null;
       }).filter(Boolean);
     }
@@ -2052,6 +2085,7 @@ IMPORT_TEXT 规则，非常重要：
         const fallback = reportRows[index];
         if (!fallback) return row;
         if (fallback.en.includes(':') || looksLikeShortExpression(fallback.en)) return fallback;
+        if (fallback.zh && row.zh !== fallback.zh && row.zh.includes(fallback.zh)) return fallback;
         if (/[\u4e00-\u9fff]/.test(row.en)) return fallback;
         if (isBadImportMeaning(row.en, row.zh)) return fallback;
         if (row.en.includes(';') && looksLikeCompleteEnglishSentence(row.en.split(';')[0])) return fallback;
@@ -2127,9 +2161,21 @@ IMPORT_TEXT 规则，非常重要：
       if (!inputMatch || !titleMatch) return itemText;
       const input = inputMatch[1].trim();
       const title = titleMatch[1].trim();
+      const sentenceAfterSpeaker = extractSentenceAfterSpeakerLabel(input);
+      if (sentenceAfterSpeaker && /^[A-Z][A-Za-z'’ -]{1,24}$/.test(title)) {
+        return itemText.replace(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*.+$/im, `Word / Phrase / Sentence: ${sentenceAfterSpeaker}`);
+      }
       const target = extractAskedEnglishTermFromInput(input);
       if (!target || !looksLikeCompleteEnglishSentence(title)) return itemText;
       return itemText.replace(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*.+$/im, `Word / Phrase / Sentence: ${target}`);
+    }
+
+    function extractSentenceAfterSpeakerLabel(input) {
+      const text = toSingleLineImportField(input).replace(/[’]/g, "'");
+      const match = text.match(/^[A-Z][A-Za-z' -]{1,24}\s*[:：]\s*([^。！？\n]*[.!?])/);
+      if (!match?.[1]) return '';
+      const candidate = match[1].trim();
+      return looksLikeCompleteEnglishSentence(candidate) ? candidate : '';
     }
 
     function extractAskedEnglishTermFromInput(input) {
