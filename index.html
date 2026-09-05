@@ -1723,6 +1723,8 @@ IMPORT_TEXT 规则，非常重要：
 14. 即使内容很多，也必须输出 ===IMPORT_TEXT=== 和所有导入行；不要只输出报告。
 15. 如果 Input 本身包含“英文表达 + 中文意思”，并且你判断这个中文意思是正确的，IMPORT_TEXT 中文列优先使用用户给的这个中文意思，不要额外扩写成别的意思。比如 Input 是 “we shall see 走着瞧”，IMPORT_TEXT 应该是 “We shall see.,走着瞧”，不要写成“计划能不能成；我们走着瞧”。如果用户是在问“这个英文是不是这个中文”，答案是对的才用用户中文；如果不对，再给正确中文。
 16. IMPORT_TEXT 的英文列和中文列必须一一对应：中文只能翻译逗号前这一条英文，不能把用户问题、上下文或另一个表达的意思混进去。
+17. 如果英文列是一个完整句子，中文列只能翻译这个句子本身；不要再补第二句解释、引申含义、情绪说明或同义表达。例如 “You're not getting enough credit for what you're doing.,你做的事没得到足够认可” 是对的；不要写成 “你做的事没得到足够认可；你的付出我都看在眼里”。
+18. 中文列开头不要使用破折号、项目符号或引号，例如不要写 “— 你从来不想我有多难过”，直接写 “你从来不想我有多难过”。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1828,7 +1830,7 @@ IMPORT_TEXT 规则，非常重要：
         .map(row => {
           const en = cleanImportEnglish(row.en);
           const zh = looksLikeCompleteEnglishSentence(en)
-            ? sanitizeImportSentenceTranslation(row.zh)
+            ? sanitizeImportSentenceTranslation(row.zh, en)
             : sanitizeImportMeaning(row.zh);
           return { en, zh };
         })
@@ -1931,7 +1933,8 @@ IMPORT_TEXT 规则，非常重要：
       if (!looksLikeShortExpression(en) || !examplePair?.en) return { en, zh };
       const safeExampleEn = examplePair.en.replace(/,+/g, ';');
       const safeExampleZh = normalizeImportChinesePunctuation(examplePair.zh || '例句');
-      const conciseZh = normalizeImportChinesePunctuation(conciseImportMeaning(zh));
+      const keepFullMeaning = /[；;]/.test(zh) && !/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|说明|表示|指的是|意思是|口语里|口语中)/.test(zh);
+      const conciseZh = normalizeImportChinesePunctuation(keepFullMeaning ? zh : conciseImportMeaning(zh));
       return {
         en: `${en}: ${safeExampleEn}`,
         zh: `${conciseZh}: ${safeExampleZh}`
@@ -1947,24 +1950,36 @@ IMPORT_TEXT 规则，非常重要：
       if (parts.length > 1) {
         const meaning = normalizeImportChinesePunctuation(conciseImportMeaning(parts[0]));
         const exampleZh = normalizeImportChinesePunctuation(stripLooseImportFragments(parts.slice(1).join('; ').trim()));
-        if (/(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着)/.test(meaning)) return meaning;
+        if (/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着)/.test(meaning)) return meaning;
         return exampleZh ? `${meaning}: ${exampleZh}` : meaning;
       }
       return normalizeImportChinesePunctuation(conciseImportMeaning(text));
     }
 
-    function sanitizeImportSentenceTranslation(zh) {
+    function sanitizeImportSentenceTranslation(zh, en = '') {
       const text = stripLooseImportFragments(toSingleLineImportField(zh));
       if (/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(text)) {
         return normalizeImportChinesePunctuation(conciseImportMeaning(text));
       }
-      return normalizeImportChinesePunctuation(text);
+      const normalized = normalizeImportChinesePunctuation(text);
+      return removeUnmatchedChineseTranslationExtras(normalized, en);
+    }
+
+    function removeUnmatchedChineseTranslationExtras(zh, en = '') {
+      const parts = String(zh || '').split('；').map(part => part.trim()).filter(Boolean);
+      if (parts.length <= 1) return zh;
+      const extraPattern = /(看在眼里|另外|另一个|顺便|也就是说|换句话说|其实|同时也|这也表示|这说明)/;
+      const firstExtraIndex = parts.findIndex((part, index) => index > 0 && extraPattern.test(part));
+      if (firstExtraIndex > 0) return parts.slice(0, firstExtraIndex).join('；');
+      return zh;
     }
 
     function normalizeImportChinesePunctuation(text) {
       return String(text || '')
         .replace(/[,，]\s*/g, '；')
         .replace(/\s*:\s*/g, ': ')
+        .replace(/^[—–-]\s*/, '')
+        .replace(/([:：；])\s*[—–-]\s*/g, '$1 ')
         .trim();
     }
 
@@ -2029,16 +2044,24 @@ IMPORT_TEXT 规则，非常重要：
     function extractInputMeaningForExpression(input, en) {
       const rawInput = toSingleLineImportField(input);
       if (!rawInput || !/[\u4e00-\u9fff]/.test(rawInput) || !/[A-Za-z]/.test(rawInput)) return '';
+      if (hasInputQuestionIntent(rawInput)) return '';
       const withoutExpression = stripExpressionFromInput(rawInput, en)
+        .replace(/[，、；;]+/g, '；')
         .replace(/[?？]/g, ' ')
         .replace(/\b(is|are|am|was|were|do|does|did|can|could|would|should|will|shall|or|and|vs)\b/ig, ' ')
-        .replace(/(?:是|叫|用|说成|翻成|这个|这个英文|英文|中文|意思|啥意思|什么意思|对吗|是吗|是不是|吗|嘛|么|呢|哪个|还是|如何表达|怎么说)/g, ' ')
-        .replace(/["'“”‘’（）()[\]{}:：;；,，.。!！/\\-]+/g, ' ')
+        .replace(/(?:是|叫|用|说成|翻成|这个|这个英文|英文|中文|意思|啥意思|什么意思|作用|用法|对吗|是吗|是不是|吗|嘛|么|呢|哪个|还是|如何表达|怎么说)/g, ' ')
+        .replace(/["'“”‘’（）()[\]{}:：.。!！/\\-]+/g, ' ')
         .replace(/\s{2,}/g, ' ')
+        .replace(/\s*；\s*/g, '；')
+        .replace(/^；+|；+$/g, '')
         .trim();
       if (!withoutExpression || !/[\u4e00-\u9fff]/.test(withoutExpression)) return '';
       if (withoutExpression.length > 24) return '';
       return normalizeImportChinesePunctuation(withoutExpression);
+    }
+
+    function hasInputQuestionIntent(input) {
+      return /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|作用|用法|\?|？|吗|嘛|么|呢)/.test(String(input || ''));
     }
 
     function isBadImportMeaning(en, zh) {
@@ -2047,7 +2070,7 @@ IMPORT_TEXT 规则，非常重要：
       const questionLike = /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|\?|？)/.test(compactZh);
       const hasEnglish = /[A-Za-z]{2,}/.test(compactZh);
       const hasChinese = /[\u4e00-\u9fff]/.test(compactZh);
-      const usageExplanation = /(语感|语气|情感|场景|语境|用法|用于|用来|适合|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(compactZh);
+      const usageExplanation = /(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(compactZh);
       const repeatsEnglish = en && compactZh.toLowerCase().includes(String(en).toLowerCase().replace(/[.,!?;:]+$/g, ''));
       return !hasChinese || questionLike || usageExplanation || repeatsEnglish || (hasEnglish && compactZh.length < 80);
     }
@@ -2060,9 +2083,7 @@ IMPORT_TEXT 规则，非常重要：
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
         const examplePair = getFirstExamplePair(item);
-        const inputMeaning = looksLikeCompleteEnglishSentence(en)
-          ? extractInputMeaningForExpression(getReportInputText(item), en)
-          : '';
+        const inputMeaning = extractInputMeaningForExpression(getReportInputText(item), en);
         const zh = inputMeaning
           || (looksLikeCompleteEnglishSentence(en) && examplePair?.zh
           ? examplePair.zh
