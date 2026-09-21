@@ -768,7 +768,7 @@
       <h2>DeepSeek 设置</h2>
     </header>
     <div class="ai-card">
-      <p class="ai-note">使用 deepseek-v4-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
+      <p class="ai-note">使用 deepseek-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
       <div class="ai-actions">
         <input id="deepseek-api-key" class="ai-input" type="password" placeholder="输入 DeepSeek API Key（sk-...）" style="flex:1; margin-bottom:0;" />
         <button id="save-api-key" class="ai-btn secondary">保存 Key</button>
@@ -1633,7 +1633,7 @@
     });
     document.getElementById('ai-settings-back').addEventListener('click', () => showPage(aiPage));
 
-    const AI_MODEL = 'deepseek-v4-flash';
+    const AI_MODEL = 'deepseek-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
     const AI_BATCH_SIZE = 5;
     const AI_IMPORT_GROUP_SIZE = 50;
@@ -1712,7 +1712,7 @@ IMPORT_TEXT 规则，非常重要：
 3. 每一行只能出现一个英文逗号，只能用来分隔英文和中文。
 4. 英文列只能包含英文表达和英文例句，绝对不能出现任何中文字符、中文原句或中文问题。如果 Input 是中文，英文列也只能写最终英文表达。
 5. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
-6. 中文列必须是最终英文表达的简短中文翻译，必须包含中文，不能只写英文；不能写用法说明、语气说明、场景说明，不能复制 Input，不能写用户的问题，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。中文列内部不要使用中文逗号“，”，例句翻译内部如果有两个分句，用中文分号“；”连接。
+6. 中文列必须是最终英文表达的简短中文翻译，必须包含中文，不能只写英文；不能写用法说明、语气说明、场景说明，不能复制用户的提问或元说明，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。若 Input 本身是要翻译的中文表达且最终英文忠实于原意，应保留 Input 的中文原话。中文列内部不要使用中文逗号“，”，例句翻译内部如果有两个分句，用中文分号“；”连接。
 7. 如果最终英文表达是单词或短语，而不是完整句子，IMPORT_TEXT 的英文列要写成“单词或短语: 一个最常用英文例句”，中文列要写成“简短中文翻译: 例句中文翻译”。例：line: I still remember my first line in the play.,台词: 我还记得我在剧里的第一句台词。
 8. 冒号后面的“例句中文翻译”只能是英文例句的逐句中文翻译，绝不能写解释、用法、场景、评价或说明。例如不要写“这句话适合在中国的生活环境”“口语里这是很常见的开场问题”，必须只翻译英文例句本身。
 9. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。中文意思也只能翻译这句英文，不要解释使用场景。
@@ -1725,6 +1725,8 @@ IMPORT_TEXT 规则，非常重要：
 16. IMPORT_TEXT 的英文列和中文列必须一一对应：中文只能翻译逗号前这一条英文，不能把用户问题、上下文或另一个表达的意思混进去。
 17. 如果英文列是一个完整句子，中文列只能翻译这个句子本身；不要再补第二句解释、引申含义、情绪说明或同义表达。例如 “You're not getting enough credit for what you're doing.,你做的事没得到足够认可” 是对的；不要写成 “你做的事没得到足够认可；你的付出我都看在眼里”。
 18. 中文列开头不要使用破折号、项目符号或引号，例如不要写 “— 你从来不想我有多难过”，直接写 “你从来不想我有多难过”。
+19. 对纯中文 Input 也适用保留原话的规则。例如 Input 是“你不值得我付出”，最终英文是“You are not worth my effort.”，导入行应为“You are not worth my effort.,你不值得我付出”，不要改写成“你不配让我为你花心思花力气”。若英文改变了原意，不能强行使用原中文。
+20. IMPORT_TEXT 后必须输出 ===INPUT_FIDELITY===，按 Input 原顺序每行写 YES 或 NO，行数与报告条数相同。仅当该 Input 是待翻译的纯中文表达、且最终英文完整忠实于原中文时写 YES；提问如何翻译、输入不完整、英文增删或改变原意时写 NO。不要解释。这个区块只供程序校验，不属于导入内容。
 
 不要返回 JSON。请严格按下面格式输出：
 
@@ -1733,7 +1735,11 @@ IMPORT_TEXT 规则，非常重要：
 
 ===IMPORT_TEXT===
 英文,中文
-英文,中文`;
+英文,中文
+
+===INPUT_FIDELITY===
+YES
+NO`;
 
     function setAiStatus(id, text, isError = false) {
       const element = document.getElementById(id);
@@ -1780,14 +1786,14 @@ IMPORT_TEXT 规则，非常重要：
       return localStorage.getItem('deepseekApiKey') || '';
     }
 
-    async function callDeepSeek(messages, jsonMode = false) {
+    async function callDeepSeek(messages, jsonMode = false, maxTokens = 12000) {
       const apiKey = getDeepSeekKey();
       if (!apiKey) throw new Error('请先填写并保存 DeepSeek API Key');
       const body = {
         model: AI_MODEL,
         messages,
         thinking: { type: 'disabled' },
-        max_tokens: 12000
+        max_tokens: maxTokens
       };
       if (jsonMode) body.response_format = { type: 'json_object' };
       let response;
@@ -1961,7 +1967,7 @@ IMPORT_TEXT 规则，非常重要：
       if (/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(text)) {
         return normalizeImportChinesePunctuation(conciseImportMeaning(text));
       }
-      const normalized = normalizeImportChinesePunctuation(text);
+      const normalized = normalizeImportChinesePunctuation(text.replace(/^["“”'‘’]+|["“”'‘’]+$/g, ''));
       return removeUnmatchedChineseTranslationExtras(normalized, en);
     }
 
@@ -2025,7 +2031,7 @@ IMPORT_TEXT 规则，非常重要：
       if (quotedMeaning?.[1]) return quotedMeaning[1].trim();
       const usageIndex = text.search(/(，|。|；|;|,|\(|（)?\s*(口语里|口语中|常用|用于|用来|强调|语气|意思是|指的是|表示)/);
       const sliced = usageIndex > 0 ? text.slice(0, usageIndex) : text;
-      return sliced.split(/[，。；;,.]/)[0].trim() || text || '中文意思';
+      return sliced.split(/[，。；;,.]/)[0].trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '') || text || '中文意思';
     }
 
     function firstUsefulMeaning(text) {
@@ -2115,6 +2121,23 @@ IMPORT_TEXT 规则，非常重要：
       return formatImportRows(cleanedRows);
     }
 
+    function applyFaithfulChineseInputs(importText, report, fidelityText) {
+      const flags = String(fidelityText || '').trim().split(/\r?\n/).map(line => line.trim().toUpperCase());
+      const items = splitAiReportItems(report);
+      const rows = parseImportLines(importText);
+      if (flags.length !== items.length || rows.length !== items.length || flags.some(flag => !/^(YES|NO)$/.test(flag))) return importText;
+      const matchedRows = rows.map((row, index) => {
+        if (flags[index] !== 'YES') return row;
+        const input = getReportInputText(items[index]);
+        const title = items[index].match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
+        const comparable = value => String(value || '').toLowerCase().replace(/[\s.,!?;:。！？；：]/g, '');
+        if (!/[\u4e00-\u9fff]/.test(input) || /[A-Za-z]/.test(input) || /(?:怎么说|如何表达|什么意思|啥意思|翻译成什么|译成什么|\.{2,}|。{2,}|…)\s*$/.test(input)) return row;
+        if (!looksLikeCompleteEnglishSentence(row.en) || comparable(row.en) !== comparable(title)) return row;
+        return { ...row, zh: normalizeImportChinesePunctuation(input) };
+      });
+      return formatImportRows(matchedRows);
+    }
+
     function parseAiOrganizerResponse(content) {
       try {
         const json = JSON.parse(content);
@@ -2133,7 +2156,8 @@ IMPORT_TEXT 规则，非常重要：
       const cleanedContent = content.replace(/^```(?:\w+)?\s*/i, '').replace(/```\s*$/i, '').trim();
       const reportMatch = cleanedContent.match(/===REPORT===([\s\S]*?)===IMPORT_TEXT===/);
       const reportOnlyMatch = cleanedContent.match(/===REPORT===([\s\S]*)/);
-      const importMatch = cleanedContent.match(/===IMPORT_TEXT===([\s\S]*)/);
+      const importMatch = cleanedContent.match(/===IMPORT_TEXT===([\s\S]*?)(?====INPUT_FIDELITY===|$)/);
+      const fidelityMatch = cleanedContent.match(/===INPUT_FIDELITY===([\s\S]*)/);
       const rawReport = reportMatch ? reportMatch[1].trim() : (reportOnlyMatch ? reportOnlyMatch[1].trim() : cleanedContent.trim());
       const report = normalizeAiReport(rawReport);
       let importText = importMatch ? importMatch[1].trim() : '';
@@ -2142,11 +2166,74 @@ IMPORT_TEXT 规则，非常重要：
       } else if (report) {
         importText = cleanImportTextWithReport(importText, report);
       }
+      if (report && fidelityMatch) importText = applyFaithfulChineseInputs(importText, report, fidelityMatch[1]);
       return {
         report,
         importText,
         itemCount: parseImportLines(importText).length
       };
+    }
+
+    function validateReviewedImportRows(review, report, sourceItems) {
+      const items = splitAiReportItems(report);
+      if (!Array.isArray(review?.rows) || review.rows.length !== items.length || items.length !== sourceItems.length) {
+        throw new Error('校对结果与原始输入条数不一致');
+      }
+      const rows = review.rows.map((row, index) => {
+        const title = items[index].match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
+        const en = cleanImportEnglish(row.en);
+        let zh = normalizeImportChinesePunctuation(toSingleLineImportField(row.zh).replace(/^["“”'‘’]+|["“”'‘’]+$/g, ''));
+        const comparable = value => String(value || '').toLowerCase().replace(/[\s.,!?;:。！？；：]/g, '');
+        const completeSentence = looksLikeCompleteEnglishSentence(title);
+        const expression = en.split(/[:：]/)[0].trim();
+        const titleOptions = title.split(/\s*\/\s*/).map(part => comparable(part));
+        if (!title || !en || !zh || !/[\u4e00-\u9fff]/.test(zh) || /[\u4e00-\u9fff]/.test(en)) {
+          throw new Error(`第 ${index + 1} 条中英内容不完整`);
+        }
+        if (completeSentence ? comparable(en) !== comparable(title) : !titleOptions.includes(comparable(expression))) {
+          throw new Error(`第 ${index + 1} 条英文与报告标题不一致`);
+        }
+        if (!completeSentence && (!en.includes(':') || !zh.includes(':'))) {
+          throw new Error(`第 ${index + 1} 条短语缺少对应例句`);
+        }
+        if (row.sourceCovered !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(zh)) {
+          throw new Error(`第 ${index + 1} 条没有完整对应原始输入`);
+        }
+        if (completeSentence) {
+          const input = sourceItems[index].trim();
+          if (row.inputFaithful === true && /[\u4e00-\u9fff]/.test(input) && !/[A-Za-z]/.test(input) && !/(?:怎么说|如何表达|什么意思|啥意思|\.{2,}|。{2,}|…)\s*$/.test(input)) {
+            zh = normalizeImportChinesePunctuation(input);
+          }
+          const enClauses = 1 + (en.match(/;/g) || []).length + (en.match(/\b(?:and|but|or|because|while)\b/gi) || []).length + (en.match(/\bso\s+(?:I|you|we|they|he|she|it|there|my|the)\b/gi) || []).length;
+          const zhClauses = 1 + (zh.match(/；/g) || []).length;
+          if (zhClauses > enClauses || (zh.includes('？') && !en.includes('?'))) {
+            throw new Error(`第 ${index + 1} 条中文有英文没有的内容`);
+          }
+        }
+        return { en, zh };
+      });
+      return rows.map(row => `${row.en},${row.zh}`).join('\n');
+    }
+
+    async function reviewAiImportBatch(report, importText, sourceItems) {
+      const reviewPrompt = `你是中英逐句校对员。请逐条核对原始输入、报告中的 Word / Phrase / Sentence 最终英文，以及候选导入行。只返回 JSON 对象 {"rows":[{"en":"...","zh":"...","sourceCovered":true,"inputFaithful":false}]}，顺序和条数与原始输入完全一致。
+规则：
+1. 英文完整句子的 en 必须逐字使用报告的最终英文表达，不增加例句或另一句。中文 zh 只能翻译 en；严禁加入语境、理由、对话下一句、用法说明或报告中的情绪解释。例如 My hands are full. 对应“我手上拿满了”，不能加“你能开下门吗？”；Don't flatter yourself. 对应“别自作多情”，不能加“我说的不是你”；Sorry to keep you waiting so long. 对应“抱歉让你等这么久”，不能加“路上堵了”。
+2. 若最终英文是单词或短语，en 写“词或短语: 完整英文例句”，zh 写“简短中文词义: 该英文例句的完整中文翻译”。例句和翻译必须一一对应。
+3. 纯中文原始输入若与最终英文完整同义，inputFaithful 为 true，zh 优先用原始中文原话；若英文漏掉或增添任何含义，inputFaithful 为 false。中英混合输入不使用 inputFaithful。
+4. sourceCovered 表示报告最终英文是否完整表达原始输入的学习意图。若原始输入是询问某词的意思，最终英文是该词即可为 true；若原始输入是待翻译的完整句子，英文漏掉任何分句则为 false。不能为迎合结果而写 true。
+5. 不要在 zh 中写引号、解释、英文或与 en 不对应的第二句。`;
+      const content = await callDeepSeek([
+        { role: 'system', content: reviewPrompt },
+        { role: 'user', content: JSON.stringify({ sourceItems, report, candidateImport: importText }) }
+      ], true, 3000);
+      let review;
+      try {
+        review = JSON.parse(content);
+      } catch (error) {
+        throw new Error('AI 校对没有返回有效内容');
+      }
+      return validateReviewedImportRows(review, report, sourceItems);
     }
 
     function escapeHtml(value) {
@@ -2267,7 +2354,7 @@ IMPORT_TEXT 规则，非常重要：
     function normalizeAiHistoryEntry(entry) {
       if (!entry || !entry.report) return null;
       const report = normalizeAiReport(String(entry.report || ''));
-      const importText = entry.importEdited
+      const importText = entry.importEdited || entry.importVerified
         ? normalizeManualImportText(String(entry.importText || '').trim())
         : cleanImportTextWithReport(String(entry.importText || '').trim(), report);
       if (!importText) return null;
@@ -2465,15 +2552,18 @@ IMPORT_TEXT 规则，非常重要：
       }
     }
 
-    async function addAiHistoryEntry(report, importText, sourceItems) {
+    async function addAiHistoryEntry(report, importText, sourceItems, importVerified = false) {
       const normalizedReport = normalizeAiReport(String(report || ''));
-      const normalizedImport = cleanImportTextWithReport(String(importText || '').trim(), normalizedReport);
+      const normalizedImport = importVerified
+        ? normalizeManualImportText(String(importText || '').trim())
+        : cleanImportTextWithReport(String(importText || '').trim(), normalizedReport);
       const entry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         createdAt: new Date().toISOString(),
         report: normalizedReport,
         importText: normalizedImport,
         importEdited: false,
+        importVerified,
         sourceItems: Array.isArray(sourceItems) ? [...sourceItems] : []
       };
       aiHistory.unshift(entry);
@@ -2639,17 +2729,22 @@ IMPORT_TEXT 规则，非常重要：
           setAiStatus('ai-generate-status', `正在生成第 ${batchIndex + 1}/${batches.length} 批`);
           let result;
           try {
-            const content = await callDeepSeek([
-              { role: 'system', content: organizerSystemPrompt },
-              { role: 'user', content: batch.join('\n') }
-            ], false);
-            result = parseAiOrganizerResponse(content);
-            const batchWords = parseImportLines(result.importText || '');
-            if (!result.report) {
-              throw new Error('AI 没有返回报告内容');
-            }
-            if (batchWords.length === 0) {
-              throw new Error('AI 没有返回可导入段落，请再点一次生成');
+            for (let attempt = 0; attempt < 2; attempt++) {
+              const content = await callDeepSeek([
+                { role: 'system', content: organizerSystemPrompt },
+                { role: 'user', content: batch.join('\n') + (attempt ? '\n\n请重新核对：每条最终英文必须完整覆盖原始输入，导入区中文只能翻译对应英文，不能添加对话下一句或解释。' : '') }
+              ], false);
+              result = parseAiOrganizerResponse(content);
+              if (!result.report || parseImportLines(result.importText || '').length !== batch.length) {
+                throw new Error('AI 返回的报告或导入条数不完整');
+              }
+              try {
+                result.importText = await reviewAiImportBatch(result.report, result.importText, batch);
+                break;
+              } catch (reviewError) {
+                if (attempt === 1) throw reviewError;
+                setAiStatus('ai-generate-status', `第 ${batchIndex + 1} 批校对未通过，正在重试`);
+              }
             }
           } catch (error) {
             throw new Error(`第 ${batchIndex + 1}/${batches.length} 批失败：${error.message || '生成失败'}`);
@@ -2675,7 +2770,7 @@ IMPORT_TEXT 规则，非常重要：
         latestAiImport = combinedImport;
         renderAiReport(combinedReport, sourceItems);
         document.getElementById('ai-import-output').value = combinedImport;
-        await addAiHistoryEntry(combinedReport, combinedImport, sourceItems);
+        await addAiHistoryEntry(combinedReport, combinedImport, sourceItems, true);
         resetAiChat();
         setAiProgress(100, sourceItems.length, sourceItems.length);
         setAiStatus('ai-generate-status', `已生成 ${words.length} 条`);
