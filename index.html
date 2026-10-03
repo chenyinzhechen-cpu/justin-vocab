@@ -1892,7 +1892,6 @@ NO`;
       const text = String(en || '').trim();
       if (!text) return false;
       if (looksLikeCompleteEnglishSentence(text)) return false;
-      if (/[.!?。！？]$/.test(text)) return false;
       const wordCount = text.split(/\s+/).filter(Boolean).length;
       return wordCount <= 5;
     }
@@ -2198,10 +2197,10 @@ NO`;
           throw new Error(`${sourceLabel}英文与报告标题不一致`);
         }
         if (!completeSentence && (!en.includes(':') || !zh.includes(':'))) {
-          const fallback = getImportRowsFromReport(items[index])[0];
-          if (fallback?.en?.includes(':') && fallback?.zh?.includes(':')) {
-            en = cleanImportEnglish(fallback.en);
-            zh = sanitizeImportMeaning(fallback.zh);
+          const repaired = combineExpressionWithExample(title, zh, getFirstExamplePair(items[index]));
+          if (repaired.en?.includes(':') && repaired.zh?.includes(':')) {
+            en = cleanImportEnglish(repaired.en);
+            zh = sanitizeImportMeaning(repaired.zh);
           } else {
             throw new Error(`${sourceLabel}短语缺少对应例句`);
           }
