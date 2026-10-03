@@ -2206,7 +2206,7 @@ NO`;
             throw new Error(`${sourceLabel}短语缺少对应例句`);
           }
         }
-        if (row.sourceCovered !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(zh)) {
+        if (row.sourceCovered !== true || row.translationOnly !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(zh)) {
           throw new Error(`${sourceLabel}没有完整对应原始输入`);
         }
         if (completeSentence) {
@@ -2214,9 +2214,7 @@ NO`;
           if (row.inputFaithful === true && /[\u4e00-\u9fff]/.test(input) && !/[A-Za-z]/.test(input) && !/(?:怎么说|如何表达|什么意思|啥意思|\.{2,}|。{2,}|…)\s*$/.test(input)) {
             zh = normalizeImportChinesePunctuation(input);
           }
-          const enClauses = 1 + (en.match(/;/g) || []).length + (en.match(/\b(?:and|but|or|because|while)\b/gi) || []).length + (en.match(/\bso\s+(?:I|you|we|they|he|she|it|there|my|the)\b/gi) || []).length;
-          const zhClauses = 1 + (zh.match(/；/g) || []).length;
-          if (zhClauses > enClauses || (zh.includes('？') && !en.includes('?'))) {
+          if (zh.includes('？') && !en.includes('?')) {
             throw new Error(`${sourceLabel}中文有英文没有的内容`);
           }
         }
@@ -2226,13 +2224,14 @@ NO`;
     }
 
     async function reviewAiImportBatch(report, importText, sourceItems) {
-      const reviewPrompt = `你是中英逐句校对员。请逐条核对原始输入、报告中的 Word / Phrase / Sentence 最终英文，以及候选导入行。只返回 JSON 对象 {"rows":[{"en":"...","zh":"...","sourceCovered":true,"inputFaithful":false}]}，顺序和条数与原始输入完全一致。
+      const reviewPrompt = `你是中英逐句校对员。请逐条核对原始输入、报告中的 Word / Phrase / Sentence 最终英文，以及候选导入行。只返回 JSON 对象 {"rows":[{"en":"...","zh":"...","sourceCovered":true,"translationOnly":true,"inputFaithful":false}]}，顺序和条数与原始输入完全一致。
 规则：
 1. 英文完整句子的 en 必须逐字使用报告的最终英文表达，不增加例句或另一句。中文 zh 只能翻译 en；严禁加入语境、理由、对话下一句、用法说明或报告中的情绪解释。例如 My hands are full. 对应“我手上拿满了”，不能加“你能开下门吗？”；Don't flatter yourself. 对应“别自作多情”，不能加“我说的不是你”；Sorry to keep you waiting so long. 对应“抱歉让你等这么久”，不能加“路上堵了”。
 2. 若最终英文是单词或短语，en 写“词或短语: 完整英文例句”，zh 写“简短中文词义: 该英文例句的完整中文翻译”。例句和翻译必须一一对应。
 3. 纯中文原始输入若与最终英文完整同义，inputFaithful 为 true，zh 优先用原始中文原话；若英文漏掉或增添任何含义，inputFaithful 为 false。中英混合输入不使用 inputFaithful。
 4. sourceCovered 表示报告最终英文是否完整表达原始输入的学习意图。若原始输入是询问某词的意思，最终英文是该词即可为 true；若原始输入是待翻译的完整句子，英文漏掉任何分句则为 false。不能为迎合结果而写 true。
-5. 不要在 zh 中写引号、解释、英文或与 en 不对应的第二句。`;
+5. translationOnly 仅当 zh 的全部内容都能从 en 直接翻译出来时为 true。只要 zh 加入语境、理由、对话下一句、用法说明或引申含义，就必须为 false。
+6. 不要在 zh 中写引号、解释、英文或与 en 不对应的第二句。中文可以根据自然语序使用分号，不能仅凭中英文分句数量不同就认为多译。`;
       const content = await callDeepSeek([
         { role: 'system', content: reviewPrompt },
         { role: 'user', content: JSON.stringify({ sourceItems, report, candidateImport: importText }) }
