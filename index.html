@@ -92,6 +92,20 @@
     header { margin-bottom: 20px; }
     .view > header { padding-right: 100px; }
     header h1, header h2 { margin: 0; font-size: 24px; }
+    .app-version {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 10px;
+      padding: 4px 9px;
+      border: 1px solid var(--report-border);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
     .back-btn {
       background: none;
       border: none;
@@ -693,6 +707,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
+      <span id="app-version" class="app-version">v2026.10.03.2027</span>
       <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
     </header>
     <div class="ai-workspace">
@@ -2252,7 +2267,33 @@ NO`;
       } catch (error) {
         throw new Error('AI 校对没有返回有效内容');
       }
-      return validateReviewedImportRows(review, report, sourceItems);
+      try {
+        return validateReviewedImportRows(review, report, sourceItems);
+      } catch (firstValidationError) {
+        const repairPrompt = `你要修复一份没通过程序校验的中英导入数据。只返回 JSON：
+{"rows":[{"finalEnglish":"...","directChinese":"...","exampleEnglish":"","exampleChinese":"","sourceCovered":true,"translationOnly":true,"inputFaithful":false}]}
+条数和顺序必须与 sourceItems 完全一致。finalEnglish 必须逐字使用报告 Word / Phrase / Sentence。完整句子的两个 example 字段留空；单词或短语必须补齐自然完整的 exampleEnglish 和仅翻译该例句的 exampleChinese。directChinese 只翻译 finalEnglish，不得解释用法或添加对话下一句。`;
+        const repairedContent = await callDeepSeek([
+          { role: 'system', content: repairPrompt },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              validationError: firstValidationError.message,
+              sourceItems,
+              report,
+              candidateImport: importText,
+              rejectedReview: review
+            })
+          }
+        ], true, 3000);
+        let repairedReview;
+        try {
+          repairedReview = JSON.parse(repairedContent);
+        } catch (error) {
+          throw firstValidationError;
+        }
+        return validateReviewedImportRows(repairedReview, report, sourceItems);
+      }
     }
 
     function escapeHtml(value) {
