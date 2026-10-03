@@ -2183,7 +2183,7 @@ NO`;
       const rows = review.rows.map((row, index) => {
         const sourceLabel = `第 ${index + 1} 条（${sourceItems[index]}）`;
         const title = items[index].match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
-        const en = cleanImportEnglish(row.en);
+        let en = cleanImportEnglish(row.en);
         let zh = normalizeImportChinesePunctuation(toSingleLineImportField(row.zh).replace(/^["“”'‘’]+|["“”'‘’]+$/g, ''));
         const comparable = value => String(value || '').toLowerCase().replace(/[\s.,!?;:。！？；：]/g, '');
         const completeSentence = looksLikeCompleteEnglishSentence(title);
@@ -2192,7 +2192,9 @@ NO`;
         if (!title || !en || !zh || !/[\u4e00-\u9fff]/.test(zh) || /[\u4e00-\u9fff]/.test(en)) {
           throw new Error(`${sourceLabel}中英内容不完整`);
         }
-        if (completeSentence ? comparable(en) !== comparable(title) : !titleOptions.includes(comparable(expression))) {
+        if (completeSentence) {
+          en = cleanImportEnglish(title);
+        } else if (!titleOptions.includes(comparable(expression))) {
           throw new Error(`${sourceLabel}英文与报告标题不一致`);
         }
         if (!completeSentence && (!en.includes(':') || !zh.includes(':'))) {
