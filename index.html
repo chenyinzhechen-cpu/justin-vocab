@@ -2198,7 +2198,13 @@ NO`;
           throw new Error(`${sourceLabel}英文与报告标题不一致`);
         }
         if (!completeSentence && (!en.includes(':') || !zh.includes(':'))) {
-          throw new Error(`${sourceLabel}短语缺少对应例句`);
+          const fallback = getImportRowsFromReport(items[index])[0];
+          if (fallback?.en?.includes(':') && fallback?.zh?.includes(':')) {
+            en = cleanImportEnglish(fallback.en);
+            zh = sanitizeImportMeaning(fallback.zh);
+          } else {
+            throw new Error(`${sourceLabel}短语缺少对应例句`);
+          }
         }
         if (row.sourceCovered !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(zh)) {
           throw new Error(`${sourceLabel}没有完整对应原始输入`);
