@@ -1880,6 +1880,7 @@ NO`;
       const text = String(en || '').trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '').replace(/[’]/g, "'");
       if (!text) return false;
       const words = text.split(/\s+/).filter(Boolean);
+      if (/^(i'm|i've|i'd|you're|you've|we're|we've|they're|they've|he's|she's|it's|that's|there's)\b\s+\S+/i.test(text)) return true;
       if (words.length < 3) return false;
       if (/[.!?]$/.test(text)) return true;
       if (/^(what|why|when|where|who|whose|which|how|do|does|did|is|are|am|was|were|can|could|would|should|will|won't|can't|have|has|had)\b/i.test(text)) return true;
@@ -2180,6 +2181,7 @@ NO`;
         throw new Error('校对结果与原始输入条数不一致');
       }
       const rows = review.rows.map((row, index) => {
+        const sourceLabel = `第 ${index + 1} 条（${sourceItems[index]}）`;
         const title = items[index].match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
         const en = cleanImportEnglish(row.en);
         let zh = normalizeImportChinesePunctuation(toSingleLineImportField(row.zh).replace(/^["“”'‘’]+|["“”'‘’]+$/g, ''));
@@ -2188,16 +2190,16 @@ NO`;
         const expression = en.split(/[:：]/)[0].trim();
         const titleOptions = title.split(/\s*\/\s*/).map(part => comparable(part));
         if (!title || !en || !zh || !/[\u4e00-\u9fff]/.test(zh) || /[\u4e00-\u9fff]/.test(en)) {
-          throw new Error(`第 ${index + 1} 条中英内容不完整`);
+          throw new Error(`${sourceLabel}中英内容不完整`);
         }
         if (completeSentence ? comparable(en) !== comparable(title) : !titleOptions.includes(comparable(expression))) {
-          throw new Error(`第 ${index + 1} 条英文与报告标题不一致`);
+          throw new Error(`${sourceLabel}英文与报告标题不一致`);
         }
         if (!completeSentence && (!en.includes(':') || !zh.includes(':'))) {
-          throw new Error(`第 ${index + 1} 条短语缺少对应例句`);
+          throw new Error(`${sourceLabel}短语缺少对应例句`);
         }
         if (row.sourceCovered !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(zh)) {
-          throw new Error(`第 ${index + 1} 条没有完整对应原始输入`);
+          throw new Error(`${sourceLabel}没有完整对应原始输入`);
         }
         if (completeSentence) {
           const input = sourceItems[index].trim();
@@ -2207,7 +2209,7 @@ NO`;
           const enClauses = 1 + (en.match(/;/g) || []).length + (en.match(/\b(?:and|but|or|because|while)\b/gi) || []).length + (en.match(/\bso\s+(?:I|you|we|they|he|she|it|there|my|the)\b/gi) || []).length;
           const zhClauses = 1 + (zh.match(/；/g) || []).length;
           if (zhClauses > enClauses || (zh.includes('？') && !en.includes('?'))) {
-            throw new Error(`第 ${index + 1} 条中文有英文没有的内容`);
+            throw new Error(`${sourceLabel}中文有英文没有的内容`);
           }
         }
         return { en, zh };
