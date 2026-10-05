@@ -613,7 +613,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.03.2035</span>
+        <span id="main-app-version" class="app-version">v2026.10.05.0305</span>
       </div>
       <div class="dashboard-header-actions">
         <button id="logout-btn" class="icon-btn" title="退出">退出</button>
@@ -710,7 +710,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.03.2035</span>
+      <span id="app-version" class="app-version">v2026.10.05.0305</span>
       <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
     </header>
     <div class="ai-workspace">
@@ -1898,6 +1898,9 @@ NO`;
       const text = String(en || '').trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '').replace(/[’]/g, "'");
       if (!text) return false;
       const words = text.split(/\s+/).filter(Boolean);
+      // Imperatives omit their subject, including short commands without punctuation.
+      if (/^(?:please\s+)?(?:don't|do not|never)\s+[a-z]+\b/i.test(text)) return true;
+      if (/^(?:please\s+)?be\s+(?:careful|quiet|patient|honest|kind|serious|ready|safe)\b/i.test(text)) return true;
       if (/^(i'm|i've|i'd|you're|you've|we're|we've|they're|they've|he's|she's|it's|that's|there's)\b\s+\S+/i.test(text)) return true;
       if (words.length < 3) return false;
       if (/[.!?]$/.test(text)) return true;
@@ -2107,9 +2110,12 @@ NO`;
         const en = titleMatch[1].trim().replace(/,/g, ';');
         const spokenMatch = item.match(/^Spoken meaning:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Naturalness:|\n\s*Better spoken alternatives:|\n\s*Example:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
         const examplePair = getFirstExamplePair(item);
+        const sameSentence = value => String(value || '').toLowerCase().replace(/[’]/g, "'").replace(/[\s.,!?;:]/g, '');
+        const imperative = /^(?:please\s+)?(?:don't|do not|never|be)\b/i.test(en);
+        const canUseExampleTranslation = !imperative || sameSentence(en) === sameSentence(examplePair?.en);
         const inputMeaning = extractInputMeaningForExpression(getReportInputText(item), en);
         const zh = inputMeaning
-          || (looksLikeCompleteEnglishSentence(en) && examplePair?.zh
+          || (looksLikeCompleteEnglishSentence(en) && examplePair?.zh && canUseExampleTranslation
           ? examplePair.zh
           : firstUsefulMeaning(spokenMatch ? spokenMatch[1] : ''));
         return en && zh ? combineExpressionWithExample(en, zh, examplePair) : null;
