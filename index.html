@@ -613,7 +613,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.05.0305</span>
+        <span id="main-app-version" class="app-version">v2026.10.07.2245</span>
       </div>
       <div class="dashboard-header-actions">
         <button id="logout-btn" class="icon-btn" title="退出">退出</button>
@@ -710,7 +710,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.05.0305</span>
+      <span id="app-version" class="app-version">v2026.10.07.2245</span>
       <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
     </header>
     <div class="ai-workspace">
@@ -1701,14 +1701,16 @@ Writing: high / medium / low
 Formal speaking: high / medium / low
 再用一两句中文说明它偏 Casual / Neutral / Formal，日常口语是否常用。
 
-Better spoken alternatives:
-用 markdown 表格输出，表头必须是：
-中文意思 | 更自然英文
-只在最终表达不够自然、不够口语、或确实有更常用说法时才给替代表达。
-不要为了凑数量给偏离原意的表达。
-替代表达必须比最终表达更自然、更准确或更贴合语境；否则不要放。
-如果最终表达已经很好，直接写：No better alternative needed — this is already natural.
-如果只是语气不同，不要说它 better，要明确说明这是 tone difference。
+Other Spoken Alternative:
+这一部分是“表达选择与区别”，不对自然表达做无依据的优劣排名。
+先用中文说明最终表达是否自然、是否建议直接使用。
+只有其他表达存在明确且值得学习的语气、礼貌程度、正式程度、含义或适用场景区别时，才用 markdown 表格输出，表头必须是：
+英文表达 | 与原句的区别
+每个替代表达必须说明具体区别，以及什么情况下可以选择它。不要只写“更自然”“更口语”“更地道”。
+如果只是更换近义词、意思和语气基本相同且没有学习价值，不列出；不为填满栏目凑句子，最多列 2 个。
+如果最终表达已经自然且无必要补充，直接写：原句已经自然，建议直接使用；无需额外替换。不要输出空表格。
+例如 Could you save me a seat? 已经自然；不能仅因为换成 keep 或 hold 就称它们更好。Can you save me a seat? 可解释为同样自然但通常比 Could you 更直接。
+若确实纠正语法、搭配或原意，必须指出原句的具体问题和修改理由；不能把语气差异称为错误。
 
 Example:
 只给 1-2 个最实用、自然、可直接复用的英文例句。每句后面用中文简单说明场景或含义。
@@ -2378,6 +2380,7 @@ NO`;
         'Spoken meaning',
         'Naturalness',
         'Better spoken alternatives',
+        'Other Spoken Alternative',
         'Example',
         'Common mistake',
         'Final advice'
@@ -2724,7 +2727,7 @@ NO`;
         const sectionsHtml = contentSections.length > 0
           ? contentSections.map(section => `
               <section class="report-section">
-                <div class="report-section-title">${escapeHtml(section.title)}</div>
+                <div class="report-section-title">${escapeHtml(section.title.toLowerCase() === 'other spoken alternative' ? 'Other Spoken Alternative · 表达选择与区别' : section.title)}</div>
                 ${renderReportBody(section.body)}
               </section>
             `).join('')
