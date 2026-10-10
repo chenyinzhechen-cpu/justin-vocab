@@ -573,7 +573,12 @@
     #home-settings-menu { position: absolute; right: 0; top: 100%; z-index: 20; min-width: 200px; padding: 12px; border-radius: 14px; background: var(--panel); box-shadow: 0 8px 24px #0003; }
     #home-settings-menu button { display: block; width: 100%; padding: 12px; text-align: left; }
     #theme-toggle { position: static; }
-    .capacity-select { max-width: 120px; padding: 7px; background: var(--panel); color: var(--text); border-radius: 12px; }
+    .capacity-select { max-width: 120px; padding: 7px 11px; background: var(--panel-dark); color: var(--text); border: 1px solid var(--panel-light); border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; appearance: none; }
+    .capacity-select:hover { background: var(--panel-light); }
+    .capacity-select:focus-visible, #wordbook-name-input:focus { outline: 2px solid var(--muted); outline-offset: 2px; }
+    #manual-target-wordbook { display: block; margin-top: 14px; }
+    .ai-manual-import-card { padding: 18px; text-align: center; width: 100%; font: inherit; color: var(--text); cursor: pointer; }
+    .ai-manual-import-card:hover { background: var(--panel-dark); }
     .preview-delete {
       display: flex;
       align-items: center;
@@ -625,7 +630,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.10.1801</span>
+        <span id="main-app-version" class="app-version">v2026.10.10.1825</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -732,7 +737,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.10.1801</span>
+      <span id="app-version" class="app-version">v2026.10.10.1825</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -784,10 +789,7 @@
           </div>
         </div>
       </section>
-      <div class="ai-card ai-manual-import-card">
-        <h3>手动导入单词</h3>
-        <button id="open-import" class="import-btn">手动导入单词</button>
-      </div>
+      <button id="open-import" class="ai-card ai-manual-import-card" type="button">手动导入单词</button>
         <div id="ai-chat-card" class="ai-card ai-chat-card collapsed">
           <h3>进一步追问</h3>
           <p class="ai-note">默认不会读取报告，避免浪费 token。需要追问时，先启用当前报告追问。</p>
@@ -862,6 +864,7 @@
   <div id="modal" class="modal hidden">
     <div class="modal-content">
       <p id="modal-message"></p>
+      <input id="wordbook-name-input" class="ai-input" type="text" maxlength="30" placeholder="例如：GRE 单词本" aria-label="单词本名称" hidden />
       <div class="modal-actions">
         <button id="modal-cancel">取消</button>
         <button id="modal-confirm">确定</button>
@@ -970,6 +973,7 @@
     }
 
     function showModal(message, onConfirm) {
+      document.getElementById('wordbook-name-input').hidden = true;
       modalMsg.textContent = message;
       modal.classList.remove('hidden');
       modalConfirm.onclick = () => {
@@ -1161,9 +1165,7 @@
     async function createWordbook(rawName) {
       const user = auth.currentUser;
       if (!user) return;
-      const name = rawName ?? window.prompt('请输入单词本名称');
-      if (name === null) return;
-      const validated = validateWordbookName(name);
+      const validated = validateWordbookName(rawName);
       if (validated.error) return showModal(validated.error);
       const bookId = `book_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       const now = Date.now();
@@ -1421,7 +1423,7 @@
           for (let size = 10; size <= 100; size++) {
             const option = document.createElement('option');
             option.value = size;
-            option.textContent = `${size}个${size === LIST_GROUP_SIZES[type] ? '（默认）' : ''}`;
+            option.textContent = `${size}${size === LIST_GROUP_SIZES[type] ? '（默认）' : ''}`;
             select.appendChild(option);
           }
         }
@@ -1670,8 +1672,19 @@
 
     let previewState = null;
 
+    function equalWordData(left, right) {
+      // Firestore can return map fields in a different order. Array order still matters.
+      const stableJson = value => JSON.stringify(value, (_key, entry) => {
+        if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+          return Object.fromEntries(Object.keys(entry).sort().map(key => [key, entry[key]]));
+        }
+        return entry;
+      });
+      return stableJson(left) === stableJson(right);
+    }
+
     function previewHasChanges() {
-      return !!previewState && JSON.stringify(previewState.draft) !== JSON.stringify(previewState.original);
+      return !!previewState && !equalWordData(previewState.draft, previewState.original);
     }
 
     function updatePreviewControls() {
@@ -1748,8 +1761,8 @@
           const ref = doc(db, 'users', user.uid, 'lists', state.list.docId);
           const snapshot = await transaction.get(ref);
           if (!snapshot.exists()) throw new Error('这个列表已被删除，草稿仍保留，请复制内容后重新导入');
-          if (JSON.stringify(snapshot.data().words) !== JSON.stringify(state.original)) {
-            throw new Error('列表已在其他页面或设备修改。为避免覆盖，未保存本次修改，草稿仍保留');
+          if (!equalWordData(snapshot.data().words, state.original)) {
+            throw new Error('保存前发现云端单词内容确实发生了变化，本次未覆盖云端。你的编辑仍在，请保留此页面并联系我处理');
           }
           transaction.update(ref, { words });
         });
@@ -1766,7 +1779,19 @@
       }
     }
 
-    document.getElementById('create-wordbook').addEventListener('click', () => createWordbook());
+    document.getElementById('create-wordbook').addEventListener('click', () => {
+      const input = document.getElementById('wordbook-name-input');
+      showModal('请输入单词本名称', () => createWordbook(input.value));
+      input.value = '';
+      input.hidden = false;
+      input.focus();
+    });
+    document.getElementById('wordbook-name-input').addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        modalConfirm.click();
+      }
+    });
     document.getElementById('home-settings-toggle').addEventListener('click', () => {
       const menu = document.getElementById('home-settings-menu');
       menu.hidden = !menu.hidden;
@@ -2767,20 +2792,28 @@ NO`;
     }
 
     function enableAiChatForCurrentReport() {
+      if (aiChatEnabled) {
+        aiChatEnabled = false;
+        document.getElementById('ai-chat-card').classList.add('collapsed');
+        document.getElementById('enable-ai-chat').textContent = '启用本报告追问';
+        setAiStatus('ai-chat-status', '已停用报告追问');
+        return;
+      }
       if (!latestAiReport) return showModal('请先生成或选择一份整理报告');
       aiChatEnabled = true;
-      aiChatMessages = [
+      if (aiChatMessages.length === 0) {
+        aiChatMessages = [
         { role: 'system', content: '你是英语口语学习助手。请围绕用户当前这份整理报告回答后续问题，简洁、实用，并提示英式口语语气和使用场景。' },
         { role: 'user', content: `这是当前整理报告：\n${latestAiReport}\n\n可导入表达：\n${document.getElementById('ai-import-output').value.trim() || latestAiImport}` },
         { role: 'assistant', content: '好的。我会基于当前这份整理报告回答后续问题。' }
-      ];
+        ];
+        document.getElementById('ai-chat-log').innerHTML = '';
+        appendChatBubble('assistant', '已启用当前报告追问。你可以继续问语气、用法或替代表达。');
+      }
       const card = document.getElementById('ai-chat-card');
-      const log = document.getElementById('ai-chat-log');
       const enableButton = document.getElementById('enable-ai-chat');
       if (card) card.classList.remove('collapsed');
-      if (log) log.innerHTML = '';
-      appendChatBubble('assistant', '已启用当前报告追问。你可以继续问语气、用法或替代表达。');
-      if (enableButton) enableButton.textContent = '已启用本报告';
+      if (enableButton) enableButton.textContent = '停用本报告追问';
       setAiStatus('ai-chat-status', '');
     }
 
