@@ -560,7 +560,18 @@
     .study-answer.show { color: var(--text); }
     .ghost-btn { text-align: center; font-size: 20px; cursor: pointer; color: var(--muted); transition: color 0.2s ease; }
     .ghost-btn:hover { color: var(--accent); }
-    .preview-row { display: grid; grid-template-columns: 1fr 1fr 44px; border-bottom: 1px solid var(--panel-light); }
+    .preview-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--panel-light); }
+    #preview-list.editing .preview-row { grid-template-columns: 1fr 1fr 44px; background: var(--panel-light); }
+    .preview-input { width: 100%; min-height: 48px; padding: 10px; border: 1px solid var(--panel-light); border-radius: 6px; color: var(--text); background: transparent; resize: vertical; font: inherit; }
+    [hidden] { display: none !important; }
+    .preview-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .preview-toolbar button { font-size: 24px; }
+    .settings-wrap { position: relative; }
+    #home-settings-toggle { font-size: 30px; padding: 8px 14px; }
+    #home-settings-menu { position: absolute; right: 0; top: 100%; z-index: 20; min-width: 200px; padding: 12px; border-radius: 14px; background: var(--panel); box-shadow: 0 8px 24px #0003; }
+    #home-settings-menu button { display: block; width: 100%; padding: 12px; text-align: left; }
+    #theme-toggle { position: static; }
+    .capacity-select { max-width: 120px; padding: 7px; background: var(--panel); color: var(--text); border-radius: 12px; }
     .preview-delete {
       display: flex;
       align-items: center;
@@ -594,7 +605,6 @@
   </style>
 </head>
 <body>
-  <button id="theme-toggle" class="theme-toggle" type="button" hidden>切换浅色</button>
 
   <div id="auth-page" class="view active">
     <div class="login-container">
@@ -613,10 +623,17 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.07.2245</span>
+        <span id="main-app-version" class="app-version">v2026.10.10.1800</span>
       </div>
       <div class="dashboard-header-actions">
-        <button id="logout-btn" class="icon-btn" title="退出">退出</button>
+        <div class="settings-wrap">
+          <button id="home-settings-toggle" class="icon-btn" title="设置" aria-label="设置" aria-expanded="false">⚙</button>
+          <div id="home-settings-menu" hidden>
+            <button id="open-ai-settings" class="icon-btn">DeepSeek API 设置</button>
+            <button id="theme-toggle" class="icon-btn" type="button">切换浅色</button>
+            <button id="logout-btn" class="icon-btn">退出登录</button>
+          </div>
+        </div>
       </div>
     </header>
     <div class="dashboard-feature">
@@ -630,7 +647,6 @@
       <div class="wordbook-section-header">
         <h2>我的单词本</h2>
         <div class="wordbook-create-row">
-          <input id="new-wordbook-name" type="text" maxlength="30" placeholder="例如：GRE 单词本" />
           <button id="create-wordbook" class="ai-btn">新建单词本</button>
         </div>
       </div>
@@ -645,13 +661,11 @@
         <h1 id="active-wordbook-title">单词本</h1>
       </div>
     </header>
-    <div class="import-section">
-      <button id="open-import" class="import-btn">手动导入单词</button>
-    </div>
     <div class="lists-container">
       <div class="list-column">
         <div class="list-column-heading">
           <h2>新单词</h2>
+          <select id="capacity-new" class="capacity-select" aria-label="新单词每组容量"></select>
           <button id="rebalance-new" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="new-lists" class="list-container"></div>
@@ -659,11 +673,13 @@
       <div class="list-column">
         <div class="list-column-heading">
           <h2>需巩固单词</h2>
+          <select id="capacity-review" class="capacity-select" aria-label="需巩固单词每组容量"></select>
           <button id="rebalance-review" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="review-lists" class="list-container"></div>
         <div class="list-column-heading" style="margin-top:24px;">
           <h2>Final巩固单词</h2>
+          <select id="capacity-final" class="capacity-select" aria-label="Final巩固单词每组容量"></select>
           <button id="rebalance-final" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="final-lists" class="list-container"></div>
@@ -676,6 +692,10 @@
       <button id="import-back" class="back-btn">← 返回</button>
       <h2>手动导入单词</h2>
     </header>
+    <div class="import-form">
+      <label for="manual-target-wordbook">目标单词本</label>
+      <select id="manual-target-wordbook" class="ai-input"></select>
+    </div>
     <div class="import-form">
       <h3>通过文件导入 CSV</h3>
       <input type="file" id="csv-file" accept=".csv,text/csv" />
@@ -710,8 +730,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.07.2245</span>
-      <button id="open-ai-settings" class="icon-btn ai-settings-toggle" title="DeepSeek 设置" aria-label="DeepSeek 设置">⚙</button>
+      <span id="app-version" class="app-version">v2026.10.10.1800</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -757,11 +776,16 @@
               <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
               <button id="save-ai-output" class="ai-btn secondary">保存修改</button>
               <select id="ai-target-wordbook" class="ai-input" style="width:auto; min-width:150px; margin:0;"></select>
-              <button id="import-ai-output" class="ai-btn">导入为新单词列表</button>
+              <button id="import-ai-output" class="ai-btn">导入新单词</button>
             </div>
           </div>
           </div>
         </div>
+      </section>
+      <div class="ai-card ai-manual-import-card">
+        <h3>手动导入单词</h3>
+        <button id="open-import" class="import-btn">手动导入单词</button>
+      </div>
         <div id="ai-chat-card" class="ai-card ai-chat-card collapsed">
           <h3>进一步追问</h3>
           <p class="ai-note">默认不会读取报告，避免浪费 token。需要追问时，先启用当前报告追问。</p>
@@ -776,7 +800,6 @@
             <button id="clear-ai-chat" class="ai-btn secondary">清空对话</button>
           </div>
         </div>
-      </section>
     </div>
   </div>
 
@@ -825,7 +848,13 @@
       <button id="preview-back" class="back-btn">← 返回</button>
       <h2 id="preview-title">预览</h2>
     </header>
+    <div class="preview-toolbar">
+      <button id="preview-edit" class="icon-btn" aria-label="编辑单词" aria-pressed="false">📝</button>
+      <button id="preview-save" class="icon-btn" aria-label="保存单词修改" hidden>🖨️</button>
+      <span id="preview-status" role="status"></span>
+    </div>
     <div id="preview-list"></div>
+    <button id="preview-add" class="ai-btn secondary" hidden>添加新的空单词词组集</button>
   </div>
 
   <div id="modal" class="modal hidden">
@@ -858,6 +887,8 @@
       getDocs,
       setDoc,
       updateDoc,
+      runTransaction,
+      writeBatch,
       deleteDoc,
       onSnapshot,
       arrayUnion
@@ -925,6 +956,8 @@
     const themeToggle = document.getElementById('theme-toggle');
 
     function showPage(page) {
+      document.getElementById('home-settings-menu').hidden = true;
+      document.getElementById('home-settings-toggle').setAttribute('aria-expanded', 'false');
       [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
         if (p) p.classList.remove('active');
       });
@@ -938,7 +971,7 @@
       modal.classList.remove('hidden');
       modalConfirm.onclick = () => {
         modal.classList.add('hidden');
-        if (typeof onConfirm === 'function') onConfirm();
+        if (typeof onConfirm === 'function') return onConfirm();
       };
       modalCancel.onclick = () => modal.classList.add('hidden');
     }
@@ -1018,6 +1051,7 @@
         finalLists = [];
         activeWordbookId = DEFAULT_BOOK_ID;
         currentList = null;
+        previewState = null;
         currentListType = null;
         aiHistory = [];
         activeAiHistoryIndex = -1;
@@ -1037,6 +1071,7 @@
         const now = Date.now();
         await setDoc(doc(db, 'users', uid, 'wordbooks', DEFAULT_BOOK_ID), {
           name: '口语单词本',
+          groupSizes: { new: 50, review: 20, final: 20 },
           createdAt: now,
           updatedAt: now
         });
@@ -1051,6 +1086,8 @@
         refreshActiveLists();
         updateWordbookDashboard();
         renderAiWordbookOptions();
+        updateWordbookPage();
+        if (previewState) updatePreviewControls();
       });
 
       const listsRef = collection(db, 'users', uid, 'lists');
@@ -1121,18 +1158,19 @@
     async function createWordbook(rawName) {
       const user = auth.currentUser;
       if (!user) return;
-      const input = document.getElementById('new-wordbook-name');
-      const validated = validateWordbookName(rawName ?? input.value);
+      const name = rawName ?? window.prompt('请输入单词本名称');
+      if (name === null) return;
+      const validated = validateWordbookName(name);
       if (validated.error) return showModal(validated.error);
       const bookId = `book_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       const now = Date.now();
       try {
         await setDoc(doc(db, 'users', user.uid, 'wordbooks', bookId), {
           name: validated.name,
+          groupSizes: { ...LIST_GROUP_SIZES },
           createdAt: now,
           updatedAt: now
         });
-        input.value = '';
       } catch (error) {
         showModal(error.message || '新建单词本失败');
       }
@@ -1226,6 +1264,7 @@
     }
 
     function renderAiWordbookOptions() {
+      renderManualWordbookOptions();
       const select = document.getElementById('ai-target-wordbook');
       if (!select) return;
       const previousValue = select.value;
@@ -1248,7 +1287,7 @@
       if (!typeSelect || !targetSelect) return;
       const type = typeSelect.value || 'new';
       const previousValue = targetSelect.value;
-      const lists = getActiveBookLists()
+      const lists = getBookLists(getManualBookId())
         .filter(list => list.type === type)
         .sort((a, b) => Number(a.id) - Number(b.id));
       targetSelect.innerHTML = '';
@@ -1271,7 +1310,7 @@
     async function appendWordsToSpecificList(listDocId, words) {
       const user = auth.currentUser;
       if (!user) return;
-      const target = getActiveBookLists().find(list => list.docId === listDocId);
+      const target = getBookLists(getManualBookId()).find(list => list.docId === listDocId);
       if (!target) throw new Error('请选择有效的目标 List');
       const currentWords = Array.isArray(target.words) ? target.words : [];
       await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), {
@@ -1328,7 +1367,7 @@
       const user = auth.currentUser;
       if (!user) return;
       const bookLists = getBookLists(bookId);
-      const target = bookLists.find(item => item.type === 'review' && item.words && item.words.length < 20);
+      const target = bookLists.find(item => item.type === 'review' && item.words && item.words.length < getListGroupSize('review', bookId));
       if (target) {
         await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
@@ -1346,7 +1385,7 @@
       const user = auth.currentUser;
       if (!user) return;
       const bookLists = getBookLists(bookId);
-      const target = bookLists.find(item => item.type === 'final' && item.words && item.words.length < 20);
+      const target = bookLists.find(item => item.type === 'final' && item.words && item.words.length < getListGroupSize('final', bookId));
       if (target) {
         await updateDoc(doc(db, 'users', user.uid, 'lists', target.docId), { words: arrayUnion(word) });
       } else {
@@ -1366,8 +1405,43 @@
       await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
     }
 
-    function getListGroupSize(type) {
-      return LIST_GROUP_SIZES[type] || 50;
+    function getListGroupSize(type, bookId = activeWordbookId) {
+      const book = wordbooks.find(item => item.id === bookId);
+      const value = Number(book?.groupSizes?.[type]);
+      return Number.isInteger(value) && value >= 10 && value <= 100 ? value : (LIST_GROUP_SIZES[type] || 50);
+    }
+
+    function renderCapacitySettings() {
+      for (const type of ['new', 'review', 'final']) {
+        const select = document.getElementById(`capacity-${type}`);
+        if (!select.options.length) {
+          for (let size = 10; size <= 100; size++) {
+            const option = document.createElement('option');
+            option.value = size;
+            option.textContent = `${size}个${size === LIST_GROUP_SIZES[type] ? '（默认）' : ''}`;
+            select.appendChild(option);
+          }
+        }
+        select.value = getListGroupSize(type);
+      }
+    }
+
+    function getManualBookId() {
+      return document.getElementById('manual-target-wordbook').value;
+    }
+
+    function renderManualWordbookOptions() {
+      const select = document.getElementById('manual-target-wordbook');
+      const previous = select.value;
+      select.replaceChildren();
+      for (const book of sortWordbooksForDisplay(wordbooks)) {
+        const option = document.createElement('option');
+        option.value = book.id;
+        option.textContent = book.name;
+        select.appendChild(option);
+      }
+      select.value = wordbooks.some(book => book.id === previous) ? previous : activeWordbookId;
+      renderSpecificListOptions();
     }
 
     function getTypeLabel(type) {
@@ -1383,17 +1457,11 @@
       return `Final巩固单词list${id}`;
     }
 
-    async function deleteWordFromList(list, wordIndex) {
-      const user = auth.currentUser;
-      if (!user || !list?.docId || !Array.isArray(list.words)) return;
-      const nextWords = list.words.filter((_, index) => index !== wordIndex);
-      await updateDoc(doc(db, 'users', user.uid, 'lists', list.docId), { words: nextWords });
-      openPreview({ ...list, words: nextWords });
-    }
-
+    let rebalancing = false;
     async function rebalanceLists(type) {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user || rebalancing) return;
+      const bookId = activeWordbookId;
       const typeLists = getActiveBookLists()
         .filter(list => list.type === type)
         .sort((a, b) => Number(a.id) - Number(b.id));
@@ -1405,30 +1473,41 @@
         chunks.push(words.slice(index, index + groupSize));
       }
       const usedIds = typeLists.map(list => Number(list.id)).filter(Number.isFinite);
+      if (Math.max(typeLists.length, chunks.length) > 500) return showModal('列表过多，无法安全地一次重新分组，请先联系维护者');
+      const batch = writeBatch(db);
       for (let index = 0; index < typeLists.length; index++) {
         const list = typeLists[index];
         if (index < chunks.length) {
-          await updateDoc(doc(db, 'users', user.uid, 'lists', list.docId), { words: chunks[index] });
+          batch.update(doc(db, 'users', user.uid, 'lists', list.docId), { words: chunks[index] });
         } else {
-          await deleteDoc(doc(db, 'users', user.uid, 'lists', list.docId));
+          batch.delete(doc(db, 'users', user.uid, 'lists', list.docId));
         }
       }
       for (let index = typeLists.length; index < chunks.length; index++) {
         let newId = nextListId(getActiveBookLists(), type);
         while (usedIds.includes(newId)) newId++;
         usedIds.push(newId);
-        await setDoc(doc(db, 'users', user.uid, 'lists', `${activeWordbookId}_${type}_${newId}`), {
+        batch.set(doc(db, 'users', user.uid, 'lists', `${bookId}_${type}_${newId}`), {
           id: newId,
           type,
-          bookId: activeWordbookId,
+          bookId,
           words: chunks[index]
         });
       }
-      showModal(`${getTypeLabel(type)}已重新排列`);
+      rebalancing = true;
+      try {
+        await batch.commit();
+        showModal(`${getTypeLabel(type)}已按每组 ${groupSize} 个重新排列`);
+      } catch (error) {
+        showModal(error.message || '重新排列失败，原列表未修改');
+      } finally {
+        rebalancing = false;
+      }
     }
 
     function updateWordbookPage() {
       refreshActiveLists();
+      renderCapacitySettings();
       const activeBook = wordbooks.find(book => book.id === activeWordbookId);
       const title = document.getElementById('active-wordbook-title');
       if (title) title.textContent = activeBook?.name || '单词本';
@@ -1586,41 +1665,147 @@
       showPage(studyPage);
     }
 
+    let previewState = null;
+
+    function previewHasChanges() {
+      return !!previewState && JSON.stringify(previewState.draft) !== JSON.stringify(previewState.original);
+    }
+
+    function updatePreviewControls() {
+      const state = previewState;
+      document.getElementById('preview-edit').disabled = !!state?.saving;
+      document.getElementById('preview-edit').setAttribute('aria-pressed', String(!!state?.editing));
+      document.getElementById('preview-save').hidden = !state?.editing;
+      document.getElementById('preview-save').disabled = !!state?.saving;
+      document.getElementById('preview-add').hidden = !state?.editing || state.draft.length >= getListGroupSize(state.list.type, getListBookId(state.list));
+      document.getElementById('preview-add').disabled = !!state?.saving;
+      document.getElementById('preview-status').textContent = state?.saving ? '正在保存…' : (previewHasChanges() ? '有未保存修改' : '');
+    }
+
     function openPreview(list) {
+      previewState = { list: { ...list }, original: structuredClone(list.words), draft: structuredClone(list.words), editing: false, saving: false };
       document.getElementById('preview-title').textContent = getListDisplayName(list, list.type) + ' 预览';
-      const previewList = document.getElementById('preview-list');
-      previewList.innerHTML = '';
-      list.words.forEach((word, index) => {
-        const row = document.createElement('div');
-        row.className = 'preview-row';
-        const enDiv = document.createElement('div');
-        enDiv.className = 'preview-en';
-        enDiv.textContent = word.en;
-        const zhDiv = document.createElement('div');
-        zhDiv.className = 'preview-zh';
-        zhDiv.textContent = word.zh;
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'preview-delete';
-        deleteBtn.type = 'button';
-        deleteBtn.title = '删除这一条';
-        deleteBtn.textContent = '×';
-        deleteBtn.addEventListener('click', () => {
-          showModal('确定删除这一条单词和翻译吗？', () => deleteWordFromList(list, index));
-        });
-        row.appendChild(enDiv);
-        row.appendChild(zhDiv);
-        row.appendChild(deleteBtn);
-        previewList.appendChild(row);
-      });
+      renderPreview();
       showPage(previewPage);
     }
 
+    function renderPreview() {
+      const state = previewState;
+      const previewList = document.getElementById('preview-list');
+      previewList.innerHTML = '';
+      previewList.classList.toggle('editing', state.editing);
+      state.draft.forEach((word, index) => {
+        const row = document.createElement('div');
+        row.className = 'preview-row';
+        for (const language of ['en', 'zh']) {
+          const field = document.createElement(state.editing ? 'textarea' : 'div');
+          field.className = state.editing ? 'preview-input' : `preview-${language}`;
+          if (state.editing) {
+            field.value = word[language] || '';
+            field.disabled = state.saving;
+            field.setAttribute('aria-label', `第${index + 1}条${language === 'en' ? '英文' : '中文'}`);
+            field.addEventListener('input', () => {
+              state.draft[index][language] = field.value;
+              updatePreviewControls();
+            });
+          } else field.textContent = word[language];
+          row.appendChild(field);
+        }
+        if (state.editing) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'preview-delete';
+          deleteBtn.type = 'button';
+          deleteBtn.title = '删除这一条（保存后生效）';
+          deleteBtn.textContent = '×';
+          deleteBtn.disabled = state.saving;
+          deleteBtn.addEventListener('click', () => {
+            state.draft.splice(index, 1);
+            renderPreview();
+          });
+          row.appendChild(deleteBtn);
+        }
+        previewList.appendChild(row);
+      });
+      updatePreviewControls();
+    }
+
+    async function savePreview() {
+      const state = previewState;
+      const user = auth.currentUser;
+      if (!state || !user || state.saving) return;
+      const incomplete = state.draft.findIndex(word => !String(word.en || '').trim() || !String(word.zh || '').trim());
+      if (incomplete !== -1) return showModal(`第 ${incomplete + 1} 条的英文或中文未填完整，请补齐后保存`);
+      state.saving = true;
+      renderPreview();
+      try {
+        const words = state.draft.map(word => ({ ...word, en: word.en.trim(), zh: word.zh.trim() }));
+        await runTransaction(db, async transaction => {
+          const ref = doc(db, 'users', user.uid, 'lists', state.list.docId);
+          const snapshot = await transaction.get(ref);
+          if (!snapshot.exists()) throw new Error('这个列表已被删除，草稿仍保留，请复制内容后重新导入');
+          if (JSON.stringify(snapshot.data().words) !== JSON.stringify(state.original)) {
+            throw new Error('列表已在其他页面或设备修改。为避免覆盖，未保存本次修改，草稿仍保留');
+          }
+          transaction.update(ref, { words });
+        });
+        state.original = structuredClone(words);
+        state.draft = structuredClone(words);
+        state.list.words = structuredClone(words);
+        state.editing = false;
+        showModal('修改已保存');
+      } catch (error) {
+        showModal(error.message || '保存失败，修改仍保留，请重试');
+      } finally {
+        state.saving = false;
+        renderPreview();
+      }
+    }
+
     document.getElementById('create-wordbook').addEventListener('click', () => createWordbook());
-    document.getElementById('new-wordbook-name').addEventListener('keydown', event => {
-      if (event.key === 'Enter') createWordbook();
+    document.getElementById('home-settings-toggle').addEventListener('click', () => {
+      const menu = document.getElementById('home-settings-menu');
+      menu.hidden = !menu.hidden;
+      document.getElementById('home-settings-toggle').setAttribute('aria-expanded', String(!menu.hidden));
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.settings-wrap')) {
+        document.getElementById('home-settings-menu').hidden = true;
+        document.getElementById('home-settings-toggle').setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.getElementById('preview-edit').addEventListener('click', () => {
+      const state = previewState;
+      if (!state || state.saving) return;
+      const toggle = () => {
+        if (state.editing) state.draft = structuredClone(state.original);
+        state.editing = !state.editing;
+        renderPreview();
+      };
+      if (state.editing && previewHasChanges()) showModal('退出编辑会丢失未保存的修改，确定放弃吗？', toggle);
+      else toggle();
+    });
+    document.getElementById('preview-save').addEventListener('click', () => {
+      showModal('确定保存所有修改（包括删除和新增）吗？', savePreview);
+    });
+    document.getElementById('preview-add').addEventListener('click', () => {
+      const state = previewState;
+      if (!state?.editing || state.saving || state.draft.length >= getListGroupSize(state.list.type, getListBookId(state.list))) return;
+      state.draft.push({ en: '', zh: '' });
+      renderPreview();
+      document.getElementById('preview-list').lastElementChild?.querySelector('textarea')?.focus();
+    });
+    window.addEventListener('beforeunload', event => {
+      if (previewHasChanges()) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
     });
     document.getElementById('wordbook-back').addEventListener('click', () => showPage(mainPage));
     document.getElementById('open-import').addEventListener('click', () => {
+      renderManualWordbookOptions();
+      const size = getListGroupSize('new', getManualBookId());
+      document.getElementById('csv-group-size').value = size;
+      document.getElementById('paste-group-size').value = size;
       renderSpecificListOptions();
       showPage(importPage);
     });
@@ -1630,11 +1815,41 @@
       if (!latestAiReport && aiHistory.length > 0) showAiHistoryEntry(0);
       showPage(aiPage);
     });
-    document.getElementById('import-back').addEventListener('click', () => showPage(wordbookPage));
+    document.getElementById('import-back').addEventListener('click', () => showPage(aiPage));
     document.getElementById('ai-back').addEventListener('click', () => showPage(mainPage));
     document.getElementById('mode-back').addEventListener('click', () => showPage(wordbookPage));
     document.getElementById('study-back').addEventListener('click', () => showPage(modePage));
-    document.getElementById('preview-back').addEventListener('click', () => showPage(wordbookPage));
+    document.getElementById('preview-back').addEventListener('click', () => {
+      if (previewState?.saving) return;
+      if (previewHasChanges()) showModal('你还没有保存，确定保存吗？', savePreview);
+      else {
+        previewState = null;
+        showPage(wordbookPage);
+      }
+    });
+    for (const type of ['new', 'review', 'final']) {
+      document.getElementById(`capacity-${type}`).addEventListener('change', async event => {
+        const select = event.target;
+        const bookId = activeWordbookId;
+        select.disabled = true;
+        try {
+          await updateDoc(doc(db, 'users', auth.currentUser.uid, 'wordbooks', bookId), {
+            [`groupSizes.${type}`]: Number(select.value), updatedAt: Date.now()
+          });
+        } catch (error) {
+          select.value = getListGroupSize(type, bookId);
+          showModal(error.message || '容量设置保存失败');
+        } finally {
+          select.disabled = false;
+        }
+      });
+    }
+    document.getElementById('manual-target-wordbook').addEventListener('change', () => {
+      renderSpecificListOptions();
+      const size = getListGroupSize('new', getManualBookId());
+      document.getElementById('csv-group-size').value = size;
+      document.getElementById('paste-group-size').value = size;
+    });
     document.getElementById('rebalance-new').addEventListener('click', () => {
       showModal('确定重新排列新单词列表吗？', () => rebalanceLists('new'));
     });
@@ -1649,12 +1864,11 @@
       document.getElementById('deepseek-api-key').value = localStorage.getItem('deepseekApiKey') || '';
       showPage(aiSettingsPage);
     });
-    document.getElementById('ai-settings-back').addEventListener('click', () => showPage(aiPage));
+    document.getElementById('ai-settings-back').addEventListener('click', () => showPage(mainPage));
 
     const AI_MODEL = 'deepseek-flash';
     const AI_URL = 'https://api.deepseek.com/chat/completions';
     const AI_BATCH_SIZE = 5;
-    const AI_IMPORT_GROUP_SIZE = 50;
     const LIST_GROUP_SIZES = { new: 50, review: 20, final: 20 };
     const organizerSystemPrompt = `你是一个帮助中文母语者积累自然英语口语表达的助手。默认输出 British spoken English，除非用户明确要求美式或其他风格。
 用户会输入中文、英文、中英混合内容、单词、词组、句子或段落。每个非空行是一条独立输入。你必须逐条识别语言和类型，并按原顺序完整整理，不遗漏、不合并。
@@ -2886,7 +3100,7 @@ NO`;
       const targetBookId = document.getElementById('ai-target-wordbook').value;
       if (!wordbooks.some(book => book.id === targetBookId)) return showModal('请选择有效的目标单词本');
       try {
-        await appendNewLists(words, AI_IMPORT_GROUP_SIZE, targetBookId);
+        await appendNewLists(words, getListGroupSize('new', targetBookId), targetBookId);
         const targetBook = wordbooks.find(book => book.id === targetBookId);
         showModal(`已导入 ${words.length} 条表达至“${targetBook?.name || '目标单词本'}”`);
       } catch (error) {
@@ -2926,6 +3140,8 @@ NO`;
       const fileInput = document.getElementById('csv-file');
       const groupSizeInput = document.getElementById('csv-group-size');
       const groupSize = parseInt(groupSizeInput.value) || 50;
+      const bookId = getManualBookId();
+      if (!wordbooks.some(book => book.id === bookId)) return showModal('请选择目标单词本');
       if (!fileInput.files || fileInput.files.length === 0) return showModal('请选择CSV文件');
       const file = fileInput.files[0];
       const reader = new FileReader();
@@ -2934,9 +3150,10 @@ NO`;
         const words = parseImportLines(text);
         if (words.length === 0) return showModal('文件内容为空或格式不正确');
         try {
-          await appendNewLists(words, groupSize, activeWordbookId);
+          await appendNewLists(words, groupSize, bookId);
           fileInput.value = '';
-          groupSizeInput.value = 50;
+          activeWordbookId = bookId;
+          groupSizeInput.value = getListGroupSize('new', bookId);
           showPage(wordbookPage);
         } catch (error) {
           showModal(error.message || '导入失败');
@@ -2949,14 +3166,17 @@ NO`;
       const textArea = document.getElementById('paste-area');
       const groupSizeInput = document.getElementById('paste-group-size');
       const groupSize = parseInt(groupSizeInput.value) || 50;
+      const bookId = getManualBookId();
+      if (!wordbooks.some(book => book.id === bookId)) return showModal('请选择目标单词本');
       const rawText = textArea.value.trim();
       if (!rawText) return showModal('请输入单词内容');
       const words = parseImportLines(rawText);
       if (words.length === 0) return showModal('内容格式不正确');
       try {
-        await appendNewLists(words, groupSize, activeWordbookId);
+        await appendNewLists(words, groupSize, bookId);
         textArea.value = '';
-        groupSizeInput.value = 50;
+        activeWordbookId = bookId;
+        groupSizeInput.value = getListGroupSize('new', bookId);
         showPage(wordbookPage);
       } catch (error) {
         showModal(error.message || '导入失败');
