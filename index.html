@@ -90,7 +90,7 @@
     .login-container button { width: 100%; padding: 10px; font-size: 16px; }
     button:hover { background: var(--button-hover); }
     header { margin-bottom: 20px; }
-    .view > header { padding-right: 100px; }
+    .view > header { padding-right: 0; }
     header h1, header h2 { margin: 0; font-size: 24px; }
     .app-version {
       display: inline-flex;
@@ -164,7 +164,7 @@
       margin-bottom: 18px;
     }
     .wordbook-section-header h2 { margin: 0; }
-    .wordbook-create-row { display: flex; gap: 8px; flex: 1; max-width: 430px; }
+    .wordbook-create-row { display: flex; gap: 8px; justify-content: flex-end; }
     .wordbook-create-row input {
       flex: 1;
       min-width: 0;
@@ -562,6 +562,8 @@
     .ghost-btn:hover { color: var(--accent); }
     .preview-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--panel-light); }
     #preview-list.editing .preview-row { grid-template-columns: 1fr 1fr 44px; background: var(--panel-light); }
+    #preview-page #preview-list { max-height: calc(100vh - 200px); }
+    #preview-add { margin: 12px; }
     .preview-input { width: 100%; min-height: 48px; padding: 10px; border: 1px solid var(--panel-light); border-radius: 6px; color: var(--text); background: transparent; resize: vertical; font: inherit; }
     [hidden] { display: none !important; }
     .preview-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
@@ -623,7 +625,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.10.1800</span>
+        <span id="main-app-version" class="app-version">v2026.10.10.1801</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -730,7 +732,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.10.1800</span>
+      <span id="app-version" class="app-version">v2026.10.10.1801</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -962,6 +964,7 @@
         if (p) p.classList.remove('active');
       });
       if (page) page.classList.add('active');
+      window.scrollTo(0, 0);
       if (page === mainPage) updateWordbookDashboard();
       if (page === wordbookPage) updateWordbookPage();
     }
@@ -1692,6 +1695,7 @@
     function renderPreview() {
       const state = previewState;
       const previewList = document.getElementById('preview-list');
+      const addButton = document.getElementById('preview-add');
       previewList.innerHTML = '';
       previewList.classList.toggle('editing', state.editing);
       state.draft.forEach((word, index) => {
@@ -1726,6 +1730,7 @@
         }
         previewList.appendChild(row);
       });
+      previewList.appendChild(addButton);
       updatePreviewControls();
     }
 
@@ -1792,7 +1797,7 @@
       if (!state?.editing || state.saving || state.draft.length >= getListGroupSize(state.list.type, getListBookId(state.list))) return;
       state.draft.push({ en: '', zh: '' });
       renderPreview();
-      document.getElementById('preview-list').lastElementChild?.querySelector('textarea')?.focus();
+      document.getElementById('preview-list').children[state.draft.length - 1]?.querySelector('textarea')?.focus();
     });
     window.addEventListener('beforeunload', event => {
       if (previewHasChanges()) {
