@@ -560,11 +560,14 @@
     .study-answer.show { color: var(--text); }
     .ghost-btn { text-align: center; font-size: 20px; cursor: pointer; color: var(--muted); transition: color 0.2s ease; }
     .ghost-btn:hover { color: var(--accent); }
-    .preview-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--panel-light); }
-    #preview-list.editing .preview-row { grid-template-columns: 1fr 1fr 44px; background: var(--panel-light); }
+    .preview-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; border-bottom: 1px solid var(--panel-light); background: var(--panel-dark); }
+    #preview-list.editing .preview-row { background: var(--panel-light); }
     #preview-page #preview-list { max-height: calc(100vh - 200px); }
     #preview-add { margin: 12px; }
-    .preview-input { width: 100%; min-height: 48px; padding: 10px; border: 1px solid var(--panel-light); border-radius: 6px; color: var(--text); background: transparent; resize: vertical; font: inherit; }
+    .preview-row .preview-field { position: relative; padding: 0; min-width: 0; }
+    .preview-row .preview-text { padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.2; min-height: 39.2px; }
+    #preview-list.editing .preview-text { visibility: hidden; }
+    .preview-input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 10px; border: 0; border-radius: 0; color: var(--text); background: transparent; resize: none; font: inherit; line-height: 1.2; overflow-wrap: anywhere; word-break: break-word; }
     [hidden] { display: none !important; }
     .preview-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
     .preview-toolbar button { font-size: 24px; }
@@ -630,13 +633,13 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.10.1825</span>
+        <span id="main-app-version" class="app-version">v2026.10.10.1842</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
           <button id="home-settings-toggle" class="icon-btn" title="设置" aria-label="设置" aria-expanded="false">⚙</button>
           <div id="home-settings-menu" hidden>
-            <button id="open-ai-settings" class="icon-btn">DeepSeek API 设置</button>
+            <button id="open-ai-settings" class="icon-btn">大模型搜索API设置</button>
             <button id="theme-toggle" class="icon-btn" type="button">切换浅色</button>
             <button id="logout-btn" class="icon-btn">退出登录</button>
           </div>
@@ -737,7 +740,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.10.1825</span>
+      <span id="app-version" class="app-version">v2026.10.10.1842</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -810,10 +813,10 @@
   <div id="ai-settings-page" class="view">
     <header style="display:flex; align-items:center;">
       <button id="ai-settings-back" class="back-btn">← 返回</button>
-      <h2>DeepSeek 设置</h2>
+      <h2>大模型搜索API设置</h2>
     </header>
     <div class="ai-card">
-      <p class="ai-note">使用 deepseek-flash。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase。</p>
+      <p class="ai-note">目前支持 deepseek-flash；ChatGPT 等其他 AI 模型需要另外接入，暂不能直接使用其 API Key。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase；调用模型时会发送给对应的 API 服务。</p>
       <div class="ai-actions">
         <input id="deepseek-api-key" class="ai-input" type="password" placeholder="输入 DeepSeek API Key（sk-...）" style="flex:1; margin-bottom:0;" />
         <button id="save-api-key" class="ai-btn secondary">保存 Key</button>
@@ -1420,7 +1423,7 @@
       for (const type of ['new', 'review', 'final']) {
         const select = document.getElementById(`capacity-${type}`);
         if (!select.options.length) {
-          for (let size = 10; size <= 100; size++) {
+          for (let size = 10; size <= 100; size += 10) {
             const option = document.createElement('option');
             option.value = size;
             option.textContent = `${size}${size === LIST_GROUP_SIZES[type] ? '（默认）' : ''}`;
@@ -1715,18 +1718,29 @@
         const row = document.createElement('div');
         row.className = 'preview-row';
         for (const language of ['en', 'zh']) {
-          const field = document.createElement(state.editing ? 'textarea' : 'div');
-          field.className = state.editing ? 'preview-input' : `preview-${language}`;
+          const cell = document.createElement('div');
+          cell.className = 'preview-field';
+          // The same text layout sets row height in both viewing and editing modes.
+          const text = document.createElement('div');
+          text.className = 'preview-text';
+          text.textContent = (word[language] || '') + '\u200b';
+          cell.appendChild(text);
           if (state.editing) {
+            text.setAttribute('aria-hidden', 'true');
+            const field = document.createElement('textarea');
+            field.className = 'preview-input';
+            field.rows = 1;
             field.value = word[language] || '';
             field.disabled = state.saving;
             field.setAttribute('aria-label', `第${index + 1}条${language === 'en' ? '英文' : '中文'}`);
             field.addEventListener('input', () => {
               state.draft[index][language] = field.value;
+              text.textContent = field.value + '\u200b';
               updatePreviewControls();
             });
-          } else field.textContent = word[language];
-          row.appendChild(field);
+            cell.appendChild(field);
+          }
+          row.appendChild(cell);
         }
         if (state.editing) {
           const deleteBtn = document.createElement('button');
