@@ -676,7 +676,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.1420</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.1752</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -807,7 +807,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.1420</span>
+      <span id="app-version" class="app-version">v2026.10.20.1752</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1286,7 +1286,7 @@
       for (let offset = 4; offset >= 0; offset--) {
         const date = new Date((studyDayNumber(today) - offset) * 86400000).toISOString().slice(0, 10);
         const day = studyDays.find(item => item.date === date);
-        const total = Object.keys(day?.completions || {}).length;
+        const total = Object.values(day?.completions || {}).filter(record => (Number(record.streakGeneration) || 0) === studyGeneration).length;
         const cell = document.createElement('div');
         cell.className = `checkin-day${total ? ' done' : ''}${date === today ? ' today' : ''}`;
         const label = document.createElement('span');
