@@ -601,7 +601,7 @@
     #checkin-card[data-state="active"] { --checkin-ink: #184e29; background: linear-gradient(120deg, #c5f2a7, #8fdb8a); border-color: #8ac87d; }
     #checkin-card[data-state="caution"] { --checkin-ink: #715100; background: linear-gradient(120deg, #fff0ab, #f5d26b); border-color: #e2bc4c; }
     #checkin-card[data-state="danger"] { --checkin-ink: #7b1d29; background: linear-gradient(120deg, #ffd2d1, #f38e94); border-color: #df7a84; }
-    .checkin-heading, .checkin-hero, .checkin-days { position: relative; z-index: 1; }
+    .checkin-heading, .checkin-hero, .checkin-window, .checkin-days { position: relative; z-index: 1; }
     .checkin-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     #checkin-card h2 { margin: 0; color: inherit; font-size: 20px; }
     .checkin-settings { position: relative; }
@@ -615,10 +615,11 @@
     #checkin-count { white-space: nowrap; }
     .checkin-flame { font-size: .86em; filter: grayscale(1); opacity: .65; }
     #checkin-card[data-state="active"] .checkin-flame, #checkin-card[data-state="caution"] .checkin-flame, #checkin-card[data-state="danger"] .checkin-flame { filter: none; opacity: 1; }
-    .checkin-flame-art { flex: 0 0 auto; width: 110px; height: 130px; color: inherit; opacity: .28; }
+    .checkin-book-art { flex: 0 0 auto; display: grid; place-items: center; width: 110px; height: 130px; font-size: 90px; line-height: 1; filter: grayscale(1); opacity: .28; }
     #checkin-status { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: inherit; }
     #checkin-warnings { position: absolute; inset: 0; z-index: 0; display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; justify-items: center; font-size: 42px; opacity: .13; pointer-events: none; transform: rotate(-12deg) scale(1.12); }
-    .checkin-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
+    .checkin-window { margin: 18px 0 0; font-size: 12px; opacity: .8; }
+    .checkin-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
     .wordbook-section + .wordbook-section { margin-top: 24px; }
     .checkin-day { min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 9px 2px; text-align: center; border-radius: 12px; background: #ffffff26; color: inherit; border: 1px solid transparent; }
     .checkin-date { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -632,7 +633,7 @@
     @media (max-width: 480px) {
       #checkin-card { padding: 20px; }
       .checkin-hero { min-height: 130px; gap: 8px; }
-      .checkin-flame-art { position: absolute; right: 0; top: 6px; width: 74px; height: 100px; opacity: .12; z-index: -1; }
+      .checkin-book-art { position: absolute; right: 0; top: 6px; width: 74px; height: 100px; font-size: 64px; opacity: .2; z-index: -1; }
       .checkin-days { gap: 5px; }
       .checkin-date { font-size: 11px; }
       #checkin-status { font-size: 14px; }
@@ -676,7 +677,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.1155</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.1419</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -713,9 +714,10 @@
           <div id="checkin-counter" class="checkin-count" aria-label="学习连击0天"><span class="checkin-flame" aria-hidden="true">🔥</span><span id="checkin-count">0天</span><span id="checkin-warning-icon" role="img" aria-label="即将断签" hidden>⚠️</span></div>
           <p id="checkin-status" role="status">正在读取打卡记录…</p>
         </div>
-        <svg class="checkin-flame-art" viewBox="0 0 100 120" aria-hidden="true"><path fill="currentColor" d="M54 2C66 29 88 35 91 63c4 30-13 53-40 53C24 116 7 98 8 73c0-19 12-33 23-46-1 18 4 24 9 27C52 42 59 25 54 2Z"/><path fill="currentColor" opacity=".5" d="M52 62c3 12 19 21 17 33-2 9-9 15-18 15s-18-7-18-17c0-12 13-20 19-31Z"/></svg>
+        <span class="checkin-book-art" aria-hidden="true">📖</span>
       </div>
-      <div id="checkin-days" class="checkin-days" aria-label="最近14天打卡记录"></div>
+      <p class="checkin-window">5天内</p>
+      <div id="checkin-days" class="checkin-days" aria-label="含今天在内的最近5天打卡记录"></div>
     </section>
     <section class="wordbook-section">
       <div class="wordbook-section-header">
@@ -807,7 +809,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.1155</span>
+      <span id="app-version" class="app-version">v2026.10.20.1419</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1283,7 +1285,7 @@
           warnings.appendChild(icon);
         }
       }
-      for (let offset = 13; offset >= 0; offset--) {
+      for (let offset = 4; offset >= 0; offset--) {
         const date = new Date((studyDayNumber(today) - offset) * 86400000).toISOString().slice(0, 10);
         const day = studyDays.find(item => item.date === date);
         const total = Object.keys(day?.completions || {}).length;
@@ -1291,7 +1293,7 @@
         cell.className = `checkin-day${total ? ' done' : ''}${date === today ? ' today' : ''}`;
         const label = document.createElement('span');
         label.className = 'checkin-date';
-        label.textContent = date.slice(5);
+        label.textContent = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(date + 'T00:00:00Z').getUTCDay()];
         const mark = document.createElement('span');
         mark.className = 'checkin-mark';
         mark.textContent = total ? '✓' : '—';
