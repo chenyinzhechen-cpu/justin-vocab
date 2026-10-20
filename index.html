@@ -601,7 +601,7 @@
     #checkin-card[data-state="active"] { --checkin-ink: #184e29; background: linear-gradient(120deg, #c5f2a7, #8fdb8a); border-color: #8ac87d; }
     #checkin-card[data-state="caution"] { --checkin-ink: #715100; background: linear-gradient(120deg, #fff0ab, #f5d26b); border-color: #e2bc4c; }
     #checkin-card[data-state="danger"] { --checkin-ink: #7b1d29; background: linear-gradient(120deg, #ffd2d1, #f38e94); border-color: #df7a84; }
-    .checkin-heading, .checkin-hero, .checkin-window, .checkin-days { position: relative; z-index: 1; }
+    .checkin-heading, .checkin-hero, .checkin-days { position: relative; z-index: 1; }
     .checkin-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     #checkin-card h2 { margin: 0; color: inherit; font-size: 20px; }
     .checkin-settings { position: relative; }
@@ -618,7 +618,6 @@
     .checkin-book-art { flex: 0 0 auto; display: grid; place-items: center; width: 110px; height: 130px; font-size: 90px; line-height: 1; filter: grayscale(1); opacity: .28; }
     #checkin-status { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: inherit; }
     #checkin-warnings { position: absolute; inset: 0; z-index: 0; display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; justify-items: center; font-size: 42px; opacity: .13; pointer-events: none; transform: rotate(-12deg) scale(1.12); }
-    .checkin-window { margin: 18px 0 0; font-size: 12px; opacity: .8; }
     .checkin-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
     .wordbook-section + .wordbook-section { margin-top: 24px; }
     .checkin-day { min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 9px 2px; text-align: center; border-radius: 12px; background: #ffffff26; color: inherit; border: 1px solid transparent; }
@@ -677,7 +676,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.1419</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.1420</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -716,7 +715,6 @@
         </div>
         <span class="checkin-book-art" aria-hidden="true">📖</span>
       </div>
-      <p class="checkin-window">5天内</p>
       <div id="checkin-days" class="checkin-days" aria-label="含今天在内的最近5天打卡记录"></div>
     </section>
     <section class="wordbook-section">
@@ -809,7 +807,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.1419</span>
+      <span id="app-version" class="app-version">v2026.10.20.1420</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
