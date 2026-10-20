@@ -594,6 +594,16 @@
       font-size: 18px;
     }
     .preview-delete:hover { color: var(--danger); background: var(--panel-light); }
+    .study-check { color: #238653; font-size: 22px; font-weight: 700; }
+    #complete-study { width: 100%; margin: 8px 4px 0; padding: 10px 14px; border-radius: 12px; }
+    .list-column-heading { flex-wrap: wrap; gap: 8px; }
+    .checkin-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+    .checkin-day { padding: 10px 4px; text-align: center; border-radius: 10px; background: var(--panel-dark); color: var(--muted); }
+    .checkin-day.done { color: var(--text); border: 1px solid #238653; }
+    #checkin-status { padding: 12px; background: var(--panel-dark); border-radius: 10px; margin: 12px 0; }
+    #checkin-status[data-state="active"] { border-left: 4px solid #238653; }
+    #checkin-status[data-state="warning"], #checkin-status[data-state="expired"] { border-left: 4px solid #b94a48; }
+    #checkin-history { max-height: 240px; overflow: auto; padding-left: 24px; }
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     .modal.hidden { display: none; }
     .modal-content { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 24px; min-width: 240px; max-width: 90%; text-align: center; }
@@ -633,7 +643,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.10.1842</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.1130</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -653,6 +663,13 @@
       </div>
       <button id="open-ai-organizer" class="ai-btn">打开 AI 单词整理</button>
     </div>
+    <section class="wordbook-section" aria-labelledby="checkin-title">
+      <h2 id="checkin-title">背诵打卡</h2>
+      <div id="checkin-status" role="status">正在读取打卡记录…</div>
+      <p id="checkin-note" class="ai-note"></p>
+      <div id="checkin-days" class="checkin-days" aria-label="最近14天打卡记录"></div>
+      <details><summary>查看历史完成记录</summary><ul id="checkin-history"></ul></details>
+    </section>
     <section class="wordbook-section">
       <div class="wordbook-section-header">
         <h2>我的单词本</h2>
@@ -676,6 +693,7 @@
         <div class="list-column-heading">
           <h2>新单词</h2>
           <select id="capacity-new" class="capacity-select" aria-label="新单词每组容量"></select>
+          <button id="clear-study-new" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-new" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="new-lists" class="list-container"></div>
@@ -684,12 +702,14 @@
         <div class="list-column-heading">
           <h2>需巩固单词</h2>
           <select id="capacity-review" class="capacity-select" aria-label="需巩固单词每组容量"></select>
+          <button id="clear-study-review" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-review" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="review-lists" class="list-container"></div>
         <div class="list-column-heading" style="margin-top:24px;">
           <h2>Final巩固单词</h2>
           <select id="capacity-final" class="capacity-select" aria-label="Final巩固单词每组容量"></select>
+          <button id="clear-study-final" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-final" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="final-lists" class="list-container"></div>
@@ -740,7 +760,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.10.1842</span>
+      <span id="app-version" class="app-version">v2026.10.20.1130</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -839,6 +859,7 @@
       <button id="order-reverse" class="order-btn">逆序</button>
       <button id="order-random" class="order-btn">随机</button>
       <button id="start-study">开始背诵</button>
+      <button id="complete-study" class="ai-btn secondary" type="button">背诵完成</button>
     </div>
   </div>
 
@@ -932,6 +953,13 @@
     let preferencesUnsubscribe = null;
     let aiReportsUnsubscribe = null;
     let aiReportsLoaded = false;
+    let studyDays = [];
+    let studyTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
+    let studyDaysUnsubscribe = null;
+    let studySettingsUnsubscribe = null;
+    let studyLoaded = false;
+    let studyError = '';
+    let studySaving = false;
     let aiChatMessages = [];
     let latestAiReport = '';
     let latestAiImport = '';
@@ -1049,6 +1077,14 @@
         if (wordbooksUnsubscribe) wordbooksUnsubscribe();
         if (preferencesUnsubscribe) preferencesUnsubscribe();
         if (aiReportsUnsubscribe) aiReportsUnsubscribe();
+        if (studyDaysUnsubscribe) studyDaysUnsubscribe();
+        if (studySettingsUnsubscribe) studySettingsUnsubscribe();
+        studyDaysUnsubscribe = null;
+        studySettingsUnsubscribe = null;
+        studyDays = [];
+        studyLoaded = false;
+        studyError = '';
+        studyTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
         listsUnsubscribe = null;
         wordbooksUnsubscribe = null;
         preferencesUnsubscribe = null;
@@ -1119,8 +1155,181 @@
         if (snapshot.exists()) applyTheme(snapshot.data().theme);
       });
 
+      initStudyRecords(uid);
       await initAiReports(uid);
     }
+
+    function studyDateKey(now = new Date(), timeZone = studyTimeZone) {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+      return ['year', 'month', 'day'].map(type => parts.find(part => part.type === type).value).join('-');
+    }
+
+    function studyDayNumber(key) {
+      return Date.parse(key + 'T00:00:00Z') / 86400000;
+    }
+
+    function getStudyStreak(days, today) {
+      const dates = [...new Set(days.filter(day => Object.keys(day.completions || {}).length > 0).map(day => day.date))]
+        .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today).sort();
+      let count = 0;
+      let previous = null;
+      for (const date of dates) {
+        count = previous && studyDayNumber(date) - studyDayNumber(previous) <= 3 ? count + 1 : 1;
+        previous = date;
+      }
+      const gap = previous ? studyDayNumber(today) - studyDayNumber(previous) : null;
+      if (gap === null) return { count: 0, state: 'empty', gap };
+      if (gap >= 4) return { count: 0, state: 'expired', gap };
+      return { count, state: gap === 0 ? 'active' : gap === 1 ? 'idle' : 'warning', gap };
+    }
+
+    function renderStudyDashboard() {
+      const status = document.getElementById('checkin-status');
+      const daysNode = document.getElementById('checkin-days');
+      const history = document.getElementById('checkin-history');
+      daysNode.innerHTML = '';
+      history.innerHTML = '';
+      if (!studyLoaded || studyError) {
+        status.textContent = studyError || '正在读取打卡记录…';
+        status.dataset.state = 'idle';
+        return;
+      }
+      const today = studyDateKey();
+      const streak = getStudyStreak(studyDays, today);
+      const messages = {
+        empty: '今天还未打卡。完成任意一个 list 后，点击“背诵完成”。',
+        active: '今日打卡成功',
+        idle: '今天还未打卡，连击暂时保留。',
+        warning: streak.gap === 3 ? '即将断签：今天结束前完成打卡，否则连击归零。' : '连续未打卡，连击进入红色提醒。',
+        expired: '连续3天未打卡，连击已归零。重新背一组即可开始。'
+      };
+      status.dataset.state = streak.state;
+      status.textContent = `学习连击 ${streak.count} 天 · ${messages[streak.state]}`;
+      document.getElementById('checkin-note').textContent = `打卡时区：${studyTimeZone}。一天只计一次；允许间隔两天，第三天结束仍未打卡则归零。清空对勾不会删除历史。`;
+      for (let offset = 13; offset >= 0; offset--) {
+        const date = new Date((studyDayNumber(today) - offset) * 86400000).toISOString().slice(0, 10);
+        const day = studyDays.find(item => item.date === date);
+        const total = Object.keys(day?.completions || {}).length;
+        const cell = document.createElement('div');
+        cell.className = `checkin-day${total ? ' done' : ''}`;
+        cell.textContent = `${date.slice(5)} ${total ? '✓' : '—'}`;
+        cell.title = `${date}：${total ? `已完成 ${total} 个列表` : '未打卡'}`;
+        cell.setAttribute('aria-label', cell.title);
+        daysNode.appendChild(cell);
+      }
+      const sorted = [...studyDays].sort((a, b) => b.date.localeCompare(a.date));
+      for (const day of sorted) {
+        for (const record of Object.values(day.completions || {})) {
+          const item = document.createElement('li');
+          item.textContent = `${day.date} · ${record.bookName} · ${record.listName} · ${record.wordCount} 个单词`;
+          history.appendChild(item);
+        }
+      }
+      if (!history.children.length) {
+        const item = document.createElement('li');
+        item.textContent = '暂无完成记录';
+        history.appendChild(item);
+      }
+    }
+
+    function initStudyRecords(uid) {
+      if (studyDaysUnsubscribe) studyDaysUnsubscribe();
+      if (studySettingsUnsubscribe) studySettingsUnsubscribe();
+      studyLoaded = false;
+      studyError = '';
+      const fail = () => {
+        studyError = '打卡记录暂时无法读取，请检查网络或云端访问权限；未确认保存前不会算作打卡成功。';
+        renderStudyDashboard();
+      };
+      studySettingsUnsubscribe = onSnapshot(doc(db, 'users', uid, 'preferences', 'study'), snapshot => {
+        const zone = snapshot.data()?.timeZone;
+        if (zone) {
+          try {
+            studyDateKey(new Date(), zone);
+            studyTimeZone = zone;
+          } catch { fail(); return; }
+        }
+        renderStudyDashboard();
+      }, fail);
+      studyDaysUnsubscribe = onSnapshot(collection(db, 'users', uid, 'studyDays'), { includeMetadataChanges: true }, snapshot => {
+        if (snapshot.metadata.hasPendingWrites) return;
+        studyDays = snapshot.docs.map(item => ({ ...item.data(), date: item.id }));
+        studyLoaded = true;
+        renderStudyDashboard();
+      }, fail);
+      renderStudyDashboard();
+    }
+
+    async function completeCurrentStudy() {
+      const user = auth.currentUser;
+      const list = currentList;
+      if (!user || !list || studySaving) return;
+      if (!studyLoaded || studyError) return showModal('打卡记录尚未成功读取，请联网后重试。');
+      studySaving = true;
+      const button = document.getElementById('complete-study');
+      button.disabled = true;
+      button.textContent = '正在保存…';
+      try {
+        const date = await runTransaction(db, async transaction => {
+          const settingsRef = doc(db, 'users', user.uid, 'preferences', 'study');
+          const settings = await transaction.get(settingsRef);
+          const zone = settings.data()?.timeZone || studyTimeZone;
+          const today = studyDateKey(new Date(), zone);
+          const listRef = doc(db, 'users', user.uid, 'lists', list.docId);
+          const listSnap = await transaction.get(listRef);
+          if (!listSnap.exists()) throw new Error('这个列表已被删除，不能记录背诵完成。');
+          const latest = listSnap.data();
+          if (!latest.words?.length) throw new Error('空列表不能记录背诵完成。');
+          const dayRef = doc(db, 'users', user.uid, 'studyDays', today);
+          const day = await transaction.get(dayRef);
+          const completions = { ...(day.data()?.completions || {}) };
+          completions[list.docId] = {
+            bookName: wordbooks.find(book => book.id === getListBookId(latest))?.name || '单词本',
+            listName: getListDisplayName(latest, latest.type),
+            wordCount: latest.words.length,
+            completedAt: Date.now()
+          };
+          if (!settings.exists()) transaction.set(settingsRef, { timeZone: zone });
+          transaction.update(listRef, { studyCompletedAt: Date.now() });
+          transaction.set(dayRef, { date: today, timeZone: zone, completions });
+          return today;
+        });
+        if (auth.currentUser?.uid === user.uid) showModal(`${date} 背诵完成，今日打卡成功！同一天重复完成不会增加连击天数。`);
+      } catch (error) {
+        if (auth.currentUser?.uid === user.uid) showModal(`保存失败，未确认打卡成功。${error.message || '请检查网络后重试。'}`);
+      } finally {
+        studySaving = false;
+        button.disabled = false;
+        button.textContent = '背诵完成';
+      }
+    }
+
+    async function clearStudyChecks(type, bookId) {
+      const user = auth.currentUser;
+      if (!user || studySaving || rebalancing) return;
+      const lists = getBookLists(bookId).filter(list => list.type === type && list.studyCompletedAt);
+      if (!lists.length) return showModal('这个区暂无需要清空的对勾。');
+      if (lists.length > 500) return showModal('列表过多，暂不能一次清空，请联系维护者。');
+      studySaving = true;
+      try {
+        const batch = writeBatch(db);
+        for (const list of lists) batch.update(doc(db, 'users', user.uid, 'lists', list.docId), { studyCompletedAt: null });
+        await batch.commit();
+        showModal('本区背诵对勾已清空，历史打卡记录仍保留。');
+      } catch (error) {
+        showModal(`清空失败，请重试。${error.message || ''}`);
+      } finally { studySaving = false; }
+    }
+
+    document.getElementById('complete-study').addEventListener('click', completeCurrentStudy);
+    ['new', 'review', 'final'].forEach(type => {
+      document.getElementById(`clear-study-${type}`).addEventListener('click', () => {
+        const bookId = activeWordbookId;
+        showModal(`确定清空当前单词本“${getTypeLabel(type)}”区的背诵对勾吗？不会删除单词，也不会删除历史打卡。`, () => clearStudyChecks(type, bookId));
+      });
+    });
+    setInterval(() => { if (auth.currentUser) renderStudyDashboard(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (auth.currentUser) renderStudyDashboard(); });
 
     function getListBookId(list) {
       return list.bookId || DEFAULT_BOOK_ID;
@@ -1486,7 +1695,7 @@
       for (let index = 0; index < typeLists.length; index++) {
         const list = typeLists[index];
         if (index < chunks.length) {
-          batch.update(doc(db, 'users', user.uid, 'lists', list.docId), { words: chunks[index] });
+          batch.update(doc(db, 'users', user.uid, 'lists', list.docId), { words: chunks[index], studyCompletedAt: null });
         } else {
           batch.delete(doc(db, 'users', user.uid, 'lists', list.docId));
         }
@@ -1566,6 +1775,14 @@
         showModal('确定删除该列表吗？', () => deleteList(list));
       });
       actions.appendChild(previewBtn);
+      if (list.studyCompletedAt) {
+        const check = document.createElement('span');
+        check.className = 'study-check';
+        check.textContent = '✓';
+        check.title = '这组已背诵完成；每天仍需点击“背诵完成”才算当天打卡';
+        check.setAttribute('aria-label', '已背诵完成');
+        actions.appendChild(check);
+      }
       actions.appendChild(deleteBtn);
       row.appendChild(actions);
       row.addEventListener('click', () => startModeSelection(list));
