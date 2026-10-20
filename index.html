@@ -617,6 +617,7 @@
     #checkin-card[data-state="active"] .checkin-flame, #checkin-card[data-state="caution"] .checkin-flame, #checkin-card[data-state="danger"] .checkin-flame { filter: none; opacity: 1; }
     .checkin-book-art { flex: 0 0 auto; display: grid; place-items: center; width: 110px; height: 130px; font-size: 90px; line-height: 1; filter: grayscale(1); opacity: .28; }
     #checkin-status { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: inherit; }
+    #retry-checkin { margin-top: 12px; padding: 8px 14px; }
     #checkin-warnings { position: absolute; inset: 0; z-index: 0; display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; justify-items: center; font-size: 42px; opacity: .13; pointer-events: none; transform: rotate(-12deg) scale(1.12); }
     .checkin-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
     .wordbook-section + .wordbook-section { margin-top: 24px; }
@@ -676,7 +677,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.1752</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.2045</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -712,6 +713,7 @@
         <div>
           <div id="checkin-counter" class="checkin-count" aria-label="学习连击0天"><span class="checkin-flame" aria-hidden="true">🔥</span><span id="checkin-count">0天</span><span id="checkin-warning-icon" role="img" aria-label="即将断签" hidden>⚠️</span></div>
           <p id="checkin-status" role="status">正在读取打卡记录…</p>
+          <button id="retry-checkin" class="ai-btn secondary" type="button" hidden>重新读取</button>
         </div>
         <span class="checkin-book-art" aria-hidden="true">📖</span>
       </div>
@@ -807,7 +809,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.1752</span>
+      <span id="app-version" class="app-version">v2026.10.20.2045</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1015,6 +1017,8 @@
     let studyLoaded = false;
     let studyError = '';
     let studySaving = false;
+    let studyLoadTimeout = null;
+    let studyLoadVersion = 0;
     let aiChatMessages = [];
     let latestAiReport = '';
     let latestAiImport = '';
@@ -1135,6 +1139,8 @@
         if (aiReportsUnsubscribe) aiReportsUnsubscribe();
         if (studyDaysUnsubscribe) studyDaysUnsubscribe();
         if (studySettingsUnsubscribe) studySettingsUnsubscribe();
+        clearTimeout(studyLoadTimeout);
+        studyLoadVersion++;
         studyDaysUnsubscribe = null;
         studySettingsUnsubscribe = null;
         studyDays = [];
@@ -1170,6 +1176,7 @@
     });
 
     async function initUser(uid) {
+      initStudyRecords(uid);
       const wordbooksRef = collection(db, 'users', uid, 'wordbooks');
       const existingWordbooks = await getDocs(wordbooksRef);
       if (existingWordbooks.empty) {
@@ -1214,7 +1221,6 @@
         if (snapshot.exists()) applyTheme(snapshot.data().theme);
       });
 
-      initStudyRecords(uid);
       await initAiReports(uid);
     }
 
@@ -1251,11 +1257,12 @@
       daysNode.innerHTML = '';
       warnings.innerHTML = '';
       warnings.hidden = true;
+      document.getElementById('retry-checkin').hidden = !studyError;
       document.getElementById('checkin-warning-icon').hidden = true;
       if (!studyLoaded || studyError) {
         status.textContent = studyError || '正在读取打卡记录…';
         card.dataset.state = 'idle';
-        count.textContent = '0天';
+        count.textContent = '—天';
         document.getElementById('checkin-counter').setAttribute('aria-label', '打卡记录尚未读取');
         renderStudyHistory();
         return;
@@ -1331,30 +1338,55 @@
     function initStudyRecords(uid) {
       if (studyDaysUnsubscribe) studyDaysUnsubscribe();
       if (studySettingsUnsubscribe) studySettingsUnsubscribe();
+      clearTimeout(studyLoadTimeout);
+      const version = ++studyLoadVersion;
+      const active = () => version === studyLoadVersion && auth.currentUser?.uid === uid;
+      let settingsReady = false;
+      let daysReady = false;
       studyLoaded = false;
       studyError = '';
-      const fail = () => {
-        studyError = '打卡记录暂时无法读取，请检查网络或云端访问权限；未确认保存前不会算作打卡成功。';
+      const finish = () => {
+        if (!active() || !settingsReady || !daysReady) return;
+        clearTimeout(studyLoadTimeout);
+        studyLoaded = true;
+        studyError = '';
         renderStudyDashboard();
       };
-      studySettingsUnsubscribe = onSnapshot(doc(db, 'users', uid, 'preferences', 'study'), { includeMetadataChanges: true }, snapshot => {
-        if (snapshot.metadata.hasPendingWrites) return;
-        studyGeneration = Number(snapshot.data()?.streakGeneration) || 0;
-        const zone = snapshot.data()?.timeZone;
-        if (zone) {
-          try {
-            studyDateKey(new Date(), zone);
-            studyTimeZone = zone;
-          } catch { fail(); return; }
-        }
+      const fail = (error, source) => {
+        if (!active()) return;
+        if (source === 'settings') settingsReady = false;
+        if (source === 'days') daysReady = false;
+        clearTimeout(studyLoadTimeout);
+        studyLoaded = false;
+        const code = String(error?.code || '');
+        studyError = code.includes('permission-denied') ? '云端暂不允许读取打卡记录，请检查访问权限后重试。'
+          : code === 'timeout' ? '读取打卡记录超时，请检查网络后点击“重新读取”。原打卡记录不会被清除。'
+          : code === 'invalid-time-zone' ? '账号的打卡时区无效，暂时无法读取，请联系维护者。'
+          : '暂时无法连接打卡记录，请检查网络后点击“重新读取”。原打卡记录不会被清除。';
         renderStudyDashboard();
-      }, fail);
-      studyDaysUnsubscribe = onSnapshot(collection(db, 'users', uid, 'studyDays'), { includeMetadataChanges: true }, snapshot => {
-        if (snapshot.metadata.hasPendingWrites) return;
-        studyDays = snapshot.docs.map(item => ({ ...item.data(), date: item.id }));
-        studyLoaded = true;
-        renderStudyDashboard();
-      }, fail);
+      };
+      studyLoadTimeout = setTimeout(() => fail({ code: 'timeout' }), 12000);
+      try {
+        studySettingsUnsubscribe = onSnapshot(doc(db, 'users', uid, 'preferences', 'study'), { includeMetadataChanges: true }, snapshot => {
+          if (!active() || snapshot.metadata.hasPendingWrites || snapshot.metadata.fromCache) return;
+          const zone = snapshot.data()?.timeZone;
+          if (zone) {
+            try {
+              studyDateKey(new Date(), zone);
+              studyTimeZone = zone;
+            } catch { fail({ code: 'invalid-time-zone' }, 'settings'); return; }
+          }
+          studyGeneration = Number(snapshot.data()?.streakGeneration) || 0;
+          settingsReady = true;
+          finish();
+        }, error => fail(error, 'settings'));
+        studyDaysUnsubscribe = onSnapshot(collection(db, 'users', uid, 'studyDays'), { includeMetadataChanges: true }, snapshot => {
+          if (!active() || snapshot.metadata.hasPendingWrites || snapshot.metadata.fromCache) return;
+          studyDays = snapshot.docs.map(item => ({ ...item.data(), date: item.id }));
+          daysReady = true;
+          finish();
+        }, error => fail(error, 'days'));
+      } catch (error) { fail(error); }
       renderStudyDashboard();
     }
 
@@ -1450,6 +1482,12 @@
       document.getElementById('checkin-settings-toggle').setAttribute('aria-expanded', 'false');
     }
 
+    document.getElementById('retry-checkin').addEventListener('click', () => {
+      if (auth.currentUser) initStudyRecords(auth.currentUser.uid);
+    });
+    window.addEventListener('online', () => {
+      if (auth.currentUser && (!studyLoaded || studyError)) initStudyRecords(auth.currentUser.uid);
+    });
     document.getElementById('checkin-settings-toggle').addEventListener('click', () => {
       const menu = document.getElementById('checkin-settings-menu');
       menu.hidden = !menu.hidden;
