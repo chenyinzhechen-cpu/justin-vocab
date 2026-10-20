@@ -597,14 +597,46 @@
     .study-check { color: #238653; font-size: 22px; font-weight: 700; }
     #complete-study { width: 100%; margin: 8px 4px 0; padding: 10px 14px; border-radius: 12px; }
     .list-column-heading { flex-wrap: wrap; gap: 8px; }
-    .checkin-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+    #checkin-card { --checkin-ink: var(--muted); position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(125deg, var(--panel-dark), var(--panel-light)); color: var(--checkin-ink); border-radius: 24px; }
+    #checkin-card[data-state="active"] { --checkin-ink: #184e29; background: linear-gradient(120deg, #c5f2a7, #8fdb8a); border-color: #8ac87d; }
+    #checkin-card[data-state="caution"] { --checkin-ink: #715100; background: linear-gradient(120deg, #fff0ab, #f5d26b); border-color: #e2bc4c; }
+    #checkin-card[data-state="danger"] { --checkin-ink: #7b1d29; background: linear-gradient(120deg, #ffd2d1, #f38e94); border-color: #df7a84; }
+    .checkin-heading, .checkin-hero, .checkin-days { position: relative; z-index: 1; }
+    .checkin-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    #checkin-card h2 { margin: 0; color: inherit; font-size: 20px; }
+    .checkin-settings { position: relative; }
+    #checkin-settings-toggle { color: inherit; font-size: 24px; padding: 6px; border-radius: 10px; }
+    #checkin-settings-menu { position: absolute; z-index: 5; top: 100%; right: 0; min-width: 200px; padding: 8px; border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 0 8px 24px #0002; }
+    #checkin-settings-menu button { display: block; text-align: left; width: 100%; padding: 12px; color: inherit; border-radius: 8px; }
+    #checkin-settings-menu button:hover { background: var(--panel-dark); }
+    .checkin-heading { z-index: 3; }
+    .checkin-hero { display: flex; align-items: center; justify-content: space-between; min-height: 140px; gap: 16px; margin-top: 8px; }
+    .checkin-count { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: clamp(48px, 6vw, 76px); font-weight: 800; line-height: 1.15; letter-spacing: -2px; }
+    #checkin-count { white-space: nowrap; }
+    .checkin-flame { font-size: .86em; filter: grayscale(1); opacity: .65; }
+    #checkin-card[data-state="active"] .checkin-flame, #checkin-card[data-state="caution"] .checkin-flame, #checkin-card[data-state="danger"] .checkin-flame { filter: none; opacity: 1; }
+    .checkin-flame-art { flex: 0 0 auto; width: 110px; height: 130px; color: inherit; opacity: .28; }
+    #checkin-status { margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: inherit; }
+    #checkin-warnings { position: absolute; inset: 0; z-index: 0; display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; justify-items: center; font-size: 42px; opacity: .13; pointer-events: none; transform: rotate(-12deg) scale(1.12); }
+    .checkin-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
     .wordbook-section + .wordbook-section { margin-top: 24px; }
-    .checkin-day { padding: 10px 4px; text-align: center; border-radius: 10px; background: var(--panel-dark); color: var(--muted); }
-    .checkin-day.done { color: var(--text); border: 1px solid #238653; }
-    #checkin-status { padding: 12px; background: var(--panel-dark); border-radius: 10px; margin: 12px 0; }
-    #checkin-status[data-state="active"] { border-left: 4px solid #238653; }
-    #checkin-status[data-state="warning"], #checkin-status[data-state="expired"] { border-left: 4px solid #b94a48; }
-    #checkin-history { max-height: 240px; overflow: auto; padding-left: 24px; }
+    .checkin-day { min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 9px 2px; text-align: center; border-radius: 12px; background: #ffffff26; color: inherit; border: 1px solid transparent; }
+    .checkin-date { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .checkin-mark { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; font-size: 15px; background: #0000000a; }
+    .checkin-day.done .checkin-mark { background: var(--checkin-ink); color: #fff; }
+    .checkin-day.today { border-color: currentColor; }
+    #checkin-history-modal .modal-content { width: 560px; text-align: left; }
+    .checkin-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    #checkin-history { max-height: min(55vh, 440px); overflow: auto; padding-left: 22px; line-height: 1.7; }
+    #checkin-history li { padding: 8px 0; border-bottom: 1px solid var(--panel-light); }
+    @media (max-width: 480px) {
+      #checkin-card { padding: 20px; }
+      .checkin-hero { min-height: 130px; gap: 8px; }
+      .checkin-flame-art { position: absolute; right: 0; top: 6px; width: 74px; height: 100px; opacity: .12; z-index: -1; }
+      .checkin-days { gap: 5px; }
+      .checkin-date { font-size: 11px; }
+      #checkin-status { font-size: 14px; }
+    }
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     .modal.hidden { display: none; }
     .modal-content { background: var(--panel); border: 1px solid var(--panel-light); border-radius: 16px; padding: 24px; min-width: 240px; max-width: 90%; text-align: center; }
@@ -644,7 +676,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.1130</span>
+        <span id="main-app-version" class="app-version">v2026.10.20.1155</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -664,12 +696,26 @@
       </div>
       <button id="open-ai-organizer" class="ai-btn">打开 AI 单词整理</button>
     </div>
-    <section class="wordbook-section" aria-labelledby="checkin-title">
-      <h2 id="checkin-title">背诵打卡</h2>
-      <div id="checkin-status" role="status">正在读取打卡记录…</div>
-      <p id="checkin-note" class="ai-note"></p>
+    <section id="checkin-card" class="wordbook-section" data-state="idle" aria-labelledby="checkin-title">
+      <div id="checkin-warnings" aria-hidden="true" hidden></div>
+      <div class="checkin-heading">
+        <h2 id="checkin-title">背诵打卡</h2>
+        <div class="checkin-settings">
+          <button id="checkin-settings-toggle" class="icon-btn" type="button" aria-label="打卡设置" aria-expanded="false" aria-controls="checkin-settings-menu">⚙</button>
+          <div id="checkin-settings-menu" hidden>
+            <button id="reset-checkin" class="icon-btn" type="button">手动重置打卡记录</button>
+            <button id="show-checkin-history" class="icon-btn" type="button">查看历史打卡记录</button>
+          </div>
+        </div>
+      </div>
+      <div class="checkin-hero">
+        <div>
+          <div id="checkin-counter" class="checkin-count" aria-label="学习连击0天"><span class="checkin-flame" aria-hidden="true">🔥</span><span id="checkin-count">0天</span><span id="checkin-warning-icon" role="img" aria-label="即将断签" hidden>⚠️</span></div>
+          <p id="checkin-status" role="status">正在读取打卡记录…</p>
+        </div>
+        <svg class="checkin-flame-art" viewBox="0 0 100 120" aria-hidden="true"><path fill="currentColor" d="M54 2C66 29 88 35 91 63c4 30-13 53-40 53C24 116 7 98 8 73c0-19 12-33 23-46-1 18 4 24 9 27C52 42 59 25 54 2Z"/><path fill="currentColor" opacity=".5" d="M52 62c3 12 19 21 17 33-2 9-9 15-18 15s-18-7-18-17c0-12 13-20 19-31Z"/></svg>
+      </div>
       <div id="checkin-days" class="checkin-days" aria-label="最近14天打卡记录"></div>
-      <details><summary>查看历史完成记录</summary><ul id="checkin-history"></ul></details>
     </section>
     <section class="wordbook-section">
       <div class="wordbook-section-header">
@@ -761,7 +807,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.1130</span>
+      <span id="app-version" class="app-version">v2026.10.20.1155</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -886,6 +932,13 @@
     <button id="preview-add" class="ai-btn secondary" hidden>添加新的空单词词组集</button>
   </div>
 
+  <div id="checkin-history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="checkin-history-title">
+    <div class="modal-content">
+      <div class="checkin-history-heading"><h2 id="checkin-history-title">历史打卡记录</h2><button id="close-checkin-history" class="icon-btn" type="button" aria-label="关闭历史打卡记录">×</button></div>
+      <ul id="checkin-history"></ul>
+    </div>
+  </div>
+
   <div id="modal" class="modal hidden">
     <div class="modal-content">
       <p id="modal-message"></p>
@@ -955,6 +1008,7 @@
     let aiReportsUnsubscribe = null;
     let aiReportsLoaded = false;
     let studyDays = [];
+    let studyGeneration = 0;
     let studyTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
     let studyDaysUnsubscribe = null;
     let studySettingsUnsubscribe = null;
@@ -993,6 +1047,7 @@
     const themeToggle = document.getElementById('theme-toggle');
 
     function showPage(page) {
+      closeCheckinSettings();
       document.getElementById('home-settings-menu').hidden = true;
       document.getElementById('home-settings-toggle').setAttribute('aria-expanded', 'false');
       [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
@@ -1083,6 +1138,9 @@
         studyDaysUnsubscribe = null;
         studySettingsUnsubscribe = null;
         studyDays = [];
+        studyGeneration = 0;
+        document.getElementById('checkin-history-modal').classList.add('hidden');
+        closeCheckinSettings();
         studyLoaded = false;
         studyError = '';
         studyTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
@@ -1169,8 +1227,8 @@
       return Date.parse(key + 'T00:00:00Z') / 86400000;
     }
 
-    function getStudyStreak(days, today) {
-      const dates = [...new Set(days.filter(day => Object.keys(day.completions || {}).length > 0).map(day => day.date))]
+    function getStudyStreak(days, today, generation = studyGeneration) {
+      const dates = [...new Set(days.filter(day => Object.values(day.completions || {}).some(record => (Number(record.streakGeneration) || 0) === generation)).map(day => day.date))]
         .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today).sort();
       let count = 0;
       let previous = null;
@@ -1181,42 +1239,79 @@
       const gap = previous ? studyDayNumber(today) - studyDayNumber(previous) : null;
       if (gap === null) return { count: 0, state: 'empty', gap };
       if (gap >= 4) return { count: 0, state: 'expired', gap };
-      return { count, state: gap === 0 ? 'active' : gap === 1 ? 'idle' : 'warning', gap };
+      return { count, state: gap === 0 ? 'active' : gap === 1 ? 'idle' : gap === 2 ? 'caution' : 'danger', gap };
     }
 
     function renderStudyDashboard() {
       const status = document.getElementById('checkin-status');
+      const card = document.getElementById('checkin-card');
+      const count = document.getElementById('checkin-count');
+      const warnings = document.getElementById('checkin-warnings');
       const daysNode = document.getElementById('checkin-days');
-      const history = document.getElementById('checkin-history');
       daysNode.innerHTML = '';
-      history.innerHTML = '';
+      warnings.innerHTML = '';
+      warnings.hidden = true;
+      document.getElementById('checkin-warning-icon').hidden = true;
       if (!studyLoaded || studyError) {
         status.textContent = studyError || '正在读取打卡记录…';
-        status.dataset.state = 'idle';
+        card.dataset.state = 'idle';
+        count.textContent = '0天';
+        document.getElementById('checkin-counter').setAttribute('aria-label', '打卡记录尚未读取');
+        renderStudyHistory();
         return;
       }
       const today = studyDateKey();
       const streak = getStudyStreak(studyDays, today);
       const messages = {
-        empty: '今天还未打卡。完成任意一个 list 后，点击“背诵完成”。',
-        active: '今日打卡成功',
-        idle: '今天还未打卡，连击暂时保留。',
-        warning: streak.gap === 3 ? '即将断签：今天结束前完成打卡，否则连击归零。' : '连续未打卡，连击进入红色提醒。',
-        expired: '连续3天未打卡，连击已归零。重新背一组即可开始。'
+        empty: '今天，先背一组吧。',
+        active: '今日打卡成功，继续保持！',
+        idle: '等你回来！今天还未打卡。',
+        caution: '别让火焰熄灭，今天背一组吧。',
+        danger: '最后一天！今天结束前打卡，保住连击。',
+        expired: '重新开始，今天背一组吧。'
       };
-      status.dataset.state = streak.state;
-      status.textContent = `学习连击 ${streak.count} 天 · ${messages[streak.state]}`;
-      document.getElementById('checkin-note').textContent = `打卡时区：${studyTimeZone}。一天只计一次；允许间隔两天，第三天结束仍未打卡则归零。清空对勾不会删除历史。`;
+      card.dataset.state = streak.state;
+      count.textContent = `${streak.count}天`;
+      document.getElementById('checkin-counter').setAttribute('aria-label', `学习连击${streak.count}天`);
+      status.textContent = messages[streak.state];
+      document.getElementById('checkin-warning-icon').hidden = !['caution', 'danger'].includes(streak.state);
+      if (streak.state === 'danger') {
+        warnings.hidden = false;
+        for (let i = 0; i < 18; i++) {
+          const icon = document.createElement('span');
+          icon.textContent = '⚠️';
+          warnings.appendChild(icon);
+        }
+      }
       for (let offset = 13; offset >= 0; offset--) {
         const date = new Date((studyDayNumber(today) - offset) * 86400000).toISOString().slice(0, 10);
         const day = studyDays.find(item => item.date === date);
         const total = Object.keys(day?.completions || {}).length;
         const cell = document.createElement('div');
-        cell.className = `checkin-day${total ? ' done' : ''}`;
-        cell.textContent = `${date.slice(5)} ${total ? '✓' : '—'}`;
+        cell.className = `checkin-day${total ? ' done' : ''}${date === today ? ' today' : ''}`;
+        const label = document.createElement('span');
+        label.className = 'checkin-date';
+        label.textContent = date.slice(5);
+        const mark = document.createElement('span');
+        mark.className = 'checkin-mark';
+        mark.textContent = total ? '✓' : '—';
+        cell.appendChild(label);
+        cell.appendChild(mark);
         cell.title = `${date}：${total ? `已完成 ${total} 个列表` : '未打卡'}`;
         cell.setAttribute('aria-label', cell.title);
         daysNode.appendChild(cell);
+      }
+      renderStudyHistory();
+    }
+
+    function renderStudyHistory() {
+      const history = document.getElementById('checkin-history');
+      history.innerHTML = '';
+      if (studyError || !studyLoaded) {
+        const item = document.createElement('li');
+        item.textContent = studyError || '正在读取打卡记录…';
+        history.appendChild(item);
+        return;
       }
       const sorted = [...studyDays].sort((a, b) => b.date.localeCompare(a.date));
       for (const day of sorted) {
@@ -1228,7 +1323,7 @@
       }
       if (!history.children.length) {
         const item = document.createElement('li');
-        item.textContent = '暂无完成记录';
+        item.textContent = '暂无打卡记录';
         history.appendChild(item);
       }
     }
@@ -1242,7 +1337,9 @@
         studyError = '打卡记录暂时无法读取，请检查网络或云端访问权限；未确认保存前不会算作打卡成功。';
         renderStudyDashboard();
       };
-      studySettingsUnsubscribe = onSnapshot(doc(db, 'users', uid, 'preferences', 'study'), snapshot => {
+      studySettingsUnsubscribe = onSnapshot(doc(db, 'users', uid, 'preferences', 'study'), { includeMetadataChanges: true }, snapshot => {
+        if (snapshot.metadata.hasPendingWrites) return;
+        studyGeneration = Number(snapshot.data()?.streakGeneration) || 0;
         const zone = snapshot.data()?.timeZone;
         if (zone) {
           try {
@@ -1288,6 +1385,7 @@
             bookName: wordbooks.find(book => book.id === getListBookId(latest))?.name || '单词本',
             listName: getListDisplayName(latest, latest.type),
             wordCount: latest.words.length,
+            streakGeneration: Number(settings.data()?.streakGeneration) || 0,
             completedAt: Date.now()
           };
           if (!settings.exists()) transaction.set(settingsRef, { timeZone: zone });
@@ -1321,6 +1419,69 @@
         showModal(`清空失败，请重试。${error.message || ''}`);
       } finally { studySaving = false; }
     }
+
+    async function resetStudyStreak() {
+      const user = auth.currentUser;
+      if (!user || studySaving) return;
+      if (!studyLoaded || studyError) return showModal('打卡记录尚未成功读取，请联网后重试。');
+      studySaving = true;
+      try {
+        // A new generation resets only the counter, not the historical day documents.
+        const generation = await runTransaction(db, async transaction => {
+          const ref = doc(db, 'users', user.uid, 'preferences', 'study');
+          const snapshot = await transaction.get(ref);
+          const settings = snapshot.data() || {};
+          const next = (Number(settings.streakGeneration) || 0) + 1;
+          transaction.set(ref, { ...settings, timeZone: settings.timeZone || studyTimeZone, streakGeneration: next });
+          return next;
+        });
+        if (auth.currentUser?.uid === user.uid) {
+          studyGeneration = generation;
+          renderStudyDashboard();
+          showModal('连击已归零，历史打卡和列表对勾都保留。再次点击“背诵完成”即可开始新连击。');
+        }
+      } catch (error) {
+        if (auth.currentUser?.uid === user.uid) showModal(`重置失败，原记录未修改。${error.message || '请检查网络后重试。'}`);
+      } finally { studySaving = false; }
+    }
+
+    function closeCheckinSettings() {
+      document.getElementById('checkin-settings-menu').hidden = true;
+      document.getElementById('checkin-settings-toggle').setAttribute('aria-expanded', 'false');
+    }
+
+    document.getElementById('checkin-settings-toggle').addEventListener('click', () => {
+      const menu = document.getElementById('checkin-settings-menu');
+      menu.hidden = !menu.hidden;
+      document.getElementById('checkin-settings-toggle').setAttribute('aria-expanded', String(!menu.hidden));
+    });
+    document.getElementById('reset-checkin').addEventListener('click', () => {
+      closeCheckinSettings();
+      showModal('确定将当前连击归零吗？历史打卡和列表对勾均保留；今天需要重新点击“背诵完成”才能开启新连击。', resetStudyStreak);
+    });
+    document.getElementById('show-checkin-history').addEventListener('click', () => {
+      closeCheckinSettings();
+      renderStudyHistory();
+      document.getElementById('checkin-history-modal').classList.remove('hidden');
+      document.getElementById('close-checkin-history').focus();
+    });
+    function closeStudyHistory() {
+      document.getElementById('checkin-history-modal').classList.add('hidden');
+      document.getElementById('checkin-settings-toggle').focus();
+    }
+    document.getElementById('close-checkin-history').addEventListener('click', closeStudyHistory);
+    document.getElementById('checkin-history-modal').addEventListener('click', event => {
+      if (event.target === event.currentTarget) closeStudyHistory();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeCheckinSettings();
+        if (!document.getElementById('checkin-history-modal').classList.contains('hidden')) closeStudyHistory();
+      }
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.checkin-settings')) closeCheckinSettings();
+    });
 
     document.getElementById('complete-study').addEventListener('click', completeCurrentStudy);
     ['new', 'review', 'final'].forEach(type => {
