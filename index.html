@@ -383,7 +383,7 @@
       font-size: 13px;
     }
     .ai-btn { padding: 10px 14px; font-size: 14px; }
-    .ai-btn.secondary, .mode-btn, .order-btn {
+    .ai-btn.secondary, .mode-btn, .order-btn, .study-layout-btn {
       border: 1px solid var(--panel-light);
       background: var(--panel-dark);
       color: var(--text);
@@ -532,7 +532,7 @@
     .chat-bubble.user { background: var(--panel-light); }
     .chat-bubble.assistant { background: var(--panel-dark); }
     #mode-page .mode-select { max-width: 480px; margin: 0 auto; }
-    .mode-btn, .order-btn, #start-study {
+    .mode-btn, .order-btn, .study-layout-btn, #start-study {
       display: inline-block;
       margin: 6px 4px;
       padding: 10px 14px;
@@ -541,11 +541,8 @@
       font-size: 14px;
       transition: background 0.2s ease;
     }
-    .mode-btn.active, .order-btn.active { background: var(--accent); color: var(--accent-contrast); }
+    .mode-btn.active, .order-btn.active, .study-layout-btn.active { background: var(--accent); color: var(--accent-contrast); }
     #start-study { margin-top: 16px; width: 100%; }
-    .study-layout-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 4px; }
-    .study-layout-btn { padding: 14px 8px; border: 1px solid var(--panel-light); border-radius: 12px; background: var(--panel-dark); color: var(--text); font: inherit; cursor: pointer; }
-    .study-layout-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
     #study-single { max-width: 720px; margin: 0 auto; padding: 28px; background: var(--panel); border: 1px solid var(--panel-light); border-radius: 20px; }
     .single-study-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 14px; }
     #single-study-prompt { display: grid; place-items: center; min-height: 140px; margin: 16px 0; font-size: clamp(24px, 4vw, 36px); line-height: 1.5; text-align: center; overflow-wrap: anywhere; white-space: pre-wrap; }
@@ -692,7 +689,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.21.0150</span>
+        <span id="main-app-version" class="app-version">v2026.10.21.0205</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -824,7 +821,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.21.0150</span>
+      <span id="app-version" class="app-version">v2026.10.21.0205</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -922,11 +919,12 @@
       <button id="order-normal" class="order-btn">顺序</button>
       <button id="order-reverse" class="order-btn">逆序</button>
       <button id="order-random" class="order-btn">随机</button>
-      <button id="start-study">开始背诵</button>
-      <div class="study-layout-options" role="group" aria-label="背诵显示模式">
+      <h3 id="study-layout-heading" style="margin-top:20px;">背诵模式</h3>
+      <div class="study-layout-options" role="group" aria-labelledby="study-layout-heading">
         <button id="study-layout-list" class="study-layout-btn active" type="button" aria-pressed="true">列表模式</button>
         <button id="study-layout-card" class="study-layout-btn" type="button" aria-pressed="false">单卡片模式</button>
       </div>
+      <button id="start-study">开始背诵</button>
       <button id="complete-study" class="ai-btn secondary" type="button">背诵完成</button>
     </div>
   </div>
