@@ -543,6 +543,21 @@
     }
     .mode-btn.active, .order-btn.active { background: var(--accent); color: var(--accent-contrast); }
     #start-study { margin-top: 16px; width: 100%; }
+    .study-layout-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 4px; }
+    .study-layout-btn { padding: 14px 8px; border: 1px solid var(--panel-light); border-radius: 12px; background: var(--panel-dark); color: var(--text); font: inherit; cursor: pointer; }
+    .study-layout-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+    #study-single { max-width: 720px; margin: 0 auto; padding: 28px; background: var(--panel); border: 1px solid var(--panel-light); border-radius: 20px; }
+    .single-study-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 14px; }
+    #single-study-prompt { display: grid; place-items: center; min-height: 140px; margin: 16px 0; font-size: clamp(24px, 4vw, 36px); line-height: 1.5; text-align: center; overflow-wrap: anywhere; white-space: pre-wrap; }
+    #single-study-answer { display: block; width: 100%; min-height: 100px; padding: 20px; border: 1px solid var(--panel-light); border-radius: 14px; background: var(--panel-dark); color: var(--muted); font: inherit; font-size: clamp(20px, 3vw, 28px); line-height: 1.6; overflow-wrap: anywhere; white-space: pre-wrap; cursor: pointer; }
+    #single-study-answer.show { color: var(--text); }
+    .single-study-nav { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 12px; margin-top: 24px; }
+    .single-study-nav > button { margin: 0; padding: 12px 8px; border-radius: 12px; }
+    #single-study-ghost .ghost-btn { width: 44px; height: 44px; padding: 0; border: 1px solid var(--panel-light); border-radius: 12px; background: var(--panel-dark); }
+    .single-study-nav button:disabled { opacity: .4; cursor: default; }
+    #study-finished { display: block; width: calc(100% - 24px); margin: 18px 12px 12px; padding: 14px; border-radius: 12px; font: inherit; font-weight: 600; }
+    #study-single #study-finished { width: 100%; margin: 20px 0 0; }
+    @media (max-width: 480px) { #study-single { padding: 20px; } .single-study-nav { gap: 8px; } }
     #study-page #study-list, #preview-page #preview-list {
       background: var(--panel);
       border: 1px solid var(--panel-light);
@@ -677,7 +692,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.20.2045</span>
+        <span id="main-app-version" class="app-version">v2026.10.21.0150</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -809,7 +824,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.20.2045</span>
+      <span id="app-version" class="app-version">v2026.10.21.0150</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -908,6 +923,10 @@
       <button id="order-reverse" class="order-btn">逆序</button>
       <button id="order-random" class="order-btn">随机</button>
       <button id="start-study">开始背诵</button>
+      <div class="study-layout-options" role="group" aria-label="背诵显示模式">
+        <button id="study-layout-list" class="study-layout-btn active" type="button" aria-pressed="true">列表模式</button>
+        <button id="study-layout-card" class="study-layout-btn" type="button" aria-pressed="false">单卡片模式</button>
+      </div>
       <button id="complete-study" class="ai-btn secondary" type="button">背诵完成</button>
     </div>
   </div>
@@ -918,6 +937,17 @@
       <h2 id="study-title">背诵</h2>
     </header>
     <div id="study-list"></div>
+    <section id="study-single" aria-label="单卡片背诵" hidden>
+      <div class="single-study-meta"><span id="single-study-progress" aria-live="polite"></span><span id="single-study-direction"></span></div>
+      <div id="single-study-prompt"></div>
+      <button id="single-study-answer" type="button" aria-expanded="false">点击显示</button>
+      <div class="single-study-nav">
+        <button id="single-study-prev" class="ai-btn secondary" type="button">上一个</button>
+        <button id="single-study-next" class="ai-btn secondary" type="button">下一个</button>
+        <div id="single-study-ghost"></div>
+      </div>
+    </section>
+    <button id="study-finished" class="ai-btn" type="button" hidden>已完成</button>
   </div>
 
   <div id="preview-page" class="view">
@@ -1004,6 +1034,8 @@
     let currentListType = null;
     let selectedMode = 'en2zh';
     let selectedOrder = 'normal';
+    let selectedStudyLayout = 'list';
+    let studySession = null;
     let listsUnsubscribe = null;
     let wordbooksUnsubscribe = null;
     let preferencesUnsubscribe = null;
@@ -1162,6 +1194,7 @@
         finalLists = [];
         activeWordbookId = DEFAULT_BOOK_ID;
         currentList = null;
+        studySession = null;
         previewState = null;
         currentListType = null;
         aiHistory = [];
@@ -1974,7 +2007,6 @@
         e.stopPropagation();
         showModal('确定删除该列表吗？', () => deleteList(list));
       });
-      actions.appendChild(previewBtn);
       if (list.studyCompletedAt) {
         const check = document.createElement('span');
         check.className = 'study-check';
@@ -1983,6 +2015,7 @@
         check.setAttribute('aria-label', '已背诵完成');
         actions.appendChild(check);
       }
+      actions.appendChild(previewBtn);
       actions.appendChild(deleteBtn);
       row.appendChild(actions);
       row.addEventListener('click', () => startModeSelection(list));
@@ -1994,6 +2027,8 @@
       currentListType = list.type;
       selectedMode = 'en2zh';
       selectedOrder = 'normal';
+      setStudyLayout('list');
+      studySession = null;
       document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById('mode-en2zh').classList.add('active');
@@ -2030,10 +2065,84 @@
       document.querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
+    function setStudyLayout(layout) {
+      selectedStudyLayout = layout === 'card' ? 'card' : 'list';
+      for (const value of ['list', 'card']) {
+        const button = document.getElementById(`study-layout-${value}`);
+        button.classList.toggle('active', value === selectedStudyLayout);
+        button.setAttribute('aria-pressed', String(value === selectedStudyLayout));
+      }
+    }
+    document.getElementById('study-layout-list').addEventListener('click', () => setStudyLayout('list'));
+    document.getElementById('study-layout-card').addEventListener('click', () => setStudyLayout('card'));
+    document.getElementById('single-study-answer').addEventListener('click', () => {
+      if (!studySession) return;
+      studySession.showAnswer = !studySession.showAnswer;
+      renderSingleStudyCard();
+    });
+    document.getElementById('single-study-prev').addEventListener('click', () => moveStudyCard(-1));
+    document.getElementById('single-study-next').addEventListener('click', () => moveStudyCard(1));
+    document.getElementById('study-finished').addEventListener('click', () => showPage(modePage));
     document.getElementById('start-study').addEventListener('click', openStudyPage);
+
+    function createStudyGhost(word, list, single = false) {
+      if (list.type === 'final' && !single) return null;
+      const ghost = document.createElement(single ? 'button' : 'span');
+      ghost.className = 'ghost-btn';
+      ghost.textContent = '👻';
+      if (single) ghost.type = 'button';
+      ghost.title = list.type === 'new' ? '加入需巩固' : list.type === 'review' ? '加入Final巩固单词' : '已在Final巩固单词';
+      ghost.setAttribute('aria-label', ghost.title);
+      if (list.type === 'final') {
+        ghost.disabled = true;
+        return ghost;
+      }
+      ghost.addEventListener('click', event => {
+        event.stopPropagation();
+        const bookId = getListBookId(list);
+        showModal(list.type === 'new' ? '是否添加至需巩固单词本？' : '是否添加至Final巩固单词？', async () => {
+          try {
+            if (list.type === 'new') await addToReviewBuffer(word, bookId);
+            else await addToFinalBuffer(word, bookId);
+          } catch (error) { showModal(error.message || '添加失败，请重试'); }
+        });
+      });
+      return ghost;
+    }
+
+    function moveStudyCard(delta) {
+      if (!studySession || selectedStudyLayout !== 'card') return;
+      const index = studySession.index + delta;
+      if (index < 0 || index >= studySession.items.length) return;
+      studySession.index = index;
+      studySession.showAnswer = false;
+      renderSingleStudyCard();
+    }
+
+    function renderSingleStudyCard() {
+      const session = studySession;
+      if (!session || !session.items.length) return;
+      const word = session.items[session.index];
+      const enToZh = session.mode === 'en2zh';
+      const last = session.index === session.items.length - 1;
+      document.getElementById('single-study-progress').textContent = `第 ${session.index + 1} / ${session.items.length} 条`;
+      document.getElementById('single-study-direction').textContent = enToZh ? '英 → 中' : '中 → 英';
+      document.getElementById('single-study-prompt').textContent = enToZh ? word.en : word.zh;
+      const answer = document.getElementById('single-study-answer');
+      answer.textContent = session.showAnswer ? (enToZh ? word.zh : word.en) : '点击显示';
+      answer.classList.toggle('show', session.showAnswer);
+      answer.setAttribute('aria-expanded', String(session.showAnswer));
+      document.getElementById('single-study-prev').disabled = session.index === 0;
+      document.getElementById('single-study-next').disabled = last;
+      const ghost = document.getElementById('single-study-ghost');
+      ghost.innerHTML = '';
+      ghost.appendChild(createStudyGhost(word, session.list, true));
+      document.getElementById('study-finished').hidden = !last;
+    }
 
     function openStudyPage() {
       if (!currentList) return;
+      if (!Array.isArray(currentList.words) || !currentList.words.length) return showModal('这个列表还没有单词');
       let items = currentList.words.slice();
       if (selectedOrder === 'reverse') items = items.slice().reverse();
       else if (selectedOrder === 'random') {
@@ -2044,8 +2153,20 @@
         }
       }
       const studyList = document.getElementById('study-list');
+      const single = document.getElementById('study-single');
+      const finished = document.getElementById('study-finished');
       studyList.innerHTML = '';
-      document.getElementById('study-title').textContent = getListDisplayName(currentList, currentList.type) + ' 背诵';
+      studyList.hidden = selectedStudyLayout === 'card';
+      single.hidden = selectedStudyLayout !== 'card';
+      finished.hidden = true;
+      studySession = { list: { ...currentList }, items, mode: selectedMode, index: 0, showAnswer: false };
+      document.getElementById('study-title').textContent = getListDisplayName(currentList, currentList.type) + (selectedStudyLayout === 'card' ? ' 单卡片背诵' : ' 背诵');
+      if (selectedStudyLayout === 'card') {
+        single.appendChild(finished);
+        renderSingleStudyCard();
+        showPage(studyPage);
+        return;
+      }
       items.forEach((word, idx) => {
         const row = document.createElement('div');
         row.className = 'study-row';
@@ -2068,25 +2189,15 @@
             ansDiv.textContent = ansDiv.dataset.answer;
           }
         });
-        let ghost = null;
-        if (currentList.type !== 'final') {
-          ghost = document.createElement('span');
-          ghost.className = 'ghost-btn';
-          ghost.textContent = '👻';
-          ghost.title = currentList.type === 'new' ? '加入需巩固' : '加入Final巩固单词';
-          ghost.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const bookId = getListBookId(currentList);
-            if (currentList.type === 'new') showModal('是否添加至需巩固单词本？', () => addToReviewBuffer(word, bookId));
-            else if (currentList.type === 'review') showModal('是否添加至Final巩固单词？', () => addToFinalBuffer(word, bookId));
-          });
-        }
+        const ghost = createStudyGhost(word, studySession.list);
         row.appendChild(idxSpan);
         row.appendChild(promptDiv);
         row.appendChild(ansDiv);
         if (ghost) row.appendChild(ghost);
         studyList.appendChild(row);
       });
+      studyList.appendChild(finished);
+      finished.hidden = false;
       showPage(studyPage);
     }
 
