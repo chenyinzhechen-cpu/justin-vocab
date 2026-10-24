@@ -699,7 +699,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.21.0220</span>
+        <span id="main-app-version" class="app-version">v2026.10.24.0215</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -833,7 +833,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.21.0220</span>
+      <span id="app-version" class="app-version">v2026.10.24.0215</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -2861,8 +2861,34 @@ NO`;
       if (/(语感|语气|情感|场景|语境|用法|用于|用来|常用|表达一种|带着|学术语境|生活环境|开场问题|这句话|这个表达|这句|说明|表示|指的是|意思是|适用于|可用于|用于描述|口语里|口语中|很常见|比较自然)/.test(text)) {
         return normalizeImportChinesePunctuation(conciseImportMeaning(text));
       }
-      const normalized = normalizeImportChinesePunctuation(text.replace(/^["“”'‘’]+|["“”'‘’]+$/g, ''));
+      const normalized = normalizeImportChinesePunctuation(stripImportBoundaryQuotes(text));
       return removeUnmatchedChineseTranslationExtras(normalized, en);
+    }
+
+    function stripImportBoundaryQuotes(value) {
+      let text = String(value || '').trim();
+      const pairs = { '“': '”', '‘': '’', '"': '"', "'": "'" };
+      while (text) {
+        const closing = pairs[text[0]];
+        if (closing) {
+          const end = text.indexOf(closing, 1);
+          if (end === text.length - 1 && end > 0) {
+            text = text.slice(1, -1).trim();
+            continue;
+          }
+          if (end < 0) {
+            text = text.slice(1).trim();
+            continue;
+          }
+        }
+        const opening = Object.keys(pairs).find(key => pairs[key] === text.at(-1));
+        if (opening && !text.slice(0, -1).includes(opening)) {
+          text = text.slice(0, -1).trim();
+          continue;
+        }
+        break;
+      }
+      return text;
     }
 
     function removeUnmatchedChineseTranslationExtras(zh, en = '') {
@@ -2915,8 +2941,7 @@ NO`;
     }
 
     function conciseImportMeaning(zh) {
-      const text = String(zh || '')
-        .replace(/^["“”'‘’]+|["“”'‘’]+$/g, '')
+      const text = stripImportBoundaryQuotes(zh)
         .replace(/^在[^，。；;,.]{0,40}(?:里|中)\s*(?:指|表示|意思是)\s*/, '')
         .replace(/^(?:这个词|这个表达|它)(?:在[^，。；;,.]{0,40})?(?:指|表示|意思是)\s*/, '')
         .replace(/^(表示|意思是|指的是|中文意思是)\s*/, '')
@@ -2925,7 +2950,7 @@ NO`;
       if (quotedMeaning?.[1]) return quotedMeaning[1].trim();
       const usageIndex = text.search(/(，|。|；|;|,|\(|（)?\s*(口语里|口语中|常用|用于|用来|强调|语气|意思是|指的是|表示)/);
       const sliced = usageIndex > 0 ? text.slice(0, usageIndex) : text;
-      return sliced.split(/[，。；;,.]/)[0].trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '') || text || '中文意思';
+      return stripImportBoundaryQuotes(sliced.split(/[，。；;,.]/)[0]) || text || '中文意思';
     }
 
     function firstUsefulMeaning(text) {
@@ -3081,7 +3106,7 @@ NO`;
         const title = items[index].match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
         const reviewedEnglish = toSingleLineImportField(row.finalEnglish ?? row.en);
         let directChinese = normalizeImportChinesePunctuation(
-          toSingleLineImportField(row.directChinese ?? row.zh).replace(/^["“”'‘’]+|["“”'‘’]+$/g, '')
+          stripImportBoundaryQuotes(toSingleLineImportField(row.directChinese ?? row.zh))
         );
         const comparable = value => String(value || '').toLowerCase().replace(/[\s.,!?;:。！？；：]/g, '');
         const completeSentence = looksLikeCompleteEnglishSentence(title);
