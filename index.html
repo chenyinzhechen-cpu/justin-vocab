@@ -699,7 +699,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.24.0215</span>
+        <span id="main-app-version" class="app-version">v2026.10.24.0220</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -833,7 +833,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.24.0215</span>
+      <span id="app-version" class="app-version">v2026.10.24.0220</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -2560,6 +2560,7 @@ Answer the input question:
 用中文直接回答用户的问题。先给明确结论，再用一两句话解释。标题必须保留英文。
 这一段只回答用户问的具体问题，例如“ATP/atp 是什么意思”“Heading home 和 going back home 哪个对”“lock in 怎么用”。不要在这里泛泛解释最终表达。
 如果 Input 只是普通单词、词组或陈述句，完全省略这个 section，连标题也不要输出。
+例如 Input 只有“中性词”时，最终英文写 neutral word；不要把你自拟的例句或问题当成用户的问题来回答。
 
 Spoken meaning:
 用中文解释它在口语里的真实意思、语感和适合表达的情绪。
@@ -2604,7 +2605,7 @@ IMPORT_TEXT 规则，非常重要：
 4. 英文列只能包含英文表达和英文例句，绝对不能出现任何中文字符、中文原句或中文问题。如果 Input 是中文，英文列也只能写最终英文表达。
 5. 英文列内部不得出现英文逗号。如果英文表达本身有逗号，必须改用分号、破折号、括号，或直接省略逗号。例如写成 “That's rough mate,你太惨了” 或 “That's rough; mate,你太惨了”，不要写 “That's rough, mate,你太惨了”。
 6. 中文列必须是最终英文表达的简短中文翻译，必须包含中文，不能只写英文；不能写用法说明、语气说明、场景说明，不能复制用户的提问或元说明，不能出现“什么意思/啥意思/缩写/对吗/怎么说/哪个对/是吗”等提问内容。若 Input 本身是要翻译的中文表达且最终英文忠实于原意，应保留 Input 的中文原话。中文列内部不要使用中文逗号“，”，例句翻译内部如果有两个分句，用中文分号“；”连接。
-7. 如果最终英文表达是单词或短语，而不是完整句子，IMPORT_TEXT 的英文列要写成“单词或短语: 一个最常用英文例句”，中文列要写成“简短中文翻译: 例句中文翻译”。例：line: I still remember my first line in the play.,台词: 我还记得我在剧里的第一句台词。
+7. 如果 Input 是不含提问或例句要求的简短纯中文词语，只导入英文与中文的直接翻译，不附加例句或问题。例如 Input 为“中性词”，IMPORT_TEXT 必须是 neutral word,中性词。其他单词或短语仍可写成“单词或短语: 一个最常用英文例句,简短中文翻译: 例句中文翻译”。
 8. 冒号后面的“例句中文翻译”只能是英文例句的逐句中文翻译，绝不能写解释、用法、场景、评价或说明。例如不要写“这句话适合在中国的生活环境”“口语里这是很常见的开场问题”，必须只翻译英文例句本身。
 9. 如果最终英文表达本身已经是完整句子，IMPORT_TEXT 不需要额外拼例句，直接写“完整英文句子,中文意思”。中文意思也只能翻译这句英文，不要解释使用场景。
 10. 如果英文例句里需要连接多个分句，可以在例句内部使用分号；中文例句翻译内部对应使用中文分号。例如：deserve: It's a great film; but it doesn't deserve to be the fourth highest-grossing film worldwide.,值得: 这是一部很棒的电影；但它不配成为全球票房第四高的电影。
@@ -2989,6 +2990,13 @@ NO`;
       return /(什么意思|啥意思|什么含义|啥含义|怎么说|如何表达|哪个对|对吗|是吗|是否|是不是|缩写|区别|还是|作用|用法|\?|？|吗|嘛|么|呢)/.test(String(input || ''));
     }
 
+    function isDirectVocabularyLookup(input, en) {
+      const text = String(input || '').trim();
+      return looksLikeShortExpression(en) && text.length > 0 && text.length <= 24
+        && /[\u4e00-\u9fff]/.test(text) && !/[A-Za-z\n。！？?!:：]/.test(text)
+        && !hasInputQuestionIntent(text) && !/(例句|举例|造句|情景|场景|解释|分析)/.test(text);
+    }
+
     function isBadImportMeaning(en, zh) {
       const compactZh = String(zh || '').trim();
       if (!compactZh) return true;
@@ -3011,7 +3019,11 @@ NO`;
         const sameSentence = value => String(value || '').toLowerCase().replace(/[’]/g, "'").replace(/[\s.,!?;:]/g, '');
         const imperative = /^(?:please\s+)?(?:don't|do not|never|be)\b/i.test(en);
         const canUseExampleTranslation = !imperative || sameSentence(en) === sameSentence(examplePair?.en);
-        const inputMeaning = extractInputMeaningForExpression(getReportInputText(item), en);
+        const input = getReportInputText(item);
+        if (isDirectVocabularyLookup(input, en)) {
+          return { en: cleanImportEnglish(en), zh: normalizeImportChinesePunctuation(input) };
+        }
+        const inputMeaning = extractInputMeaningForExpression(input, en);
         const zh = inputMeaning
           || (looksLikeCompleteEnglishSentence(en) && examplePair?.zh && canUseExampleTranslation
           ? examplePair.zh
@@ -3120,6 +3132,9 @@ NO`;
         if (row.sourceCovered !== true || row.translationOnly !== true || /^(?:意思是|表示|表达一种|这句话|这个表达|语气|口语里)/.test(directChinese)) {
           throw new Error(`${sourceLabel}没有完整对应原始输入`);
         }
+        if (isDirectVocabularyLookup(sourceItems[index], title)) {
+          return { en: cleanImportEnglish(title), zh: normalizeImportChinesePunctuation(sourceItems[index]) };
+        }
         if (completeSentence) {
           const en = cleanImportEnglish(title);
           const input = sourceItems[index].trim();
@@ -3159,7 +3174,7 @@ NO`;
 规则：
 1. finalEnglish 必须逐字使用报告 Word / Phrase / Sentence 的最终英文，不要把例句拼在这个字段里。directChinese 只写 finalEnglish 的直接中文；严禁加入语境、理由、对话下一句、用法说明或报告中的情绪解释。例如 My hands are full. 对应“我手上拿满了”，不能加“你能开下门吗？”。
 2. 若 finalEnglish 是完整句子，exampleEnglish 和 exampleChinese 都必须是空字符串。
-3. 若 finalEnglish 是单词或短语，exampleEnglish 必须是一个自然、完整的英文例句，exampleChinese 必须只是该例句的完整中文翻译。不要在任何 JSON 字段里使用“短语: 例句”的拼接形式，四项内容必须分开。
+3. 若原始输入是不含提问或例句要求的简短纯中文词语，直接翻译即可，两个 example 字段留空。例如“中性词”只对应 neutral word，不要添加 cheap 或其他自拟问题。其他单词或短语的 exampleEnglish 写自然完整的例句，exampleChinese 只翻译该例句。不要在任何 JSON 字段里使用“短语: 例句”的拼接形式，四项内容必须分开。
 4. 纯中文原始输入若与最终英文完整同义，inputFaithful 为 true，directChinese 优先用原始中文原话；若英文漏掉或增添任何含义，inputFaithful 为 false。中英混合输入不使用 inputFaithful。
 5. sourceCovered 表示报告最终英文是否完整表达原始输入的学习意图。若原始输入是询问某词的意思，最终英文是该词即可为 true；若原始输入是待翻译的完整句子，英文漏掉任何分句则为 false。不能为迎合结果而写 true。
 6. translationOnly 仅当 directChinese 只翻译 finalEnglish，且 exampleChinese 只翻译 exampleEnglish 时为 true。只要中文加入语境、理由、对话下一句、用法说明或引申含义，就必须为 false。
@@ -3179,7 +3194,7 @@ NO`;
       } catch (firstValidationError) {
         const repairPrompt = `你要修复一份没通过程序校验的中英导入数据。只返回 JSON：
 {"rows":[{"finalEnglish":"...","directChinese":"...","exampleEnglish":"","exampleChinese":"","sourceCovered":true,"translationOnly":true,"inputFaithful":false}]}
-条数和顺序必须与 sourceItems 完全一致。finalEnglish 必须逐字使用报告 Word / Phrase / Sentence。完整句子的两个 example 字段留空；单词或短语必须补齐自然完整的 exampleEnglish 和仅翻译该例句的 exampleChinese。directChinese 只翻译 finalEnglish，不得解释用法或添加对话下一句。`;
+条数和顺序必须与 sourceItems 完全一致。finalEnglish 必须逐字使用报告 Word / Phrase / Sentence。完整句子、以及不含提问或例句要求的简短纯中文词语，两个 example 字段留空；其他单词或短语补齐自然完整的例句及翻译。directChinese 只翻译 finalEnglish，不得解释用法或添加对话下一句。`;
         const repairedContent = await callDeepSeek([
           { role: 'system', content: repairPrompt },
           {
