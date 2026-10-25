@@ -592,6 +592,15 @@
     #home-settings-toggle { font-size: 30px; padding: 8px 14px; }
     #home-settings-menu { position: absolute; right: 0; top: 100%; z-index: 20; min-width: 200px; padding: 12px; border-radius: 14px; background: var(--panel); box-shadow: 0 8px 24px #0003; }
     #home-settings-menu button { display: block; width: 100%; padding: 12px; text-align: left; }
+    .language-setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; }
+    #ui-language { width: auto; min-width: 110px; margin: 0; padding: 8px; border: 1px solid var(--panel-light); border-radius: 10px; background: var(--panel-dark); color: var(--text); font: inherit; }
+    .file-import-control { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .file-import-control .ai-btn { margin: 0; cursor: pointer; }
+    .file-input-native { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+    .file-input-native:focus-visible + label { outline: 2px solid var(--text); outline-offset: 3px; }
+    #csv-file-name { color: var(--muted); overflow-wrap: anywhere; }
+    html[lang="en"] .list-column-heading { flex-wrap: wrap; gap: 8px; }
+    html[lang="en"] .checkin-count { font-size: clamp(32px, 6vw, 72px); }
     #theme-toggle { position: static; }
     .capacity-select { max-width: 120px; padding: 7px 11px; background: var(--panel-dark); color: var(--text); border: 1px solid var(--panel-light); border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; appearance: none; }
     .capacity-select:hover { background: var(--panel-light); }
@@ -699,7 +708,7 @@
     <header>
       <div style="display:flex; align-items:center;">
         <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.24.0220</span>
+        <span id="main-app-version" class="app-version">v2026.10.25.0145</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
@@ -707,6 +716,7 @@
           <div id="home-settings-menu" hidden>
             <button id="open-ai-settings" class="icon-btn">大模型搜索API设置</button>
             <button id="theme-toggle" class="icon-btn" type="button">切换浅色</button>
+            <label class="language-setting" for="ui-language"><span>语言</span><select id="ui-language" aria-label="界面语言"><option value="zh-CN">中文</option><option value="en">English</option></select></label>
             <button id="logout-btn" class="icon-btn">退出登录</button>
           </div>
         </div>
@@ -801,7 +811,11 @@
     </div>
     <div class="import-form">
       <h3>通过文件导入 CSV</h3>
-      <input type="file" id="csv-file" accept=".csv,text/csv" />
+      <div class="file-import-control">
+        <input type="file" id="csv-file" class="file-input-native" aria-label="选择 CSV 文件" accept=".csv,text/csv" />
+        <label for="csv-file" class="ai-btn secondary">选择 CSV 文件</label>
+        <span id="csv-file-name">未选择文件</span>
+      </div>
       <label for="csv-group-size">每个列表单词数</label>
       <input type="number" id="csv-group-size" min="1" value="50" />
       <button id="import-file-btn">导入文件并分组</button>
@@ -833,7 +847,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.24.0220</span>
+      <span id="app-version" class="app-version">v2026.10.25.0145</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -928,7 +942,7 @@
       <button id="mode-en2zh" class="mode-btn">英 → 中</button>
       <button id="mode-zh2en" class="mode-btn">中 → 英</button>
       <h3 style="margin-top:20px;">顺序</h3>
-      <button id="order-normal" class="order-btn">顺序</button>
+      <button id="order-normal" class="order-btn" data-i18n-context="normal-order">顺序</button>
       <button id="order-reverse" class="order-btn">逆序</button>
       <button id="order-random" class="order-btn">随机</button>
       <h3 id="study-layout-heading" style="margin-top:20px;">背诵模式</h3>
@@ -992,6 +1006,208 @@
     </div>
   </div>
 
+  <script id="ui-localization">
+    function createVocabLocalization() {
+      const english = {
+        'Justin专属单词背诵程序': "Justin's Vocabulary Trainer",
+        '语言': 'Language', '界面语言': 'Interface language', '设置': 'Settings',
+        '正在打开…': 'Opening…', '重试': 'Retry', '打开时间较长，请检查网络后重试。': 'This is taking longer than usual. Check your connection and retry.',
+        '请使用邮箱注册或登录': 'Sign in or register with your email', '邮箱': 'Email', '密码': 'Password', '登录': 'Sign in', '注册': 'Register',
+        '大模型搜索API设置': 'AI Model API Settings', '切换浅色': 'Switch to light mode', '切换深色': 'Switch to dark mode', '退出登录': 'Sign out',
+        '重新读取单词本': 'Reload wordbooks', 'AI 单词整理': 'AI Vocabulary Organizer', '打开 AI 单词整理': 'Open AI Organizer',
+        '翻译、润色和整理口语表达，生成报告后可选择导入到任意单词本。': 'Translate, polish and organize spoken expressions, then import them into any wordbook.',
+        '背诵打卡': 'Study Streak', '打卡设置': 'Streak settings', '手动重置打卡记录': 'Reset current streak', '查看历史打卡记录': 'View check-in history',
+        '正在读取打卡记录…': 'Loading check-ins…', '重新读取': 'Reload', '即将断签': 'Streak at risk', '打卡记录尚未读取': 'Check-ins have not loaded yet',
+        '含今天在内的最近5天打卡记录': 'Check-ins for the last 5 days, including today', '今天，先背一组吧。': 'Start with one list today.',
+        '今日打卡成功，继续保持！': 'Checked in today. Keep it up!', '等你回来！今天还未打卡。': 'Welcome back! You have not checked in today.',
+        '别让火焰熄灭，今天背一组吧。': 'Keep your streak alive. Study a list today.', '最后一天！今天结束前打卡，保住连击。': 'Last chance! Check in before today ends to save your streak.',
+        '重新开始，今天背一组吧。': 'A fresh start. Study a list today.', '周一': 'Mon', '周二': 'Tue', '周三': 'Wed', '周四': 'Thu', '周五': 'Fri', '周六': 'Sat', '周日': 'Sun',
+        '暂无打卡记录': 'No check-ins yet', '未打卡': 'Not checked in', '我的单词本': 'My Wordbooks', '新建单词本': 'New wordbook', '单词本': 'Wordbook',
+        '← 返回': '← Back', '新单词': 'New Words', '需巩固单词': 'Review Words', 'Final巩固单词': 'Final Review',
+        '新单词每组容量': 'New words per list', '需巩固单词每组容量': 'Review words per list', 'Final巩固单词每组容量': 'Final review words per list',
+        '清空背诵记录': 'Clear completion marks', '重新排列单词': 'Regroup words', '手动导入单词': 'Import Words Manually', '目标单词本': 'Target wordbook',
+        '通过文件导入 CSV': 'Import a CSV file', '每个列表单词数': 'Words per list', '导入文件并分组': 'Import and group file',
+        '选择 CSV 文件': 'Choose CSV file', '未选择文件': 'No file selected',
+        '直接粘贴内容（每行：英文,中文）': 'Paste words (one English,Chinese pair per line)', '导入粘贴内容并分组': 'Import and group pasted words',
+        '导入单词到指定 List': 'Add words to an existing list', '格式同样是每行：英文,中文。会直接追加到你选择的具体 List 末尾。': 'Use one English,Chinese pair per line. Words will be appended to the selected list.',
+        '选择列表类型': 'List type', '选择具体 List': 'Choose a list', '导入指定list': 'Import into selected list',
+        '生成口语整理报告': 'Generate a Speaking Report', '粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。': 'Paste words, phrases, sentences or paragraphs. Chinese is translated into English; English is translated and polished. Mixed input is checked for accuracy and naturalness. Larger inputs are processed in batches.',
+        '例如：\n我需要出去逛逛 I need to touch grass\nlook up\n这周末我只想在家休息': 'Examples:\nI need to touch grass\nlook up\nI just want to relax at home this weekend',
+        '生成报告': 'Generate report', '一键清空': 'Clear input', '报告生成进度': 'Report generation progress', '结构化单词报告': 'Vocabulary Report',
+        'Other Spoken Alternative · 表达选择与区别': 'Other Spoken Alternative',
+        '上一份': 'Previous report', '下一份': 'Next report', '暂无历史记录': 'No reports yet', '删除当前报告': 'Delete current report',
+        '生成后，这里会显示每条表达的简短说明。': 'Explanations for each expression will appear here.', '可直接导入单词本的完整段落': 'Ready-to-Import Vocabulary',
+        '格式固定为每行': 'Use one pair per line:', '英文,中文': 'English,Chinese', '。可先修改，再一键导入；内容较多时会自动拆成多个单词列表。': ' Edit before importing. Larger sets are split into multiple lists.',
+        'AI 生成后会出现在这里': 'Generated vocabulary will appear here', '复制段落': 'Copy text', '保存修改': 'Save changes', '导入新单词': 'Import new words',
+        '进一步追问': 'Follow-up Questions', '默认不会读取报告，避免浪费 token。需要追问时，先启用当前报告追问。': 'Report context is off by default to save tokens. Enable it before asking follow-up questions.',
+        '启用本报告追问': 'Enable report context', '停用本报告追问': 'Disable report context', '已停用报告追问': 'Report context disabled',
+        '例如：touch grass 是开玩笑还是正式表达？': 'Example: Is “touch grass” playful or formal?', '发送': 'Send', '清空对话': 'Clear conversation',
+        '已启用当前报告追问。你可以继续问语气、用法或替代表达。': 'Report context enabled. Ask about tone, usage or alternative expressions.',
+        '目前支持 deepseek-flash；ChatGPT 等其他 AI 模型需要另外接入，暂不能直接使用其 API Key。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase；调用模型时会发送给对应的 API 服务。': 'Currently supports deepseek-flash. Other models, including ChatGPT, require a separate integration; their API keys cannot be used here yet. Your API key is stored only in this browser, not in the page or Firebase. It is sent to the API provider when you use the model.',
+        '输入 DeepSeek API Key（sk-...）': 'Enter your DeepSeek API key (sk-...)', '保存 Key': 'Save key', '清除': 'Clear',
+        '选择模式': 'Study Options', '翻译方向': 'Translation Direction', '英 → 中': 'English → Chinese', '中 → 英': 'Chinese → English',
+        '顺序': 'Order', '逆序': 'Reverse', '随机': 'Shuffle', '背诵模式': 'Study Mode', '列表模式': 'List', '单卡片模式': 'Flashcards',
+        '开始背诵': 'Start studying', '背诵完成': 'Mark as completed', '背诵': 'Study', '单卡片背诵': 'Flashcard study', '点击显示': 'Reveal answer',
+        '上一个': 'Previous', '下一个': 'Next', '已完成': 'Done', '预览': 'Preview', '编辑单词': 'Edit words', '保存单词修改': 'Save word changes',
+        '添加新的空单词词组集': 'Add a blank word pair', '历史打卡记录': 'Check-in History', '关闭历史打卡记录': 'Close check-in history',
+        '例如：GRE 单词本': 'Example: GRE vocabulary', '单词本名称': 'Wordbook name', '取消': 'Cancel', '确定': 'Confirm',
+        '正在保存…': 'Saving…', '有未保存修改': 'Unsaved changes', '修改已保存': 'Changes saved', '重命名': 'Rename', '删除': 'Delete',
+        '未命名单词本': 'Untitled wordbook', '正在加载单词本...': 'Loading wordbooks…', '请输入单词本名称': 'Enter a wordbook name', '输入新的单词本名称': 'Enter a new wordbook name',
+        '单词本名称最多 30 个字': 'Wordbook names can contain up to 30 characters', '已经有同名的单词本': 'A wordbook with this name already exists',
+        '最后一个单词本不能删除': 'You cannot delete your last wordbook', '新建单词本失败': 'Could not create wordbook', '重命名单词本失败': 'Could not rename wordbook', '删除单词本失败，请重试': 'Could not delete wordbook. Please retry.',
+        '请输入邮箱和密码': 'Enter your email and password', '登录失败': 'Sign-in failed', '注册失败': 'Registration failed', '退出登录失败，请重试': 'Sign-out failed. Please retry.', '主题同步失败': 'Could not sync theme',
+        '此浏览器未允许保存登录状态，关闭后可能需要重新登录。请使用普通浏览模式，并允许保存网站数据。': 'This browser cannot save your sign-in session. Use normal browsing mode and allow site data to stay signed in.',
+        '正在读取你的单词本…': 'Loading your wordbooks…', '账号已登录，但单词本读取较慢。请检查网络，或点击重新读取。': 'You are signed in, but your wordbooks are taking longer to load. Check your connection or reload.',
+        '账号已登录，但单词数据暂时无法读取。请检查网络后重试，无需重新登录。': 'You are signed in, but your words could not be loaded. Check your connection and retry; no need to sign in again.',
+        '云端暂不允许读取打卡记录，请检查访问权限后重试。': 'Access to check-ins was denied. Check permissions and retry.',
+        '读取打卡记录超时，请检查网络后点击“重新读取”。原打卡记录不会被清除。': 'Loading check-ins timed out. Check your connection and select Reload. Existing records are safe.',
+        '账号的打卡时区无效，暂时无法读取，请联系维护者。': 'The check-in time zone is invalid. Contact support.',
+        '暂时无法连接打卡记录，请检查网络后点击“重新读取”。原打卡记录不会被清除。': 'Could not connect to check-ins. Check your connection and select Reload. Existing records are safe.',
+        '打卡记录尚未成功读取，请联网后重试。': 'Check-ins have not loaded. Connect to the internet and retry.',
+        '这个列表已被删除，不能记录背诵完成。': 'This list was deleted and cannot be marked as completed.', '空列表不能记录背诵完成。': 'An empty list cannot be marked as completed.',
+        '请检查网络后重试。': 'Check your connection and retry.', '这个区暂无需要清空的对勾。': 'There are no completion marks to clear in this section.',
+        '列表过多，暂不能一次清空，请联系维护者。': 'Too many lists to clear at once. Contact support.', '本区背诵对勾已清空，历史打卡记录仍保留。': 'Completion marks cleared. Check-in history is preserved.',
+        '连击已归零，历史打卡和列表对勾都保留。再次点击“背诵完成”即可开始新连击。': 'Streak reset. History and list completion marks are preserved. Select Mark as completed again to start a new streak.',
+        '确定将当前连击归零吗？历史打卡和列表对勾均保留；今天需要重新点击“背诵完成”才能开启新连击。': 'Reset your current streak? History and list completion marks will remain. Mark a list as completed again today to start a new streak.',
+        '请选择有效的目标 List': 'Choose a valid target list', '目标单词本不存在': 'The target wordbook does not exist',
+        '列表过多，无法安全地一次重新分组，请先联系维护者': 'Too many lists to regroup safely at once. Contact support.', '重新排列失败，原列表未修改': 'Regrouping failed. Your original lists are unchanged.',
+        '确定删除该列表吗？': 'Delete this list?', '这组已背诵完成；每天仍需点击“背诵完成”才算当天打卡': 'This list is completed. Select Mark as completed each day to check in for that day.', '已背诵完成': 'Study completed',
+        '加入需巩固': 'Add to review', '加入Final巩固单词': 'Add to final review', '已在Final巩固单词': 'Already in final review', '是否添加至需巩固单词本？': 'Add this word to review?', '是否添加至Final巩固单词？': 'Add this word to final review?',
+        '添加失败，请重试': 'Could not add word. Please retry.', '这个列表还没有单词': 'This list has no words yet', '删除这一条（保存后生效）': 'Delete this row (applied when saved)',
+        '这个列表已被删除，草稿仍保留，请复制内容后重新导入': 'This list was deleted. Your draft is preserved; copy it before importing again.',
+        '保存前发现云端单词内容确实发生了变化，本次未覆盖云端。你的编辑仍在，请保留此页面并联系我处理': 'The words changed in the cloud. Nothing was overwritten. Your edits are preserved; keep this page open and contact support.',
+        '保存失败，修改仍保留，请重试': 'Save failed. Your edits are preserved. Please retry.', '退出编辑会丢失未保存的修改，确定放弃吗？': 'Leaving edit mode will discard unsaved changes. Discard them?',
+        '确定保存所有修改（包括删除和新增）吗？': 'Save all changes, including deletions and additions?', '你还没有保存，确定保存吗？': 'You have unsaved changes. Save them?',
+        '容量设置保存失败': 'Could not save list capacity', '确定重新排列新单词列表吗？': 'Regroup new word lists?', '确定重新排列需巩固单词列表吗？': 'Regroup review lists?', '确定重新排列 Final巩固单词列表吗？': 'Regroup final review lists?',
+        '请先填写并保存 DeepSeek API Key': 'Enter and save your DeepSeek API key first', '请输入 DeepSeek API Key': 'Enter your DeepSeek API key',
+        '无法连接 DeepSeek。若浏览器拦截跨域请求，请用本地服务器打开网页，或为正式版本增加后端代理。': 'Cannot connect to DeepSeek. If the browser blocks cross-origin requests, use a local server or a backend proxy.',
+        '校对结果与原始输入条数不一致': 'The reviewed item count does not match the input', 'AI 校对没有返回有效内容': 'The AI review returned invalid content',
+        '报告同步失败': 'Could not sync report', '删除报告失败': 'Could not delete report', '报告已生成，但同步到 Firebase 失败': 'Report generated, but could not sync to Firebase',
+        '没有可以保存的导入段落': 'No import text to save', '请先生成一次整理报告': 'Generate a report first', '保存失败': 'Save failed', '已保存当前导入段落修改': 'Import text changes saved',
+        'API Key 已保存到当前浏览器': 'API key saved in this browser', 'API Key 已清除': 'API key cleared', '请先输入需要整理的内容': 'Enter some content to organize first',
+        '正在同步报告...': 'Syncing reports…', '正在生成第一批报告...': 'Generating the first batch…', 'AI 返回的报告或导入条数不完整': 'The AI returned an incomplete report or import list', '生成失败': 'Generation failed',
+        '还没有可复制的导入段落': 'No import text to copy', '已复制导入段落': 'Import text copied', '浏览器未允许自动复制，请手动选中复制': 'Automatic copying is blocked. Select and copy the text manually.',
+        '确定删除当前这份报告吗？': 'Delete the current report?', '导入段落为空或格式不正确': 'Import text is empty or incorrectly formatted', '请选择有效的目标单词本': 'Choose a valid target wordbook', '导入失败': 'Import failed',
+        '请先启用本报告追问': 'Enable report context first', '请先生成或选择一份整理报告': 'Generate or select a report first', '正在回答...': 'Replying…', '发送失败': 'Could not send message',
+        '请选择目标单词本': 'Choose a target wordbook', '请选择CSV文件': 'Choose a CSV file', '文件内容为空或格式不正确': 'The file is empty or incorrectly formatted', '请输入单词内容': 'Enter your words',
+        '内容格式不正确': 'The content is incorrectly formatted', '请输入要导入的单词内容': 'Enter the words to import', '请选择具体 List': 'Choose a list',
+        'look up,查词\\nscroll down,向下滚动': 'look up,查词\\nscroll down,向下滚动'
+      };
+      let language = 'zh-CN';
+      try { if (localStorage.getItem('vocabLanguage') === 'en') language = 'en'; } catch { /* Local storage is optional. */ }
+      const sourceValues = new WeakMap();
+      const protectedContent = 'script, style, textarea, [data-user-content], #active-wordbook-title, .wordbook-card-header h3, #ai-target-wordbook, #manual-target-wordbook, .study-prompt, .study-answer.show, #single-study-prompt, #single-study-answer[aria-expanded="true"], .preview-text, #ai-report:not(.empty) .report-input-text, #ai-report:not(.empty) .report-text-block, #ai-report:not(.empty) .report-section p, #ai-report:not(.empty) .report-list, #ai-report:not(.empty) table, #ai-report:not(.empty) .report-title, .chat-bubble:not([data-ui-content])';
+
+      function translateEnglish(text) {
+        if (Object.hasOwn(english, text)) return english[text];
+        const patterns = [
+          [/^(\d+|—)天$/, (_, n) => `${n} ${n === '1' ? 'day' : 'days'}`],
+          [/^学习连击(\d+)天$/, (_, n) => `${n}-day study streak`],
+          [/^(\d+) 个列表 · (\d+) 个单词$/, (_, lists, words) => `${lists} ${lists === '1' ? 'list' : 'lists'} · ${words} ${words === '1' ? 'word' : 'words'}`],
+          [/^(\d+)个$/, (_, n) => `${n} ${n === '1' ? 'word' : 'words'}`],
+          [/^(\d+)（默认）$/, (_, n) => `${n} (default)`],
+          [/^第\s*(\d+)\s*\/\s*(\d+)\s*条$/, (_, n, total) => `${n} / ${total}`],
+          [/^第(\d+)条(英文|中文)$/, (_, n, lang) => `Word ${n}, ${lang === '英文' ? 'English' : 'Chinese'}`],
+          [/^第 (\d+)\/(\d+) 份(.*)$/, (_, n, total, date) => `Report ${n}/${total}${date}`],
+          [/^正在生成 (\d+)\/(\d+)$/, (_, n, total) => `Generating ${n}/${total}`],
+          [/^正在生成第 (\d+)\/(\d+) 批$/, (_, n, total) => `Generating batch ${n}/${total}`],
+          [/^第 (\d+) 批校对未通过，正在重试$/, (_, n) => `Review failed for batch ${n}. Retrying…`],
+          [/^已完成 (\d+)\/(\d+)$/, (_, n, total) => `Completed ${n}/${total}`],
+          [/^已生成 (\d+) 条$/, (_, n) => `Generated ${n} items`],
+          [/^第 (\d+)\/(\d+) 批失败：([\s\S]*)$/, (_, n, total, error) => `Batch ${n}/${total} failed: ${translateEnglish(error)}`],
+          [/^第 (\d+) 条（([\s\S]*)）(中英内容不完整|英文与报告标题不一致|没有完整对应原始输入|中文有英文没有的内容|短语缺少对应例句)$/, (_, n, input, issue) => `Item ${n} (${input}): ${{ '中英内容不完整': 'incomplete translation', '英文与报告标题不一致': 'English does not match the report title', '没有完整对应原始输入': 'translation does not fully match the input', '中文有英文没有的内容': 'Chinese contains extra content', '短语缺少对应例句': 'missing example translation' }[issue]}`],
+          [/^DeepSeek 请求失败（(\d+)）$/, (_, n) => `DeepSeek request failed (${n})`],
+          [/^(\d{4}-\d{2}-\d{2}) 背诵完成，今日打卡成功！同一天重复完成不会增加连击天数。$/, (_, date) => `${date}: Study completed. Checked in today! Repeating this today will not increase your streak.`],
+          [/^(保存失败，未确认打卡成功。|清空失败，请重试。|重置失败，原记录未修改。)([\s\S]*)$/, (_, prefix, error) => `${{ '保存失败，未确认打卡成功。': 'Save failed. Check-in was not confirmed. ', '清空失败，请重试。': 'Could not clear marks. Please retry. ', '重置失败，原记录未修改。': 'Reset failed. Original records are unchanged. ' }[prefix]}${translateEnglish(error)}`],
+          [/^删除“([\s\S]*)”会永久删除里面的全部单词，确定继续吗？$/, (_, name) => `Permanently delete “${name}” and all its words?`],
+          [/^再次确认：永久删除“([\s\S]*)”及其中全部列表？$/, (_, name) => `Confirm again: permanently delete “${name}” and all its lists?`],
+          [/^确定清空当前单词本“(.*)”区的背诵对勾吗？不会删除单词，也不会删除历史打卡。$/, (_, type) => `Clear completion marks in ${translateEnglish(type)}? Words and check-in history will remain.`],
+          [/^(.*)里还没有列表$/, (_, type) => `No lists in ${translateEnglish(type)} yet`],
+          [/^(.*)已按每组 (\d+) 个重新排列$/, (_, type, n) => `${translateEnglish(type)} regrouped into lists of ${n}`],
+          [/^暂无(.*)列表$/, (_, type) => `No ${translateEnglish(type)} lists yet`],
+          [/^第 (\d+) 条的英文或中文未填完整，请补齐后保存$/, (_, n) => `Complete both English and Chinese for row ${n} before saving`],
+          [/^已导入 (\d+) 条表达至“([\s\S]*)”$/, (_, n, name) => `Imported ${n} expressions into “${name}”`],
+          [/^已导入 (\d+) 条到指定 List$/, (_, n) => `Imported ${n} items into the selected list`],
+          [/^(\d{4}-\d{2}-\d{2})：(已完成 (\d+) 个列表|未打卡)$/, (_, date, state, n) => `${date}: ${n ? `${n} lists completed` : 'Not checked in'}`],
+          [/^(\d{4}-\d{2}-\d{2} · [\s\S]* · )(新单词|需巩固单词|Final巩固单词)list(\d+) · (\d+) 个单词$/, (_, prefix, type, n, words) => `${prefix}${translateEnglish(type)} List ${n} · ${words} words`],
+          [/^(\d{4}-\d{2}-\d{2} · [\s\S]* · )(\d+) 个单词$/, (_, prefix, n) => `${prefix}${n} words`],
+          [/^(新单词|需巩固单词|Final巩固单词)list(\d+)(.*)$/, (_, type, n, tail) => `${translateEnglish(type)} List ${n}${translateEnglish(tail)}`],
+          [/^（(\d+)个）$/, (_, n) => ` (${n} words)`],
+          [/^ 单卡片背诵$/, () => ' · Flashcards'], [/^ 背诵$/, () => ' · Study'], [/^ 预览$/, () => ' · Preview']
+        ];
+        for (const [pattern, replace] of patterns) if (pattern.test(text)) return text.replace(pattern, replace);
+        const trimmed = text.trim();
+        if (trimmed && trimmed !== text) return text.replace(trimmed, translateEnglish(trimmed));
+        return text;
+      }
+
+      function translate(text) {
+        return language === 'en' ? translateEnglish(String(text)) : String(text);
+      }
+
+      function localizeValue(owner, key, read, write) {
+        const values = sourceValues.get(owner) || {};
+        const current = read();
+        const previous = values[key];
+        const source = previous && current === previous.output ? previous.source : current;
+        const output = key === 'text' && owner.parentElement?.dataset.i18nContext === 'normal-order' && language === 'en'
+          ? 'In order' : translate(source);
+        values[key] = { source, output };
+        sourceValues.set(owner, values);
+        if (current !== output) write(output);
+      }
+
+      function localize(root = document.body) {
+        if (!root) return;
+        if (root.nodeType === 3) {
+          if (root.parentElement && !root.parentElement.closest(protectedContent)) {
+            localizeValue(root, 'text', () => root.nodeValue, value => { root.nodeValue = value; });
+          }
+          return;
+        }
+        if (root.nodeType !== 1 || root.matches('script, style')) return;
+        for (const attr of ['title', 'placeholder', 'aria-label', 'aria-valuetext']) {
+          if (root.hasAttribute(attr)) localizeValue(root, attr, () => root.getAttribute(attr), value => root.setAttribute(attr, value));
+        }
+        for (const child of root.childNodes) localize(child);
+      }
+
+      // Keep the original UI strings so live renderers and language changes are reversible.
+      const observer = new MutationObserver(records => {
+        observer.disconnect();
+        for (const record of records) {
+          if (record.type === 'childList') for (const node of record.addedNodes) localize(node);
+          else localize(record.target);
+        }
+        observe();
+      });
+      function observe() {
+        observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['title', 'placeholder', 'aria-label', 'aria-valuetext', 'aria-expanded', 'class'] });
+      }
+      function setLanguage(value) {
+        language = value === 'en' ? 'en' : 'zh-CN';
+        try { localStorage.setItem('vocabLanguage', language); } catch { /* Still allow switching when storage is blocked. */ }
+        document.documentElement.lang = language;
+        document.getElementById('ui-language').value = language;
+        observer.disconnect();
+        localize();
+        localize(document.querySelector('title'));
+        observe();
+      }
+      document.getElementById('ui-language').addEventListener('change', event => setLanguage(event.target.value));
+      document.getElementById('csv-file').addEventListener('change', event => {
+        const name = document.getElementById('csv-file-name');
+        const fileName = event.target.files?.[0]?.name;
+        if (fileName) name.setAttribute('data-user-content', 'true');
+        else name.removeAttribute('data-user-content');
+        name.textContent = fileName || '未选择文件';
+      });
+      window.addEventListener('storage', event => { if (event.key === 'vocabLanguage') setLanguage(event.newValue); });
+      setLanguage(language);
+      return { setLanguage, translate, english, get language() { return language; } };
+    }
+    window.vocabI18n = createVocabLocalization();
+  </script>
   <script>
     try { document.documentElement.dataset.theme = localStorage.getItem('vocabTheme') || 'dark'; }
     catch { document.documentElement.dataset.theme = 'dark'; }
@@ -1714,7 +1930,7 @@
     async function renameWordbook(wordbook, proposedName) {
       const user = auth.currentUser;
       if (!user) return;
-      const rawName = proposedName ?? window.prompt('输入新的单词本名称', wordbook.name || '');
+      const rawName = proposedName ?? window.prompt(window.vocabI18n.translate('输入新的单词本名称'), wordbook.name || '');
       if (rawName === null) return;
       const validated = validateWordbookName(rawName, wordbook.id);
       if (validated.error) return showModal(validated.error);
@@ -3480,7 +3696,7 @@ NO`;
         { role: 'assistant', content: '好的。我会基于当前这份整理报告回答后续问题。' }
         ];
         document.getElementById('ai-chat-log').innerHTML = '';
-        appendChatBubble('assistant', '已启用当前报告追问。你可以继续问语气、用法或替代表达。');
+        appendChatBubble('assistant', '已启用当前报告追问。你可以继续问语气、用法或替代表达。', true);
       }
       const card = document.getElementById('ai-chat-card');
       const enableButton = document.getElementById('enable-ai-chat');
@@ -3672,9 +3888,10 @@ NO`;
       container.scrollTop = 0;
     }
 
-    function appendChatBubble(role, text) {
+    function appendChatBubble(role, text, isUiMessage = false) {
       const bubble = document.createElement('div');
       bubble.className = `chat-bubble ${role}`;
+      if (isUiMessage) bubble.dataset.uiContent = 'true';
       bubble.textContent = text;
       const log = document.getElementById('ai-chat-log');
       log.appendChild(bubble);
