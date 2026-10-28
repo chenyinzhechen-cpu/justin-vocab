@@ -856,7 +856,9 @@
         <textarea id="ai-source-input" class="ai-textarea" placeholder="例如：&#10;我需要出去逛逛 I need to touch grass&#10;look up&#10;这周末我只想在家休息"></textarea>
         <div class="ai-actions">
           <button id="generate-ai-report" class="ai-btn">生成报告</button>
+          <button id="save-ai-source" class="ai-btn secondary" type="button">保存草稿</button>
           <button id="clear-ai-source" class="ai-btn secondary" type="button">一键清空</button>
+          <span id="ai-draft-status" class="ai-status" role="status" aria-live="polite" style="margin:0;"></span>
           <div id="ai-progress-wrap" class="ai-progress-wrap" hidden>
             <div id="ai-progress" class="ai-progress" role="progressbar" aria-label="报告生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div id="ai-progress-bar" class="ai-progress-bar"></div>
@@ -1034,6 +1036,12 @@
         '生成口语整理报告': 'Generate a Speaking Report', '粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。': 'Paste words, phrases, sentences or paragraphs. Chinese is translated into English; English is translated and polished. Mixed input is checked for accuracy and naturalness. Larger inputs are processed in batches.',
         '例如：\n我需要出去逛逛 I need to touch grass\nlook up\n这周末我只想在家休息': 'Examples:\nI need to touch grass\nlook up\nI just want to relax at home this weekend',
         '生成报告': 'Generate report', '一键清空': 'Clear input', '报告生成进度': 'Report generation progress', '结构化单词报告': 'Vocabulary Report',
+        '保存草稿': 'Save draft', '草稿已保存到当前浏览器': 'Draft saved in this browser',
+        '已恢复上次草稿': 'Previous draft restored', '草稿已清空': 'Draft cleared',
+        '自动保存，不会生成报告；草稿仅保存在当前设备的此浏览器': 'Autosaved without generating a report. Drafts stay in this browser on this device.',
+        '草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试': 'Draft could not be saved. Keep this page open, allow website storage, and retry.',
+        '草稿读取失败，请检查浏览器存储设置': 'Draft could not be restored. Check browser storage settings.',
+        '请先登录后保存草稿': 'Sign in before saving a draft',
         'Other Spoken Alternative · 表达选择与区别': 'Other Spoken Alternative',
         '上一份': 'Previous report', '下一份': 'Next report', '暂无历史记录': 'No reports yet', '删除当前报告': 'Delete current report',
         '生成后，这里会显示每条表达的简短说明。': 'Explanations for each expression will appear here.', '可直接导入单词本的完整段落': 'Ready-to-Import Vocabulary',
@@ -1445,6 +1453,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       const version = ++authNavigationVersion;
+      aiSourceDraft.setUser(user?.uid || null);
       document.getElementById('app-startup').hidden = true;
       if (user) {
         authPage.hidden = true;
@@ -3911,8 +3920,72 @@ NO`;
       showModal('API Key 已清除');
     });
 
+    function createAiSourceDraft(input, status, getStorage) {
+      let uid = null;
+      let dirty = false;
+      const key = () => `vocabAiSourceDraft:v1:${uid}`;
+      function show(message, failed = false) {
+        status.textContent = message;
+        status.style.color = failed ? 'var(--danger, #c62828)' : '';
+      }
+      function save() {
+        if (!uid) { show('请先登录后保存草稿', true); return false; }
+        try {
+          getStorage().setItem(key(), input.value);
+          dirty = false;
+          show('草稿已保存到当前浏览器');
+          return true;
+        } catch {
+          dirty = true;
+          show('草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试', true);
+          return false;
+        }
+      }
+      return {
+        setUser(nextUid) {
+          if (nextUid === uid) return;
+          uid = nextUid;
+          dirty = false;
+          input.value = '';
+          show('');
+          if (!uid) return;
+          try {
+            const saved = getStorage().getItem(key());
+            input.value = saved ?? '';
+            show(saved ? '已恢复上次草稿' : '自动保存，不会生成报告；草稿仅保存在当前设备的此浏览器');
+          } catch { show('草稿读取失败，请检查浏览器存储设置', true); }
+        },
+        changed() { dirty = true; return save(); },
+        save,
+        flush() { if (dirty) save(); },
+        clear() {
+          if (!uid) { show('请先登录后保存草稿', true); return false; }
+          try {
+            getStorage().removeItem(key());
+            input.value = '';
+            dirty = false;
+            show('草稿已清空');
+            return true;
+          } catch {
+            show('草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试', true);
+            return false;
+          }
+        }
+      };
+    }
+
+    const aiSourceDraft = createAiSourceDraft(
+      document.getElementById('ai-source-input'), document.getElementById('ai-draft-status'), () => localStorage
+    );
+    document.getElementById('ai-source-input').addEventListener('input', () => aiSourceDraft.changed());
+    document.getElementById('save-ai-source').addEventListener('click', () => aiSourceDraft.save());
+    window.addEventListener('pagehide', () => aiSourceDraft.flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') aiSourceDraft.flush();
+    });
+
     document.getElementById('clear-ai-source').addEventListener('click', () => {
-      document.getElementById('ai-source-input').value = '';
+      if (!aiSourceDraft.clear()) return;
       resetAiProgress();
       setAiStatus('ai-generate-status', '');
     });
@@ -3920,6 +3993,7 @@ NO`;
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
       const source = document.getElementById('ai-source-input').value.trim();
       if (!source) return showModal('请先输入需要整理的内容');
+      aiSourceDraft.save();
       const sourceItems = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
       const batches = createAiBatches(sourceItems);
       const button = document.getElementById('generate-ai-report');
