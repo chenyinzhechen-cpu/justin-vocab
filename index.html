@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.10.28.2202</span>
+        <span id="main-app-version" class="app-version">v2026.10.28.2220</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1012,6 +1012,7 @@
         <div class="checkin-settings">
           <button id="checkin-settings-toggle" class="icon-btn" type="button" aria-label="打卡设置" aria-expanded="false" aria-controls="checkin-settings-menu">⚙</button>
           <div id="checkin-settings-menu" hidden>
+            <button id="manual-today-checkin" class="icon-btn" type="button" disabled>手动今日打卡</button>
             <button id="cancel-today-checkin" class="icon-btn" type="button" disabled>取消今日打卡</button>
             <button id="reset-checkin" class="icon-btn" type="button">手动重置打卡记录</button>
             <button id="show-checkin-history" class="icon-btn" type="button">查看历史打卡记录</button>
@@ -1139,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.28.2202</span>
+      <span id="app-version" class="app-version">v2026.10.28.2220</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1368,12 +1369,16 @@
         '顺序': 'Order', '逆序': 'Reverse', '随机': 'Random', '背诵模式': 'Study Mode', '列表模式': 'List', '单卡片模式': 'Single card',
         '开始背诵': 'Start studying', '背诵完成': 'Mark as completed', '背诵': 'Study', '单卡片背诵': 'Flashcard study', '点击显示': 'Reveal answer',
         '← 返回单词本列表': '← Back to wordbooks', '取消本组背诵完成': 'Unmark this list', '取消今日打卡': 'Cancel today’s check-in',
+        '手动今日打卡': 'Check in manually today',
+        '确定手动记录今日打卡吗？无需完成 List，不会更改列表完成标记。': 'Check in manually today? No completed list is required. List completion marks will stay unchanged.',
+        '今日打卡成功，列表完成标记不变。': 'Checked in today. List completion marks are unchanged.',
+        '手动打卡失败，未确认今日打卡成功。': 'Manual check-in failed. Today’s check-in was not confirmed.',
         '这个列表已被删除，不能取消完成。': 'This list was deleted and cannot be unmarked.',
         '本组完成标记已取消，今日打卡不变。': 'List unmarked. Today’s check-in is unchanged.',
         '取消完成失败，原标记未修改。': 'Could not unmark the list. Its completion mark is unchanged.',
         '今日打卡已取消，列表完成标记和其他日期不变。': 'Today’s check-in cancelled. List marks and other dates are unchanged.',
         '取消今日打卡失败，原记录未修改。': 'Could not cancel today’s check-in. The record is unchanged.',
-        '确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。再次点击“背诵完成”可重新打卡。': 'Cancel today’s check-in? List completion marks and other dates will stay unchanged. Mark a list as completed again to check in today.',
+        '确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。可通过“背诵完成”或“手动今日打卡”重新打卡。': 'Cancel today’s check-in? List completion marks and other dates will stay unchanged. Mark a list as completed or check in manually to check in again today.',
         '上一个': 'Previous', '下一个': 'Next', '已完成': 'Done', '预览': 'Preview', '编辑单词': 'Edit words', '保存单词修改': 'Save word changes',
         '添加新的空单词词组集': 'Add a blank word pair', '历史打卡记录': 'Check-in History', '关闭历史打卡记录': 'Close check-in history',
         '例如：GRE 单词本': 'Example: GRE vocabulary', '单词本名称': 'Wordbook name', '取消': 'Cancel', '确定': 'Confirm',
@@ -1393,8 +1398,8 @@
         '这个列表已被删除，不能记录背诵完成。': 'This list was deleted and cannot be marked as completed.', '空列表不能记录背诵完成。': 'An empty list cannot be marked as completed.',
         '请检查网络后重试。': 'Check your connection and retry.', '这个区暂无需要清空的对勾。': 'There are no completion marks to clear in this section.',
         '列表过多，暂不能一次清空，请联系维护者。': 'Too many lists to clear at once. Contact support.', '本区背诵对勾已清空，历史打卡记录仍保留。': 'Completion marks cleared. Check-in history is preserved.',
-        '连击已归零，历史打卡和列表对勾都保留。再次点击“背诵完成”即可开始新连击。': 'Streak reset. History and list completion marks are preserved. Select Mark as completed again to start a new streak.',
-        '确定将当前连击归零吗？历史打卡和列表对勾均保留；今天需要重新点击“背诵完成”才能开启新连击。': 'Reset your current streak? History and list completion marks will remain. Mark a list as completed again today to start a new streak.',
+        '连击已归零，历史打卡和列表对勾都保留。可通过“背诵完成”或“手动今日打卡”开始新连击。': 'Streak reset. History and list completion marks are preserved. Mark a list as completed or check in manually to start a new streak.',
+        '确定将当前连击归零吗？历史打卡和列表对勾均保留；可通过“背诵完成”或“手动今日打卡”开启新连击。': 'Reset your current streak? History and list completion marks will remain. Mark a list as completed or check in manually to start a new streak.',
         '请选择有效的目标 List': 'Choose a valid target list', '目标单词本不存在': 'The target wordbook does not exist',
         '列表过多，无法安全地一次重新分组，请先联系维护者': 'Too many lists to regroup safely at once. Contact support.', '重新排列失败，原列表未修改': 'Regrouping failed. Your original lists are unchanged.',
         '确定删除该列表吗？': 'Delete this list?', '这组已背诵完成；每天仍需点击“背诵完成”才算当天打卡': 'This list is completed. Select Mark as completed each day to check in for that day.', '已背诵完成': 'Study completed',
@@ -1455,6 +1460,7 @@
           [/^已导入 (\d+) 条表达至“([\s\S]*)”$/, (_, n, name) => `Imported ${n} expressions into “${name}”`],
           [/^已导入 (\d+) 条到指定 List$/, (_, n) => `Imported ${n} items into the selected list`],
           [/^(\d{4}-\d{2}-\d{2})：(已完成 (\d+) 个列表|未打卡)$/, (_, date, state, n) => `${date}: ${n ? `${n} lists completed` : 'Not checked in'}`],
+          [/^(\d{4}-\d{2}-\d{2})(：| · )手动今日打卡$/, (_, date, separator) => `${date}${separator === '：' ? ': ' : separator}Manual check-in`],
           [/^(\d{4}-\d{2}-\d{2} · [\s\S]* · )(新单词|需巩固单词|Final巩固单词)list(\d+) · (\d+) 个单词$/, (_, prefix, type, n, words) => `${prefix}${translateEnglish(type)} List ${n} · ${words} words`],
           [/^(\d{4}-\d{2}-\d{2} · [\s\S]* · )(\d+) 个单词$/, (_, prefix, n) => `${prefix}${n} words`],
           [/^(新单词|需巩固单词|Final巩固单词)list(\d+)(.*)$/, (_, type, n, tail) => `${translateEnglish(type)} List ${n}${translateEnglish(tail)}`],
@@ -2108,6 +2114,7 @@
       document.getElementById('retry-checkin').hidden = !studyError;
       document.getElementById('checkin-warning-icon').hidden = true;
       document.getElementById('cancel-today-checkin').disabled = true;
+      document.getElementById('manual-today-checkin').disabled = true;
       if (!studyLoaded || studyError) {
         status.textContent = studyError || '正在读取打卡记录…';
         card.dataset.state = 'idle';
@@ -2119,6 +2126,7 @@
       const today = studyDateKey();
       const streak = getStudyStreak(studyDays, today);
       document.getElementById('cancel-today-checkin').disabled = studySaving || streak.state !== 'active';
+      document.getElementById('manual-today-checkin').disabled = studySaving || streak.state === 'active';
       const messages = {
         empty: '今天，先背一组吧。',
         active: '今日打卡成功，继续保持！',
@@ -2144,7 +2152,9 @@
       for (let offset = 4; offset >= 0; offset--) {
         const date = new Date((studyDayNumber(today) - offset) * 86400000).toISOString().slice(0, 10);
         const day = studyDays.find(item => item.date === date);
-        const total = Object.values(day?.completions || {}).filter(record => (Number(record.streakGeneration) || 0) === studyGeneration).length;
+        const records = Object.values(day?.completions || {}).filter(record => (Number(record.streakGeneration) || 0) === studyGeneration);
+        const total = records.length;
+        const listTotal = records.filter(record => record.source !== 'manual').length;
         const cell = document.createElement('div');
         cell.className = `checkin-day${total ? ' done' : ''}${date === today ? ' today' : ''}`;
         const label = document.createElement('span');
@@ -2155,7 +2165,7 @@
         mark.textContent = total ? '✓' : '—';
         cell.appendChild(label);
         cell.appendChild(mark);
-        cell.title = `${date}：${total ? `已完成 ${total} 个列表` : '未打卡'}`;
+        cell.title = `${date}：${total ? (listTotal ? `已完成 ${listTotal} 个列表` : '手动今日打卡') : '未打卡'}`;
         cell.setAttribute('aria-label', cell.title);
         daysNode.appendChild(cell);
       }
@@ -2175,7 +2185,7 @@
       for (const day of sorted) {
         for (const record of Object.values(day.completions || {})) {
           const item = document.createElement('li');
-          item.textContent = `${day.date} · ${record.bookName} · ${record.listName} · ${record.wordCount} 个单词`;
+          item.textContent = record.source === 'manual' ? `${day.date} · 手动今日打卡` : `${day.date} · ${record.bookName} · ${record.listName} · ${record.wordCount} 个单词`;
           history.appendChild(item);
         }
       }
@@ -2273,6 +2283,39 @@
       }
     }
 
+    async function manualTodayCheckin() {
+      const user = auth.currentUser;
+      if (!user || studySaving) return;
+      if (!studyLoaded || studyError) return showModal('打卡记录尚未成功读取，请联网后重试。');
+      studySaving = true;
+      renderCompletionControls();
+      document.getElementById('manual-today-checkin').disabled = true;
+      document.getElementById('cancel-today-checkin').disabled = true;
+      try {
+        await runTransaction(db, async transaction => {
+          const settingsRef = doc(db, 'users', user.uid, 'preferences', 'study');
+          const settings = await transaction.get(settingsRef);
+          const zone = settings.data()?.timeZone || studyTimeZone;
+          const generation = Number(settings.data()?.streakGeneration) || 0;
+          const today = studyDateKey(new Date(), zone);
+          const ref = doc(db, 'users', user.uid, 'studyDays', today);
+          const snapshot = await transaction.get(ref);
+          const completions = { ...(snapshot.data()?.completions || {}) };
+          if (Object.values(completions).some(record => (Number(record.streakGeneration) || 0) === generation)) return;
+          completions.__manual_checkin__ = { source: 'manual', streakGeneration: generation, completedAt: Date.now() };
+          if (!settings.exists()) transaction.set(settingsRef, { timeZone: zone });
+          transaction.set(ref, { ...snapshot.data(), date: today, timeZone: zone, completions });
+        });
+        if (auth.currentUser?.uid === user.uid) showModal('今日打卡成功，列表完成标记不变。');
+      } catch (error) {
+        if (auth.currentUser?.uid === user.uid) showModal('手动打卡失败，未确认今日打卡成功。');
+      } finally {
+        studySaving = false;
+        renderCompletionControls();
+        renderStudyDashboard();
+      }
+    }
+
     async function cancelTodayCheckin() {
       const user = auth.currentUser;
       if (!user || studySaving) return;
@@ -2280,6 +2323,7 @@
       studySaving = true;
       renderCompletionControls();
       document.getElementById('cancel-today-checkin').disabled = true;
+      document.getElementById('manual-today-checkin').disabled = true;
       try {
         await runTransaction(db, async transaction => {
           const settings = await transaction.get(doc(db, 'users', user.uid, 'preferences', 'study'));
@@ -2385,7 +2429,7 @@
         if (auth.currentUser?.uid === user.uid) {
           studyGeneration = generation;
           renderStudyDashboard();
-          showModal('连击已归零，历史打卡和列表对勾都保留。再次点击“背诵完成”即可开始新连击。');
+          showModal('连击已归零，历史打卡和列表对勾都保留。可通过“背诵完成”或“手动今日打卡”开始新连击。');
         }
       } catch (error) {
         if (auth.currentUser?.uid === user.uid) showModal(`重置失败，原记录未修改。${error.message || '请检查网络后重试。'}`);
@@ -2410,11 +2454,15 @@
     });
     document.getElementById('reset-checkin').addEventListener('click', () => {
       closeCheckinSettings();
-      showModal('确定将当前连击归零吗？历史打卡和列表对勾均保留；今天需要重新点击“背诵完成”才能开启新连击。', resetStudyStreak);
+      showModal('确定将当前连击归零吗？历史打卡和列表对勾均保留；可通过“背诵完成”或“手动今日打卡”开启新连击。', resetStudyStreak);
     });
     document.getElementById('cancel-today-checkin').addEventListener('click', () => {
       closeCheckinSettings();
-      showModal('确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。再次点击“背诵完成”可重新打卡。', cancelTodayCheckin);
+      showModal('确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。可通过“背诵完成”或“手动今日打卡”重新打卡。', cancelTodayCheckin);
+    });
+    document.getElementById('manual-today-checkin').addEventListener('click', () => {
+      closeCheckinSettings();
+      showModal('确定手动记录今日打卡吗？无需完成 List，不会更改列表完成标记。', manualTodayCheckin);
     });
     document.getElementById('show-checkin-history').addEventListener('click', () => {
       closeCheckinSettings();
