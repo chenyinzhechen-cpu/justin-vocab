@@ -891,7 +891,6 @@
     #wordbook-page .list-container { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     #wordbook-page .list-item { padding:18px; min-height:88px; gap:12px; border-color:var(--report-border); box-shadow:0 2px 4px var(--shadow); }
     #wordbook-page .list-item:hover { border-color:var(--muted); background:var(--panel-dark); }
-    #wordbook-page .list-item.is-complete { border-color:var(--muted); background:var(--panel-dark); }
     .list-copy { display:flex !important; flex-direction:column; align-items:flex-start !important; justify-content:center; padding-left:35px; position:relative; gap:3px !important; }
     .list-copy:before { content:''; position:absolute; left:0; width:26px; height:28px; background:var(--text); border:0; border-radius:0; -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M14 6C10 3 5 3 2 5v19c4-2 8-2 12 1 4-3 8-3 12-1V5c-3-2-8-2-12 1v19'/%3E%3C/svg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M14 6C10 3 5 3 2 5v19c4-2 8-2 12 1 4-3 8-3 12-1V5c-3-2-8-2-12 1v19'/%3E%3C/svg%3E") center/contain no-repeat; }
     .list-copy:after { content:none; }
@@ -912,6 +911,27 @@
     .mode-btn.active:after,.order-btn.active:after,.study-layout-btn.active:after { content:''; width:9px; height:9px; border-radius:50%; background:var(--text); position:absolute; left:22px; top:50%; transform:translateY(-50%); }
     #start-study,#complete-study { font-size:16px; min-height:48px; }#start-study { margin-top:26px; }
     button:disabled { opacity:.4; cursor:default; }
+    /* Editorial headings, readable study content and quieter utility labels across every view. */
+    :root { --font-display:Georgia,'Songti SC',serif; }
+    #main-page header h1,#mode-page header h1,.library-heading h1,#wordbook-page header h1 { font-family:var(--font-display); font-size:clamp(32px,3.2vw,46px); font-weight:700; letter-spacing:-.7px; }
+    .view > header h2,.ai-card h2,.report-title { font-family:var(--font-display); font-weight:600; }
+    .view > header h2 { font-size:28px; line-height:1.3; }
+    #checkin-title,.continue-card h2,.overview-calendar h2 { font-family:var(--font-display); font-weight:600; }
+    .mode-select h3,.ai-card h3 { font-family:inherit; font-size:17px; font-weight:650; }
+    .mode-btn,.order-btn,.study-layout-btn { font-size:17px; }
+    .mode-btn.active,.order-btn.active,.study-layout-btn.active { font-weight:600; }
+    #study-title { font-family:var(--font-display); font-size:28px; }
+    .study-prompt { font-family:var(--font-display); font-size:20px; font-weight:500; line-height:1.5; }
+    .study-answer { font-size:17px; line-height:1.6; }.study-answer.show { font-weight:500; }
+    .study-index,.single-study-meta { color:var(--muted); font-size:14px; font-weight:500; }
+    #single-study-prompt { font-family:var(--font-display); font-size:clamp(27px,3.5vw,38px); font-weight:500; line-height:1.45; }
+    #single-study-answer { font-family:inherit; font-size:clamp(20px,2.5vw,27px); line-height:1.6; }
+    #start-study,#complete-study,#study-finished { font-weight:600; }
+    #cancel-list-completion { display:block; width:100%; margin-top:12px; min-height:44px; font-size:15px; color:var(--muted); border:1px dashed var(--muted); }
+    #wordbook-library-link { display:inline-flex; align-items:center; color:var(--text); font-weight:600; padding:6px 0; }
+    .report-title { font-size:23px; }.report-text-block,.report-section p,.report-list { font-size:16px; line-height:1.7; }
+    #checkin-card[data-state="active"] .checkin-flame { color:#dc422c; opacity:1; }
+    #checkin-card[data-state="active"] .checkin-flame path { fill:#ed5136; stroke:#cf3d28; }
     @media(max-width:1200px) { .list-study { font-size:13px; }.list-actions { gap:3px; } .list-copy { padding-left:34px; }.list-name { font-size:17px; } }
     @media(max-width:1000px) { #app-sidebar { width:200px; }.view:not(#auth-page) { margin-left:200px; padding:30px; }.overview-top { grid-template-columns:1fr; }#wordbook-page .list-container { grid-template-columns:1fr; }#wordbook-page .list-item { grid-column:1 !important; grid-row:auto !important; } }
     @media(max-width:700px) {
@@ -928,6 +948,7 @@
       #wordbook-page header { flex-wrap:wrap; gap:12px; }#wordbook-import { padding:8px 12px; font-size:13px; }.list-column-heading { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.toolbar-spacer { display:none; }#wordbook-page .capacity-select { min-width:92px; width:100%; font-size:14px; padding:9px; }.rebalance-btn { font-size:12px; padding:9px; min-height:40px; }
       #wordbook-page .list-item { padding:14px 10px; }.list-copy { padding-left:30px; }.list-copy:before { width:22px; height:24px; }.list-actions { gap:3px; }.list-study { font-size:12px; padding-left:8px; }.list-name { font-size:16px; }.list-count { font-size:12px; }
       #mode-page .mode-select { padding:0; }.option-group button,.study-layout-options button { margin:0; font-size:15px; }.mode-subtitle { font-size:14px; }
+      .study-prompt { font-size:18px; }.study-answer { font-size:16px; }#study-title { font-size:23px; }
     }
   </style>
 </head>
@@ -965,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.10.28.2109</span>
+        <span id="main-app-version" class="app-version">v2026.10.28.2202</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -991,6 +1012,7 @@
         <div class="checkin-settings">
           <button id="checkin-settings-toggle" class="icon-btn" type="button" aria-label="打卡设置" aria-expanded="false" aria-controls="checkin-settings-menu">⚙</button>
           <div id="checkin-settings-menu" hidden>
+            <button id="cancel-today-checkin" class="icon-btn" type="button" disabled>取消今日打卡</button>
             <button id="reset-checkin" class="icon-btn" type="button">手动重置打卡记录</button>
             <button id="show-checkin-history" class="icon-btn" type="button">查看历史打卡记录</button>
           </div>
@@ -1026,7 +1048,7 @@
   </div>
 
   <div id="wordbook-page" class="view">
-    <div class="breadcrumb"><button id="wordbook-library-link" class="icon-btn" type="button">全部单词本</button><span aria-hidden="true">/</span><span id="wordbook-breadcrumb-name" data-user-content></span></div>
+    <div class="breadcrumb"><button id="wordbook-library-link" class="icon-btn" type="button">← 返回单词本列表</button><span aria-hidden="true">/</span><span id="wordbook-breadcrumb-name" data-user-content></span></div>
     <header>
       <div style="display:flex; align-items:center;">
         <button id="wordbook-back" class="back-btn">← 返回</button>
@@ -1117,7 +1139,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.28.2109</span>
+      <span id="app-version" class="app-version">v2026.10.28.2202</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1229,6 +1251,7 @@
       </div>
       <button id="start-study">开始背诵</button>
       <button id="complete-study" class="ai-btn secondary" type="button">背诵完成</button>
+      <button id="cancel-list-completion" class="ai-btn secondary" type="button" hidden>取消本组背诵完成</button>
     </div>
   </div>
 
@@ -1344,6 +1367,13 @@
         '选择模式': 'Study Options', '翻译方向': 'Translation Direction', '英 → 中': 'English → Chinese', '中 → 英': 'Chinese → English',
         '顺序': 'Order', '逆序': 'Reverse', '随机': 'Random', '背诵模式': 'Study Mode', '列表模式': 'List', '单卡片模式': 'Single card',
         '开始背诵': 'Start studying', '背诵完成': 'Mark as completed', '背诵': 'Study', '单卡片背诵': 'Flashcard study', '点击显示': 'Reveal answer',
+        '← 返回单词本列表': '← Back to wordbooks', '取消本组背诵完成': 'Unmark this list', '取消今日打卡': 'Cancel today’s check-in',
+        '这个列表已被删除，不能取消完成。': 'This list was deleted and cannot be unmarked.',
+        '本组完成标记已取消，今日打卡不变。': 'List unmarked. Today’s check-in is unchanged.',
+        '取消完成失败，原标记未修改。': 'Could not unmark the list. Its completion mark is unchanged.',
+        '今日打卡已取消，列表完成标记和其他日期不变。': 'Today’s check-in cancelled. List marks and other dates are unchanged.',
+        '取消今日打卡失败，原记录未修改。': 'Could not cancel today’s check-in. The record is unchanged.',
+        '确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。再次点击“背诵完成”可重新打卡。': 'Cancel today’s check-in? List completion marks and other dates will stay unchanged. Mark a list as completed again to check in today.',
         '上一个': 'Previous', '下一个': 'Next', '已完成': 'Done', '预览': 'Preview', '编辑单词': 'Edit words', '保存单词修改': 'Save word changes',
         '添加新的空单词词组集': 'Add a blank word pair', '历史打卡记录': 'Check-in History', '关闭历史打卡记录': 'Close check-in history',
         '例如：GRE 单词本': 'Example: GRE vocabulary', '单词本名称': 'Wordbook name', '取消': 'Cancel', '确定': 'Confirm',
@@ -2014,6 +2044,11 @@
       listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
         if (!active()) return;
         allLists = snapshot.docs.map(docSnap => ({ ...docSnap.data(), docId: docSnap.id }));
+        if (currentList && !snapshot.metadata?.hasPendingWrites) {
+          const latest = allLists.find(list => list.docId === currentList.docId);
+          currentList.studyCompletedAt = latest?.studyCompletedAt || null;
+          renderCompletionControls();
+        }
         refreshActiveLists();
         updateWordbookDashboard();
         updateWordbookPage();
@@ -2072,6 +2107,7 @@
       warnings.hidden = true;
       document.getElementById('retry-checkin').hidden = !studyError;
       document.getElementById('checkin-warning-icon').hidden = true;
+      document.getElementById('cancel-today-checkin').disabled = true;
       if (!studyLoaded || studyError) {
         status.textContent = studyError || '正在读取打卡记录…';
         card.dataset.state = 'idle';
@@ -2082,6 +2118,7 @@
       }
       const today = studyDateKey();
       const streak = getStudyStreak(studyDays, today);
+      document.getElementById('cancel-today-checkin').disabled = studySaving || streak.state !== 'active';
       const messages = {
         empty: '今天，先背一组吧。',
         active: '今日打卡成功，继续保持！',
@@ -2204,12 +2241,72 @@
       renderStudyDashboard();
     }
 
+    function renderCompletionControls() {
+      const button = document.getElementById('cancel-list-completion');
+      button.hidden = !currentList?.studyCompletedAt;
+      button.disabled = studySaving;
+      document.getElementById('complete-study').disabled = studySaving;
+    }
+
+    async function cancelCurrentListCompletion() {
+      const user = auth.currentUser;
+      const list = currentList;
+      if (!user || !list || studySaving) return;
+      studySaving = true;
+      renderCompletionControls();
+      try {
+        await runTransaction(db, async transaction => {
+          const ref = doc(db, 'users', user.uid, 'lists', list.docId);
+          const snapshot = await transaction.get(ref);
+          if (!snapshot.exists()) throw new Error('这个列表已被删除，不能取消完成。');
+          transaction.update(ref, { studyCompletedAt: null });
+        });
+        if (auth.currentUser?.uid === user.uid) {
+          if (currentList?.docId === list.docId) currentList.studyCompletedAt = null;
+          showModal('本组完成标记已取消，今日打卡不变。');
+        }
+      } catch (error) {
+        if (auth.currentUser?.uid === user.uid) showModal('取消完成失败，原标记未修改。');
+      } finally {
+        studySaving = false;
+        renderCompletionControls();
+      }
+    }
+
+    async function cancelTodayCheckin() {
+      const user = auth.currentUser;
+      if (!user || studySaving) return;
+      if (!studyLoaded || studyError) return showModal('打卡记录尚未成功读取，请联网后重试。');
+      studySaving = true;
+      renderCompletionControls();
+      document.getElementById('cancel-today-checkin').disabled = true;
+      try {
+        await runTransaction(db, async transaction => {
+          const settings = await transaction.get(doc(db, 'users', user.uid, 'preferences', 'study'));
+          const zone = settings.data()?.timeZone || studyTimeZone;
+          const today = studyDateKey(new Date(), zone);
+          const ref = doc(db, 'users', user.uid, 'studyDays', today);
+          const snapshot = await transaction.get(ref);
+          if (!snapshot.exists()) return;
+          transaction.set(ref, { ...snapshot.data(), completions: {}, cancelledAt: Date.now() });
+        });
+        if (auth.currentUser?.uid === user.uid) showModal('今日打卡已取消，列表完成标记和其他日期不变。');
+      } catch (error) {
+        if (auth.currentUser?.uid === user.uid) showModal('取消今日打卡失败，原记录未修改。');
+      } finally {
+        studySaving = false;
+        renderCompletionControls();
+        renderStudyDashboard();
+      }
+    }
+
     async function completeCurrentStudy() {
       const user = auth.currentUser;
       const list = currentList;
       if (!user || !list || studySaving) return;
       if (!studyLoaded || studyError) return showModal('打卡记录尚未成功读取，请联网后重试。');
       studySaving = true;
+      renderCompletionControls();
       const button = document.getElementById('complete-study');
       button.disabled = true;
       button.textContent = '正在保存…';
@@ -2239,13 +2336,17 @@
           transaction.set(dayRef, { date: today, timeZone: zone, completions });
           return today;
         });
-        if (auth.currentUser?.uid === user.uid) showModal(`${date} 背诵完成，今日打卡成功！同一天重复完成不会增加连击天数。`);
+        if (auth.currentUser?.uid === user.uid) {
+          if (currentList?.docId === list.docId) currentList.studyCompletedAt = Date.now();
+          showModal(`${date} 背诵完成，今日打卡成功！同一天重复完成不会增加连击天数。`);
+        }
       } catch (error) {
         if (auth.currentUser?.uid === user.uid) showModal(`保存失败，未确认打卡成功。${error.message || '请检查网络后重试。'}`);
       } finally {
         studySaving = false;
         button.disabled = false;
         button.textContent = '背诵完成';
+        renderCompletionControls();
       }
     }
 
@@ -2311,6 +2412,10 @@
       closeCheckinSettings();
       showModal('确定将当前连击归零吗？历史打卡和列表对勾均保留；今天需要重新点击“背诵完成”才能开启新连击。', resetStudyStreak);
     });
+    document.getElementById('cancel-today-checkin').addEventListener('click', () => {
+      closeCheckinSettings();
+      showModal('确定取消今天的打卡吗？仅影响今天，列表完成标记和其他日期保持不变。再次点击“背诵完成”可重新打卡。', cancelTodayCheckin);
+    });
     document.getElementById('show-checkin-history').addEventListener('click', () => {
       closeCheckinSettings();
       renderStudyHistory();
@@ -2336,6 +2441,7 @@
     });
 
     document.getElementById('complete-study').addEventListener('click', completeCurrentStudy);
+    document.getElementById('cancel-list-completion').addEventListener('click', cancelCurrentListCompletion);
     ['new', 'review', 'final'].forEach(type => {
       document.getElementById(`clear-study-${type}`).addEventListener('click', () => {
         const bookId = activeWordbookId;
@@ -2788,7 +2894,7 @@
 
     function createListRow(list, type) {
       const row = document.createElement('div');
-      row.className = list.studyCompletedAt ? 'list-item is-complete' : 'list-item';
+      row.className = 'list-item';
       const leftWrap = document.createElement('div');
       leftWrap.className = 'list-copy';
       leftWrap.style.display = 'flex';
@@ -2855,6 +2961,7 @@
       setActiveOrderBtn(document.getElementById('order-normal'));
       document.getElementById('mode-title').textContent = getListDisplayName(list, list.type);
       renderModeContext(list);
+      renderCompletionControls();
       showPage(modePage);
     }
 
