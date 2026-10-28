@@ -683,6 +683,140 @@
       .wordbook-create-row { max-width: none; }
     }
   </style>
+  <style id="monochrome-redesign">
+    :root { --bg:#191918; --panel:#222220; --panel-light:#3a3a36; --panel-dark:#2b2b28; --text:#f3f2ee; --muted:#b4b3ac; --accent:#f3f2ee; --accent-contrast:#242423; --button-hover:#deddd7; --report-bg:#222220; --report-item:#262624; --report-border:#42423d; --soft-border:#ffffff19; --shadow:#00000015; }
+    :root[data-theme="light"] { --bg:#faf9f6; --panel:#fff; --panel-light:#e5e4df; --panel-dark:#f1f0ec; --text:#252525; --muted:#706f69; --accent:#252525; --accent-contrast:#fff; --button-hover:#41413d; --report-bg:#fff; --report-item:#fff; --report-border:#e5e4df; --soft-border:#25252516; --shadow:#25252508; }
+    body { font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    button,input,select,textarea { font-family:inherit; }
+    button { touch-action:manipulation; }
+    button:focus-visible,a:focus-visible { outline:2px solid var(--muted); outline-offset:3px; }
+    #app-sidebar { display:none; position:fixed; inset:0 auto 0 0; width:220px; padding:32px 18px 24px; border-right:1px solid var(--soft-border); background:var(--panel-dark); z-index:50; }
+    :root[data-screen]:not([data-screen="auth"]) #app-sidebar { display:flex; flex-direction:column; }
+    .sidebar-brand { display:flex; align-items:center; gap:13px; margin:0 14px 42px; }
+    .sidebar-brand svg { width:36px; height:36px; }
+    .sidebar-brand strong,.sidebar-brand span { display:block; }
+    .sidebar-brand strong { font-size:20px; letter-spacing:-.5px; }
+    .sidebar-brand span { font-size:13px; color:var(--muted); }
+    #app-sidebar nav { display:grid; gap:6px; }
+    #app-sidebar nav button { text-align:left; padding:13px 16px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:15px; cursor:pointer; }
+    #app-sidebar nav button[aria-current="page"] { color:var(--text); background:var(--panel-light); font-weight:650; }
+    #app-sidebar nav button:hover { background:var(--panel-light); color:var(--text); }
+    #sidebar-footer { margin-top:auto; border-top:1px solid var(--soft-border); padding-top:16px; }
+    #sidebar-footer #home-settings-toggle { font-size:16px; padding:10px 14px; }
+    #sidebar-footer #home-settings-menu { top:auto; bottom:100%; left:0; right:auto; border:1px solid var(--panel-light); }
+    .view:not(#auth-page) { margin-left:220px; padding:40px clamp(24px,4vw,64px); max-width:1660px; }
+    header h1,#main-page header h1 { font-size:32px; line-height:1.2; font-weight:700; letter-spacing:-1px; }
+    header h2 { font-size:27px; letter-spacing:-.6px; }
+    .view > header { min-height:40px; margin-bottom:22px; }
+    #main-page header { margin-bottom:8px; }
+    .app-version { background:none; border:none; font-weight:400; padding:0; font-size:11px; }
+    .overview-intro { color:var(--muted); font-size:17px; margin:0 0 30px; }
+    .overview-top { display:grid; grid-template-columns:1.1fr 1fr; gap:22px; }
+    .wordbook-section,.continue-card,.ai-card,#study-single,.login-container,.modal-content { border-radius:12px; box-shadow:none; }
+    .continue-card { border:1px solid var(--panel-light); background:var(--panel); padding:28px; min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
+    .continue-card h2 { margin:0 0 24px; font-size:19px; }
+    .eyebrow { font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:1.5px; }
+    #continue-book { font-size:24px; margin:6px 0; overflow-wrap:anywhere; }
+    #continue-list { color:var(--muted); margin:0 0 26px; }
+    #continue-study { margin-top:auto; min-height:44px; padding:10px 22px; }
+    .subtle { font-size:14px; color:var(--muted); }
+    .continue-card .subtle { margin-bottom:0; }
+    #checkin-card { border:0; border-radius:12px; padding:28px; background:var(--panel-dark); --checkin-ink:var(--text); }
+    #checkin-card[data-state="active"] { background:var(--panel-dark); --checkin-ink:var(--text); box-shadow:inset 0 3px var(--text); }
+    #checkin-card[data-state="caution"] { background:#fff3cf; --checkin-ink:#674b06; }
+    #checkin-card[data-state="danger"] { background:#fbe4e4; --checkin-ink:#872e36; }
+    :root[data-theme="dark"] #checkin-card[data-state="caution"] { background:#43391f; --checkin-ink:#ffde8d; }
+    :root[data-theme="dark"] #checkin-card[data-state="danger"] { background:#46282b; --checkin-ink:#ffbdc3; }
+    #checkin-card h2 { font-size:19px; }
+    .checkin-hero { min-height:142px; }
+    .checkin-count,html[lang="en"] .checkin-count { font-size:clamp(36px,4vw,62px); letter-spacing:-2px; font-weight:650; }
+    .checkin-flame { filter:grayscale(1) !important; opacity:.55; }
+    .checkin-book-art { display:none; }
+    #checkin-status { font-size:14px; }
+    .checkin-days { padding-top:16px; margin-top:18px; border-top:1px solid var(--soft-border); }
+    .checkin-day { background:transparent; border-radius:8px; padding:6px 1px; }
+    .checkin-date { font-size:12px; color:inherit; opacity:.8; }
+    .checkin-mark { width:28px; height:28px; background:transparent; }
+    .checkin-day.today { border-color:transparent; }
+    .checkin-day.today .checkin-mark { outline:1px solid currentColor; }
+    #checkin-warnings { opacity:.05; }
+    .overview-calendar { display:grid; grid-template-columns:1fr 1.7fr; gap:40px; margin-top:32px; padding:30px 4px 0; border-top:1px solid var(--panel-light); }
+    .overview-calendar h2 { font-size:20px; margin:0; }
+    .calendar-navigation { display:flex; gap:18px; align-items:center; margin:28px 0; }
+    .calendar-navigation strong { font-size:16px; font-weight:500; }
+    .calendar-legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
+    .calendar-weekdays,.calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; text-align:center; }
+    .calendar-weekdays { color:var(--muted); font-size:11px; padding-bottom:12px; border-bottom:1px solid var(--soft-border); }
+    .calendar-cell { min-height:36px; display:grid; place-items:center; }
+    .calendar-cell span { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; font-size:13px; }
+    .calendar-cell.done span { background:var(--text); color:var(--bg); }
+    .calendar-cell.today span { outline:1px solid var(--text); outline-offset:2px; }
+    .calendar-cell.future { color:var(--muted); opacity:.5; }
+    #library-page .wordbook-section { border:0; padding:0; background:transparent; }
+    #library-page .wordbook-section-header h2 { display:none; }
+    #library-page .wordbook-section-header { justify-content:flex-end; }
+    .word-section-tabs { display:flex; gap:8px; border-bottom:1px solid var(--panel-light); margin-bottom:24px; }
+    .word-section-tabs button { border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); padding:12px 18px; font:inherit; cursor:pointer; }
+    .word-section-tabs button[aria-selected="true"] { border-bottom-color:var(--text); color:var(--text); font-weight:600; }
+    #wordbook-page .lists-container { display:block; }
+    #wordbook-page .list-container { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:10px; }
+    #wordbook-page .list-item { margin:0; }
+    .wordbook-grid { grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:18px; }
+    .wordbook-card { background:var(--panel); padding:26px; border-radius:10px; border-color:var(--panel-light); }
+    .wordbook-card:hover { transform:none; border-color:var(--muted); }
+    .wordbook-card h3 { font-size:20px; }
+    .wordbook-card-actions { flex-wrap:wrap; justify-content:flex-end; }
+    .ai-btn,#import-page button,#start-study,.mode-btn,.order-btn,.study-layout-btn,#complete-study,.back-btn { border-radius:8px; }
+    .ai-btn { padding:10px 16px; font-size:14px; min-height:40px; }
+    .ai-btn.secondary,.mode-btn,.order-btn,.study-layout-btn { border:1px solid var(--panel-light); background:var(--panel); color:var(--text); }
+    .ai-btn.secondary:hover,.mode-btn:hover,.order-btn:hover,.study-layout-btn:hover,.back-btn:hover,.icon-btn:hover { background:var(--panel-dark); }
+    .mode-btn.active,.order-btn.active,.study-layout-btn.active { background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
+    .ai-card { padding:24px; border-color:var(--panel-light); }
+    .ai-textarea,.ai-input,#import-page textarea,#import-page input { border-radius:8px; background:var(--bg); border-color:var(--panel-light); line-height:1.6; }
+    textarea:focus,input:focus,select:focus { outline:2px solid var(--muted); outline-offset:2px; }
+    .ai-report-bubble { border:0; border-radius:0; }
+    .ai-package-header { padding-top:10px; border-top:1px solid var(--panel-light); }
+    .report-item { border-radius:8px; box-shadow:none; }
+    .ai-report-card { padding-left:0; }
+    .ai-report-pair { gap:24px; }
+    .ai-import-card { background:var(--panel-dark); }
+    .list-column { min-width:0; }
+    .list-column-heading { padding-bottom:14px; margin-bottom:10px; border-bottom:1px solid var(--panel-light); align-items:center; }
+    .list-column h2 { color:var(--text); font-size:17px; }
+    .list-item { border-radius:8px; padding:14px; background:var(--panel); }
+    .list-item > div:first-child { flex-wrap:wrap; gap:5px; min-width:0; }
+    .list-name { overflow-wrap:anywhere; }
+    .list-actions { flex-shrink:0; }
+    .rebalance-btn,.capacity-select { border-radius:6px; font-size:11px; }
+    .study-check { color:var(--text); }
+    #mode-page .mode-select { max-width:540px; padding:28px; }
+    #start-study,#complete-study { width:100%; margin:16px 0 0; min-height:44px; }
+    .study-prompt,.study-answer { border-radius:0; background:transparent; }
+    .study-answer { border-left:1px solid var(--panel-light); }
+    #single-study-answer { background:var(--panel-dark); border-radius:8px; }
+    .modal-content { box-shadow:0 16px 60px #0002; }
+    @media(min-width:1450px) { .lists-container { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media(max-width:1100px) { #app-sidebar { width:180px; padding-left:10px; padding-right:10px; } .view:not(#auth-page) { margin-left:180px; padding:28px 24px; } .overview-top { grid-template-columns:1fr; } .overview-calendar { gap:22px; grid-template-columns:1fr 1.6fr; } .ai-report-pair { grid-template-columns:1fr; } }
+    @media(max-width:700px) {
+      #app-sidebar { inset:0 0 auto; width:100%; height:62px; padding:10px 12px; flex-direction:row !important; align-items:center; border-right:0; border-bottom:1px solid var(--panel-light); gap:8px; }
+      .sidebar-brand { margin:0 8px 0 0; } .sidebar-brand svg { width:25px; height:25px; } .sidebar-brand div { display:none; }
+      #app-sidebar nav { display:flex; flex:1; gap:2px; } #app-sidebar nav button { padding:9px 8px; font-size:12px; white-space:nowrap; }
+      #sidebar-footer { margin:0; padding:0; border:0; } #sidebar-footer #home-settings-toggle { padding:7px; font-size:19px; } #home-settings-toggle span { display:none; }
+      #sidebar-footer #home-settings-menu { bottom:auto; top:100%; left:auto; right:0; }
+      .view:not(#auth-page) { margin-left:0; padding:86px 18px 28px; }
+      header h1,#main-page header h1 { font-size:28px; } header h2 { font-size:23px; } .app-version { font-size:9px; margin-left:8px; }
+      #main-page header > div:first-child { flex-wrap:wrap; gap:4px; } .overview-intro { font-size:15px; }
+      .continue-card,#checkin-card { padding:22px; } .overview-calendar { grid-template-columns:1fr; gap:14px; } .calendar-navigation { margin:18px 0; }
+      .calendar-legend { margin-bottom:0; } .calendar-weekdays,.calendar-grid { gap:4px; } .calendar-cell { min-height:40px; }
+      .wordbook-grid { grid-template-columns:1fr; } .wordbook-card { padding:20px; } .ai-card { padding:18px; } .ai-report-card { padding:0; }
+      .wordbook-section-header { flex-wrap:wrap; } .lists-container { display:block; } .list-column { margin-bottom:30px; }
+      .list-column-heading .rebalance-btn { min-height:34px; } .list-item { padding:12px; } .icon-btn { min-width:30px; min-height:34px; }
+      .study-row { grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 30px; font-size:14px; } .study-row span,.study-row div { padding:10px 6px; }
+      #mode-page .mode-select { padding:20px; } .preview-row { font-size:14px; } .preview-text,.preview-input { padding:8px !important; }
+      .ai-actions { gap:8px; } .ai-package-header { flex-wrap:wrap; } .ai-history-bar { flex-wrap:wrap; } .ai-import-card { padding:18px; }
+    }
+    @media(prefers-reduced-motion:reduce) { * { transition:none !important; scroll-behavior:auto !important; } }
+  </style>
 </head>
 <body>
 
@@ -704,15 +838,20 @@
     </div>
   </div>
 
+  <aside id="app-sidebar" aria-label="主导航">
+    <div class="sidebar-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 7C12 3 6 3 2 5v23c4-2 10-2 14 1 4-3 10-3 14-1V5c-4-2-10-2-14 2Zm0 0v22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><div><strong>Justin</strong><span>Vocabulary</span></div></div>
+    <nav><button id="nav-overview" type="button">总览</button><button id="nav-wordbooks" type="button">全部单词本</button><button id="open-ai-organizer" type="button">AI 整理</button></nav>
+    <div id="sidebar-footer"></div>
+  </aside>
   <div id="main-page" class="view">
     <header>
       <div style="display:flex; align-items:center;">
-        <h1>Justin专属单词背诵程序</h1>
-        <span id="main-app-version" class="app-version">v2026.10.28.0243</span>
+        <h1>总览</h1>
+        <span id="main-app-version" class="app-version">v2026.10.28.1517</span>
       </div>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
-          <button id="home-settings-toggle" class="icon-btn" title="设置" aria-label="设置" aria-expanded="false">⚙</button>
+          <button id="home-settings-toggle" class="icon-btn" title="设置" aria-label="设置" aria-expanded="false">⚙ <span>设置</span></button>
           <div id="home-settings-menu" hidden>
             <button id="open-ai-settings" class="icon-btn">大模型搜索API设置</button>
             <button id="theme-toggle" class="icon-btn" type="button">切换浅色</button>
@@ -724,13 +863,8 @@
     </header>
     <p id="session-persistence-note" class="auth-note" hidden></p>
     <div id="user-load-state" hidden><div id="user-load-status" class="auth-note" role="status"></div><button id="retry-user-load" class="ai-btn secondary" type="button" hidden>重新读取单词本</button></div>
-    <div class="dashboard-feature">
-      <div>
-        <h2>AI 单词整理</h2>
-        <p>翻译、润色和整理口语表达，生成报告后可选择导入到任意单词本。</p>
-      </div>
-      <button id="open-ai-organizer" class="ai-btn">打开 AI 单词整理</button>
-    </div>
+    <p class="overview-intro">每天一点，慢慢积累。</p>
+    <div class="overview-top">
     <section id="checkin-card" class="wordbook-section" data-state="idle" aria-labelledby="checkin-title">
       <div id="checkin-warnings" aria-hidden="true" hidden></div>
       <div class="checkin-heading">
@@ -753,6 +887,20 @@
       </div>
       <div id="checkin-days" class="checkin-days" aria-label="含今天在内的最近5天打卡记录"></div>
     </section>
+    <section class="continue-card">
+      <h2>继续学习</h2><p class="eyebrow">最近打开</p>
+      <h3 id="continue-book" data-user-content></h3><p id="continue-list" data-user-content></p>
+      <button id="continue-study" class="ai-btn" type="button">准备学习 →</button>
+      <p class="subtle">进入后选择翻译方向和背诵模式。</p>
+    </section>
+    </div>
+    <section class="overview-calendar" aria-labelledby="calendar-title">
+      <div><h2 id="calendar-title">打卡日历</h2><p class="subtle">回看每一次学习。</p><div class="calendar-navigation"><button id="calendar-prev" class="icon-btn" type="button" aria-label="上个月">←</button><strong id="calendar-month" data-user-content></strong><button id="calendar-next" class="icon-btn" type="button" aria-label="下个月">→</button></div><p class="calendar-legend"><span>● 已打卡</span><span>○ 今天</span></p></div>
+      <div><p id="calendar-status" class="subtle" role="status"></p><div class="calendar-weekdays"><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span></div><div id="calendar-grid" class="calendar-grid"></div></div>
+    </section>
+  </div>
+  <div id="library-page" class="view">
+    <header><h1>我的单词本</h1><p class="subtle">选择单词本，开始今天的学习。</p></header>
     <section class="wordbook-section">
       <div class="wordbook-section-header">
         <h2>我的单词本</h2>
@@ -771,8 +919,9 @@
         <h1 id="active-wordbook-title">单词本</h1>
       </div>
     </header>
+    <div class="word-section-tabs" role="tablist" aria-label="单词分区"><button id="section-new" type="button" role="tab" aria-controls="column-new" aria-selected="true">新单词</button><button id="section-review" type="button" role="tab" aria-controls="column-review" aria-selected="false">需巩固单词</button><button id="section-final" type="button" role="tab" aria-controls="column-final" aria-selected="false">Final巩固单词</button></div>
     <div class="lists-container">
-      <div class="list-column">
+      <div id="column-new" class="list-column" role="tabpanel" aria-labelledby="section-new">
         <div class="list-column-heading">
           <h2>新单词</h2>
           <select id="capacity-new" class="capacity-select" aria-label="新单词每组容量"></select>
@@ -781,7 +930,7 @@
         </div>
         <div id="new-lists" class="list-container"></div>
       </div>
-      <div class="list-column">
+      <div id="column-review" class="list-column" role="tabpanel" aria-labelledby="section-review" hidden>
         <div class="list-column-heading">
           <h2>需巩固单词</h2>
           <select id="capacity-review" class="capacity-select" aria-label="需巩固单词每组容量"></select>
@@ -789,7 +938,9 @@
           <button id="rebalance-review" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
         <div id="review-lists" class="list-container"></div>
-        <div class="list-column-heading" style="margin-top:24px;">
+      </div>
+      <div id="column-final" class="list-column" role="tabpanel" aria-labelledby="section-final" hidden>
+        <div class="list-column-heading">
           <h2>Final巩固单词</h2>
           <select id="capacity-final" class="capacity-select" aria-label="Final巩固单词每组容量"></select>
           <button id="clear-study-final" class="rebalance-btn" type="button">清空背诵记录</button>
@@ -847,7 +998,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.28.0243</span>
+      <span id="app-version" class="app-version">v2026.10.28.1517</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1036,6 +1187,16 @@
         '生成口语整理报告': 'Generate a Speaking Report', '粘贴单词、词组、句子或段落。中文会生成英文表达，英文会翻译并润色，中英混合会检查是否正确、自然。输入较多时会自动分批整理。': 'Paste words, phrases, sentences or paragraphs. Chinese is translated into English; English is translated and polished. Mixed input is checked for accuracy and naturalness. Larger inputs are processed in batches.',
         '例如：\n我需要出去逛逛 I need to touch grass\nlook up\n这周末我只想在家休息': 'Examples:\nI need to touch grass\nlook up\nI just want to relax at home this weekend',
         '生成报告': 'Generate report', '一键清空': 'Clear input', '报告生成进度': 'Report generation progress', '结构化单词报告': 'Vocabulary Report',
+        '主导航': 'Main navigation', '总览': 'Overview', '每天一点，慢慢积累。': 'Your learning, one day at a time.',
+        '全部单词本': 'Wordbooks', 'AI 整理': 'AI Organizer',
+        '单词分区': 'Word sections',
+        '继续学习': 'Continue learning', '最近打开': 'Last opened', '准备学习 →': 'Prepare to study →',
+        '进入后选择翻译方向和背诵模式。': 'Choose your study options next.', '打卡日历': 'Check-in calendar',
+        '回看每一次学习。': 'A simple record of your study days.', '上个月': 'Previous month', '下个月': 'Next month',
+        '● 已打卡': '● Checked in', '○ 今天': '○ Today', '选择单词本，开始今天的学习。': 'Choose a wordbook to begin.',
+        '先选一组单词吧': 'Start with a list', '从单词本中选择一个 List。': 'Choose a list from your wordbooks.',
+        '尚未读取打卡记录': 'Check-in records are not available yet',
+        '请先保存或取消当前编辑，再切换页面。': 'Save or cancel your current edits before switching pages.',
         '保存草稿': 'Save draft', '草稿已保存到当前浏览器': 'Draft saved in this browser',
         '已恢复上次草稿': 'Previous draft restored', '草稿已清空': 'Draft cleared',
         '自动保存，不会生成报告；草稿仅保存在当前设备的此浏览器': 'Autosaved without generating a report. Drafts stay in this browser on this device.',
@@ -1217,8 +1378,8 @@
     window.vocabI18n = createVocabLocalization();
   </script>
   <script>
-    try { document.documentElement.dataset.theme = localStorage.getItem('vocabTheme') || 'dark'; }
-    catch { document.documentElement.dataset.theme = 'dark'; }
+    try { document.documentElement.dataset.theme = localStorage.getItem('vocabTheme') || 'light'; }
+    catch { document.documentElement.dataset.theme = 'light'; }
     document.getElementById('retry-startup').addEventListener('click', () => window.location.reload());
     setTimeout(() => {
       if (document.getElementById('app-startup').hidden) return;
@@ -1308,6 +1469,7 @@
 
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
+    const libraryPage = document.getElementById('library-page');
     const wordbookPage = document.getElementById('wordbook-page');
     const importPage = document.getElementById('import-page');
     const aiPage = document.getElementById('ai-page');
@@ -1327,17 +1489,138 @@
     const themeToggle = document.getElementById('theme-toggle');
     let authNavigationVersion = 0;
     let userLoadTimeout = null;
+    let overviewMonthOffset = 0;
+    let recentStudyList = null;
+    let recentStudyUid = null;
+    document.getElementById('sidebar-footer').appendChild(document.querySelector('.settings-wrap'));
+
+    function updateSidebar(page) {
+      const selected = page === mainPage ? 'nav-overview' : [aiPage, aiSettingsPage, importPage].includes(page) ? 'open-ai-organizer' : 'nav-wordbooks';
+      for (const id of ['nav-overview', 'nav-wordbooks', 'open-ai-organizer']) {
+        const button = document.getElementById(id);
+        if (id === selected) button.setAttribute('aria-current', 'page');
+        else button.removeAttribute('aria-current');
+      }
+    }
+
+    function selectWordSection(type) {
+      for (const kind of ['new','review','final']) {
+        const selected = kind === type;
+        const button = document.getElementById(`section-${kind}`);
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+        document.getElementById(`column-${kind}`).hidden = !selected;
+      }
+    }
+    for (const kind of ['new','review','final']) {
+      const button = document.getElementById(`section-${kind}`);
+      button.addEventListener('click', () => selectWordSection(kind));
+      button.addEventListener('keydown', event => {
+        if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+        event.preventDefault();
+        const types = ['new','review','final'];
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (types.indexOf(kind) + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+        selectWordSection(types[index]);
+        document.getElementById(`section-${types[index]}`).focus();
+      });
+    }
+
+    function navigateFromSidebar(page) {
+      if (previewState?.saving) return;
+      if (previewHasChanges()) return showModal('请先保存或取消当前编辑，再切换页面。');
+      showPage(page);
+    }
+    document.getElementById('nav-overview').addEventListener('click', () => navigateFromSidebar(mainPage));
+    document.getElementById('nav-wordbooks').addEventListener('click', () => navigateFromSidebar(libraryPage));
+
+    function rememberRecentStudy(list) {
+      const uid = auth.currentUser?.uid;
+      if (!uid || !list?.docId) return;
+      try { localStorage.setItem(`vocabRecentStudy:v1:${uid}`, list.docId); } catch { /* Continue still works in this session. */ }
+      recentStudyList = list;
+      recentStudyUid = uid;
+    }
+
+    function renderContinueLearning() {
+      const uid = auth.currentUser?.uid;
+      const sessionId = uid === recentStudyUid ? recentStudyList?.docId : null;
+      recentStudyList = null;
+      if (uid) {
+        let id = sessionId;
+        try {
+          id = id || localStorage.getItem(`vocabRecentStudy:v1:${uid}`);
+        } catch { /* No stored recent list. */ }
+        recentStudyList = allLists.find(list => list.docId === id && list.words?.length && wordbooks.some(book => book.id === getListBookId(list))) || null;
+      }
+      recentStudyUid = uid || null;
+      const title = document.getElementById('continue-book');
+      const detail = document.getElementById('continue-list');
+      title.textContent = recentStudyList ? wordbooks.find(book => book.id === getListBookId(recentStudyList))?.name || '' : window.vocabI18n.translate('先选一组单词吧');
+      detail.textContent = recentStudyList ? `${window.vocabI18n.translate(getListDisplayName(recentStudyList))} · ${window.vocabI18n.translate(`${recentStudyList.words.length}个`)}` : window.vocabI18n.translate('从单词本中选择一个 List。');
+    }
+    document.getElementById('continue-study').addEventListener('click', () => {
+      renderContinueLearning();
+      if (recentStudyList) {
+        activeWordbookId = getListBookId(recentStudyList);
+        refreshActiveLists();
+        selectWordSection(recentStudyList.type);
+        startModeSelection(recentStudyList);
+      } else showPage(libraryPage);
+    });
+
+    function buildOverviewMonth(days, generation, today, offset) {
+      const current = new Date(`${today}T00:00:00Z`);
+      const month = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + offset, 1));
+      const leading = (month.getUTCDay() + 6) % 7;
+      const length = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0)).getUTCDate();
+      const done = new Set(days.filter(day => day.date <= today && Object.values(day.completions || {}).some(record => (Number(record.streakGeneration) || 0) === generation)).map(day => day.date));
+      const cells = Array.from({ length: leading }, () => null);
+      for (let n = 1; n <= length; n++) {
+        const date = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), n)).toISOString().slice(0, 10);
+        cells.push({ date, day: n, done: done.has(date), today: date === today, future: date > today });
+      }
+      return { month, cells };
+    }
+
+    function renderOverviewCalendar() {
+      const today = studyDateKey();
+      const { month, cells } = buildOverviewMonth(studyDays, studyGeneration, today, overviewMonthOffset);
+      const english = window.vocabI18n.language === 'en';
+      document.getElementById('calendar-month').textContent = new Intl.DateTimeFormat(english ? 'en-GB' : 'zh-CN', { month:'long', year:'numeric', timeZone:'UTC' }).format(month);
+      document.getElementById('calendar-next').disabled = overviewMonthOffset >= 0;
+      const status = document.getElementById('calendar-status');
+      status.textContent = studyError || (!studyLoaded ? window.vocabI18n.translate('尚未读取打卡记录') : '');
+      const grid = document.getElementById('calendar-grid');
+      grid.replaceChildren();
+      for (const cell of cells) {
+        const node = document.createElement('div');
+        node.className = 'calendar-cell';
+        if (cell) {
+          node.className += `${studyLoaded && !studyError && cell.done ? ' done' : ''}${cell.today ? ' today' : ''}${cell.future ? ' future' : ''}`;
+          const day = document.createElement('span');
+          day.textContent = String(cell.day);
+          node.appendChild(day);
+          node.setAttribute('aria-label', `${cell.date} · ${!studyLoaded || studyError ? window.vocabI18n.translate('尚未读取打卡记录') : window.vocabI18n.translate(cell.done ? '● 已打卡' : '未打卡')}`);
+        } else node.setAttribute('aria-hidden', 'true');
+        grid.appendChild(node);
+      }
+    }
+    document.getElementById('calendar-prev').addEventListener('click', () => { overviewMonthOffset = Math.max(-1200, overviewMonthOffset - 1); renderOverviewCalendar(); });
+    document.getElementById('calendar-next').addEventListener('click', () => { overviewMonthOffset = Math.min(0, overviewMonthOffset + 1); renderOverviewCalendar(); });
+    document.getElementById('ui-language').addEventListener('change', () => { renderOverviewCalendar(); renderContinueLearning(); });
 
     function showPage(page) {
       closeCheckinSettings();
       document.getElementById('home-settings-menu').hidden = true;
       document.getElementById('home-settings-toggle').setAttribute('aria-expanded', 'false');
-      [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
+      [mainPage, libraryPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
         if (p) p.classList.remove('active');
       });
       if (page) page.classList.add('active');
+      document.documentElement.dataset.screen = page?.id || 'auth';
+      updateSidebar(page);
       window.scrollTo(0, 0);
-      if (page === mainPage) updateWordbookDashboard();
+      if (page === mainPage || page === libraryPage) { updateWordbookDashboard(); renderOverviewCalendar(); }
       if (page === wordbookPage) updateWordbookPage();
     }
 
@@ -1456,12 +1739,16 @@
       aiSourceDraft.setUser(user?.uid || null);
       document.getElementById('app-startup').hidden = true;
       if (user) {
+        overviewMonthOffset = 0;
         authPage.hidden = true;
         authPage.style.display = 'none';
         themeToggle.hidden = false;
         showPage(mainPage);
         await loadSignedInUser(user, version);
       } else {
+        document.documentElement.dataset.screen = 'auth';
+        recentStudyList = null;
+        recentStudyUid = null;
         clearTimeout(userLoadTimeout);
         document.getElementById('user-load-state').hidden = true;
         if (listsUnsubscribe) listsUnsubscribe();
@@ -1503,7 +1790,7 @@
         passwordInput.value = '';
         authPage.hidden = false;
         authPage.style.display = 'flex';
-        [mainPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
+        [mainPage, libraryPage, wordbookPage, importPage, aiPage, aiSettingsPage, modePage, studyPage, previewPage].forEach(p => {
           if (p) p.classList.remove('active');
         });
       }
@@ -1592,6 +1879,7 @@
     }
 
     function renderStudyDashboard() {
+      renderOverviewCalendar();
       const status = document.getElementById('checkin-status');
       const card = document.getElementById('checkin-card');
       const count = document.getElementById('checkin-count');
@@ -1977,6 +2265,7 @@
     }
 
     function updateWordbookDashboard() {
+      renderContinueLearning();
       const container = document.getElementById('wordbooks-container');
       if (!container) return;
       container.innerHTML = '';
@@ -2333,6 +2622,7 @@
     }
 
     function startModeSelection(list) {
+      rememberRecentStudy(list);
       currentList = list;
       currentListType = list.type;
       selectedMode = 'en2zh';
@@ -2682,7 +2972,7 @@
         event.returnValue = '';
       }
     });
-    document.getElementById('wordbook-back').addEventListener('click', () => showPage(mainPage));
+    document.getElementById('wordbook-back').addEventListener('click', () => showPage(libraryPage));
     document.getElementById('open-import').addEventListener('click', () => {
       renderManualWordbookOptions();
       const size = getListGroupSize('new', getManualBookId());
@@ -2692,6 +2982,8 @@
       showPage(importPage);
     });
     document.getElementById('open-ai-organizer').addEventListener('click', () => {
+      if (previewState?.saving) return;
+      if (previewHasChanges()) return showModal('请先保存或取消当前编辑，再切换页面。');
       renderAiWordbookOptions();
       loadAiHistory();
       if (!latestAiReport && aiHistory.length > 0) showAiHistoryEntry(0);
