@@ -816,6 +816,110 @@
       .ai-actions { gap:8px; } .ai-package-header { flex-wrap:wrap; } .ai-history-bar { flex-wrap:wrap; } .ai-import-card { padding:18px; }
     }
     @media(prefers-reduced-motion:reduce) { * { transition:none !important; scroll-behavior:auto !important; } }
+    /* Reference-matched hierarchy and controls. */
+    #app-sidebar { width:240px; padding-top:30px; background:var(--panel-dark); }
+    .view:not(#auth-page) { margin-left:240px; padding:32px clamp(28px,3vw,52px) 36px; }
+    .sidebar-brand { margin:0 14px 40px; }
+    #app-sidebar nav button { display:flex; align-items:center; gap:16px; font-size:17px; padding:14px 16px; min-height:52px; }
+    #app-sidebar nav svg { width:23px; height:23px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+    #sidebar-footer { display:flex; flex-direction:column; gap:16px; }
+    #sidebar-footer .settings-wrap { order:0; }
+    #sidebar-language { order:1; display:flex; align-items:center; gap:10px; padding:8px 12px; border-top:1px solid var(--panel-light); color:var(--muted); }
+    #sidebar-language button { background:none; border:0; color:var(--muted); font-size:14px; padding:6px 2px; cursor:pointer; }
+    #sidebar-language button[aria-pressed="true"] { color:var(--text); font-weight:650; }
+    #main-page header h1 { font-size:46px; letter-spacing:-1.5px; margin:0; }
+    .overview-heading { display:block !important; }
+    #overview-date { margin:0 0 8px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; }
+    .overview-heading .app-version { position:absolute; right:0; top:54px; display:block; margin:0; font-size:10px; }
+    #main-page header .dashboard-header-actions { display:none; }
+    #main-page header { align-items:flex-start; position:relative; }
+    .profile-mark { display:grid; place-items:center; width:44px; height:44px; border-radius:50%; background:var(--panel-dark); font-size:20px; margin-left:auto; }
+    .overview-intro { font-size:20px; margin-bottom:30px; }
+    #checkin-card,.continue-card { padding:28px; min-height:360px; }
+    #checkin-card h2,.continue-card h2 { font-size:22px; font-weight:650; }
+    .checkin-hero { min-height:166px; }
+    .checkin-count,html[lang="en"] .checkin-count { font-weight:600; gap:14px; }
+    .checkin-flame { width:46px; height:62px; font-size:initial; filter:none !important; opacity:.7; }
+    #checkin-count { display:flex; align-items:baseline; gap:10px; letter-spacing:-1.5px; }
+    .streak-number { font-size:76px; line-height:1.1; font-weight:650; }
+    .streak-unit { font-size:32px; font-weight:400; letter-spacing:-.5px; }
+    #checkin-status { font-size:17px; line-height:1.5; margin-top:18px; }
+    .checkin-days { padding-top:20px; margin-top:12px; }
+    .checkin-date { font-size:14px; }.checkin-mark { width:32px; height:32px; font-size:18px; }
+    .continue-card .eyebrow { margin:0 0 12px; font-size:12px; }.continue-card h2 { margin-bottom:26px; }
+    #continue-book { font-size:29px; line-height:1.3; margin:4px 0 10px; }
+    #continue-list { font-size:17px; margin:0 0 6px; }#continue-count { color:var(--muted); font-size:16px; margin:0 0 24px; }
+    #continue-study { font-size:17px; font-weight:600; min-height:52px; min-width:240px; padding:12px 22px; }
+    .continue-card .subtle { font-size:15px; }
+    .overview-calendar { grid-template-columns:1fr 1.9fr; margin-top:30px; padding-top:28px; }
+    .overview-calendar h2 { font-size:23px; }.overview-calendar .subtle { font-size:16px; }
+    .calendar-navigation { margin:30px 0; gap:24px; }.calendar-navigation strong { font-size:20px; }.calendar-navigation button { font-size:22px; }
+    .calendar-weekdays { font-size:14px; padding-bottom:14px; }.calendar-grid { row-gap:9px; }.calendar-cell { min-height:38px; }.calendar-cell span { font-size:16px; width:36px; height:36px; }
+    .calendar-legend { font-size:14px; gap:18px; }
+    .library-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .library-heading h1 { font-size:36px; }.library-heading .subtle { font-size:16px; margin-bottom:0; }
+    #library-page .wordbook-grid { display:flex; flex-direction:column; gap:16px; max-width:960px; }
+    .wordbook-card { position:relative; display:flex; align-items:center; padding:0; min-height:130px; }
+    .wordbook-entry { display:flex; flex:1; align-items:center; gap:24px; padding:24px; border:0; border-radius:10px; background:transparent; color:var(--text); text-align:left; cursor:pointer; min-width:0; }
+    .wordbook-entry:hover { background:var(--panel-dark); }.wordbook-copy { flex:1; min-width:0; }
+    .book-cover { display:block; width:44px; height:62px; border-radius:3px 6px 6px 3px; background:var(--text); opacity:.8; position:relative; flex-shrink:0; box-shadow:inset 4px 0 0 #ffffff25,inset -3px 0 0 #ffffff20; }
+    .book-cover:after { content:''; position:absolute; left:8px; top:0; bottom:0; border-left:1px solid var(--bg); opacity:.5; }
+    .wordbook-card:nth-child(even) .book-cover { opacity:.45; }.wordbook-card h3 { font-size:23px; }.wordbook-card-meta { margin-top:8px; font-size:15px; }
+    .entry-arrow { font-size:30px; color:var(--muted); margin-right:38px; }
+    .wordbook-card-actions { position:absolute; right:20px; top:50%; transform:translateY(-50%); z-index:4; display:block; }
+    .wordbook-card-actions summary { list-style:none; cursor:pointer; font-size:25px; padding:4px 10px; border-radius:6px; }
+    .wordbook-card-actions summary::-webkit-details-marker { display:none; }
+    .wordbook-card-actions[open] { background:var(--panel); border:1px solid var(--panel-light); border-radius:8px; padding:4px; box-shadow:0 8px 20px var(--shadow); }
+    .wordbook-card-actions[open] .icon-btn { display:block; padding:10px 20px; width:100%; text-align:left; }
+    .breadcrumb { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; margin-bottom:18px; flex-wrap:wrap; }
+    .breadcrumb .icon-btn { padding:0; font:inherit; }.breadcrumb span[data-user-content] { overflow-wrap:anywhere; }
+    #wordbook-page header { margin-bottom:6px; }#wordbook-page header h1 { font-size:36px; }
+    #wordbook-back { display:none; }#wordbook-summary { font-size:16px; margin:8px 0 26px; }
+    .word-section-tabs button { display:flex; gap:10px; align-items:center; font-size:16px; padding:12px 18px; }
+    .tab-count { background:var(--panel-dark); padding:2px 8px; font-size:12px; font-weight:500; border-radius:20px; }
+    .list-column-heading { justify-content:flex-start; gap:14px; padding:0 0 16px; }.list-column-heading h2 { display:none; }.toolbar-spacer { flex:1; }
+    .capacity-select { max-width:none; min-width:120px; padding:10px 14px; font-size:14px; appearance:auto; background:var(--panel); }
+    .rebalance-btn { padding:10px 14px; font-size:13px; background:var(--panel); border:1px solid var(--panel-light); }
+    .section-stats { color:var(--muted); font-size:14px; margin:16px 0; }
+    .toolbar-total { color:var(--muted); font-size:14px; white-space:nowrap; }
+    #wordbook-page .list-container { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    #wordbook-page .list-item { padding:16px; min-height:84px; gap:12px; }
+    .list-copy { display:flex !important; flex-direction:column; align-items:flex-start !important; justify-content:center; padding-left:35px; position:relative; gap:3px !important; }
+    .list-copy:before { content:''; position:absolute; left:0; width:22px; height:24px; border:1.5px solid var(--muted); border-radius:3px; }
+    .list-copy:after { content:''; position:absolute; left:10px; width:1px; height:24px; background:var(--muted); }
+    .list-name { font-size:15px; line-height:1.35; }.list-count { margin:0; font-size:13px; }
+    .list-actions { gap:8px; }.list-actions .icon-btn { padding:4px; width:24px; min-width:24px; height:32px; }
+    .preview-symbol { position:relative; }.preview-symbol:before { content:''; display:block; width:12px; height:12px; border:1.5px solid currentColor; border-radius:50%; position:absolute; left:3px; top:6px; }.preview-symbol:after { content:''; width:8px; border-top:1.5px solid currentColor; transform:rotate(45deg); position:absolute; left:13px; top:19px; }
+    .list-study { background:none; border:0; border-left:1px solid var(--panel-light); padding:6px 0 6px 12px; color:var(--text); font-size:13px; cursor:pointer; white-space:nowrap; }
+    #mode-page { max-width:1400px; }#mode-page header { margin-bottom:6px; }#mode-page header h1 { font-size:36px; }
+    .mode-subtitle { margin:0 0 28px; color:var(--muted); font-size:16px; }
+    #mode-page .mode-select { max-width:640px; margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+    .mode-select h3 { font-size:17px; font-weight:600; margin:24px 0 12px; }
+    .option-group,.study-layout-options { display:flex; flex-direction:column; border:1px solid var(--panel-light); border-radius:10px; overflow:hidden; background:var(--panel); }
+    .mode-btn,.order-btn,.study-layout-btn { position:relative; padding:15px 18px 15px 48px; margin:0; border:0; border-radius:0; text-align:left; font-size:16px; min-height:52px; background:transparent; color:var(--text); }
+    .mode-btn + .mode-btn,.order-btn + .order-btn,.study-layout-btn + .study-layout-btn { border-top:1px solid var(--panel-light); }
+    .mode-btn:before,.order-btn:before,.study-layout-btn:before { content:''; width:17px; height:17px; border:1px solid var(--muted); border-radius:50%; position:absolute; top:50%; left:18px; transform:translateY(-50%); }
+    .mode-btn.active,.order-btn.active,.study-layout-btn.active { background:var(--panel-dark); color:var(--text); }
+    .mode-btn.active:after,.order-btn.active:after,.study-layout-btn.active:after { content:''; width:9px; height:9px; border-radius:50%; background:var(--text); position:absolute; left:22px; top:50%; transform:translateY(-50%); }
+    #start-study,#complete-study { font-size:16px; min-height:48px; }#start-study { margin-top:26px; }
+    button:disabled { opacity:.4; cursor:default; }
+    @media(max-width:1200px) { .list-study { font-size:12px; }.list-actions { gap:3px; } .list-copy { padding-left:28px; }.list-name { font-size:14px; } }
+    @media(max-width:1000px) { #app-sidebar { width:200px; }.view:not(#auth-page) { margin-left:200px; padding:30px; }.overview-top { grid-template-columns:1fr; }#wordbook-page .list-container { grid-template-columns:1fr; }#wordbook-page .list-item { grid-column:1 !important; grid-row:auto !important; } }
+    @media(max-width:700px) {
+      #app-sidebar { width:100%; height:64px; padding:8px 10px; }.view:not(#auth-page) { margin-left:0; padding:88px 18px 28px; }
+      #app-sidebar nav button { gap:5px; font-size:11px; padding:8px 6px; min-height:42px; }#app-sidebar nav svg { width:18px; height:18px; }
+      #sidebar-footer { gap:0; border:0; }#sidebar-language { display:none; }.sidebar-brand { margin:0 4px 0 0; }
+      #main-page header h1 { font-size:36px; }.overview-intro { font-size:16px; }.profile-mark { width:34px; height:34px; font-size:16px; }
+      #checkin-card,.continue-card { min-height:0; padding:22px; }.checkin-hero { min-height:140px; }.streak-number { font-size:64px; }.streak-unit { font-size:26px; }.checkin-flame { width:36px; height:52px; }
+      #checkin-card h2,.continue-card h2 { font-size:20px; }#checkin-status { font-size:15px; }.checkin-date { font-size:12px; }
+      #continue-book { font-size:26px; }#continue-study { min-width:0; width:100%; }.overview-calendar { grid-template-columns:1fr; }.calendar-cell span { font-size:14px; }
+      .library-heading { flex-wrap:wrap; }.library-heading h1,#wordbook-page header h1,#mode-page header h1 { font-size:29px; }.library-heading .wordbook-create-row { margin-left:auto; }
+      .wordbook-entry { padding:20px 14px; gap:16px; }.book-cover { width:32px; height:48px; }.wordbook-card h3 { font-size:19px; }.wordbook-card-meta { font-size:13px; }.entry-arrow { margin-right:30px; }.wordbook-card-actions { right:10px; }
+      .word-section-tabs { gap:0; }.word-section-tabs button { padding:10px 8px; font-size:12px; gap:5px; }.tab-count { font-size:10px; padding:1px 5px; }
+      #wordbook-page header { flex-wrap:wrap; gap:12px; }#wordbook-import { padding:8px 12px; }.list-column-heading { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.toolbar-spacer { display:none; }.capacity-select { min-width:92px; width:100%; font-size:12px; padding:9px; }.rebalance-btn { font-size:11px; padding:9px; min-height:38px; }
+      #wordbook-page .list-item { padding:14px 10px; }.list-copy { padding-left:28px; }.list-actions { gap:3px; }.list-study { font-size:11px; padding-left:8px; }.list-name { font-size:13px; }.list-count { font-size:12px; }
+      #mode-page .mode-select { padding:0; }.option-group button,.study-layout-options button { margin:0; font-size:15px; }.mode-subtitle { font-size:14px; }
+    }
   </style>
 </head>
 <body>
@@ -840,15 +944,21 @@
 
   <aside id="app-sidebar" aria-label="主导航">
     <div class="sidebar-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 7C12 3 6 3 2 5v23c4-2 10-2 14 1 4-3 10-3 14-1V5c-4-2-10-2-14 2Zm0 0v22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><div><strong>Justin</strong><span>Vocabulary</span></div></div>
-    <nav><button id="nav-overview" type="button">总览</button><button id="nav-wordbooks" type="button">全部单词本</button><button id="open-ai-organizer" type="button">AI 整理</button></nav>
-    <div id="sidebar-footer"></div>
+    <nav>
+      <button id="nav-overview" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Zm6 10v-7h6v7"/></svg><span>总览</span></button>
+      <button id="nav-wordbooks" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C8 2 4 3 2 4v17c3-2 7-2 10 0 3-2 7-2 10 0V4c-3-1-7-2-10 1Zm0 0v16"/></svg><span>全部单词本</span></button>
+      <button id="open-ai-organizer" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6Zm9 0v5h4M9 12h7M9 16h7"/></svg><span>AI 整理</span></button>
+    </nav>
+    <div id="sidebar-footer"><div id="sidebar-language" role="group" aria-label="界面语言"><button id="sidebar-zh" type="button" lang="zh-CN">中文</button><span aria-hidden="true">/</span><button id="sidebar-en" type="button" lang="en">EN</button></div></div>
   </aside>
   <div id="main-page" class="view">
     <header>
-      <div style="display:flex; align-items:center;">
+      <div class="overview-heading">
+        <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.10.28.1517</span>
+        <span id="main-app-version" class="app-version">v2026.10.28.1539</span>
       </div>
+      <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
         <div class="settings-wrap">
           <button id="home-settings-toggle" class="icon-btn" title="设置" aria-label="设置" aria-expanded="false">⚙ <span>设置</span></button>
@@ -879,7 +989,7 @@
       </div>
       <div class="checkin-hero">
         <div>
-          <div id="checkin-counter" class="checkin-count" aria-label="学习连击0天"><span class="checkin-flame" aria-hidden="true">🔥</span><span id="checkin-count">0天</span><span id="checkin-warning-icon" role="img" aria-label="即将断签" hidden>⚠️</span></div>
+          <div id="checkin-counter" class="checkin-count" aria-label="学习连击0天"><svg class="checkin-flame" viewBox="0 0 48 64" aria-hidden="true"><path d="M26 3c4 13-3 19-8 24-2-3-3-6-3-9C5 28 3 38 6 47c3 9 10 14 19 14 12 0 20-9 20-21 0-12-8-24-19-37Z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/></svg><span id="checkin-count">0天</span><span id="checkin-warning-icon" role="img" aria-label="即将断签" hidden>⚠️</span></div>
           <p id="checkin-status" role="status">正在读取打卡记录…</p>
           <button id="retry-checkin" class="ai-btn secondary" type="button" hidden>重新读取</button>
         </div>
@@ -889,7 +999,7 @@
     </section>
     <section class="continue-card">
       <h2>继续学习</h2><p class="eyebrow">最近打开</p>
-      <h3 id="continue-book" data-user-content></h3><p id="continue-list" data-user-content></p>
+      <h3 id="continue-book" data-user-content></h3><p id="continue-list" data-user-content></p><p id="continue-count" data-user-content></p>
       <button id="continue-study" class="ai-btn" type="button">准备学习 →</button>
       <p class="subtle">进入后选择翻译方向和背诵模式。</p>
     </section>
@@ -900,53 +1010,53 @@
     </section>
   </div>
   <div id="library-page" class="view">
-    <header><h1>我的单词本</h1><p class="subtle">选择单词本，开始今天的学习。</p></header>
+    <header class="library-heading"><div><h1>我的单词本</h1><p class="subtle">选择单词本，开始今天的学习。</p></div><div class="wordbook-create-row"><button id="create-wordbook" class="ai-btn">新建单词本</button></div></header>
     <section class="wordbook-section">
-      <div class="wordbook-section-header">
-        <h2>我的单词本</h2>
-        <div class="wordbook-create-row">
-          <button id="create-wordbook" class="ai-btn">新建单词本</button>
-        </div>
-      </div>
       <div id="wordbooks-container" class="wordbook-grid"></div>
     </section>
   </div>
 
   <div id="wordbook-page" class="view">
+    <div class="breadcrumb"><button id="wordbook-library-link" class="icon-btn" type="button">全部单词本</button><span aria-hidden="true">/</span><span id="wordbook-breadcrumb-name" data-user-content></span></div>
     <header>
       <div style="display:flex; align-items:center;">
         <button id="wordbook-back" class="back-btn">← 返回</button>
         <h1 id="active-wordbook-title">单词本</h1>
       </div>
+      <button id="wordbook-import" class="ai-btn secondary" type="button">导入单词</button>
     </header>
-    <div class="word-section-tabs" role="tablist" aria-label="单词分区"><button id="section-new" type="button" role="tab" aria-controls="column-new" aria-selected="true">新单词</button><button id="section-review" type="button" role="tab" aria-controls="column-review" aria-selected="false">需巩固单词</button><button id="section-final" type="button" role="tab" aria-controls="column-final" aria-selected="false">Final巩固单词</button></div>
+    <p id="wordbook-summary" class="subtle" data-user-content></p>
+    <div class="word-section-tabs" role="tablist" aria-label="单词分区"><button id="section-new" type="button" role="tab" aria-controls="column-new" aria-selected="true"><span>新单词</span><span id="section-count-new" class="tab-count"></span></button><button id="section-review" type="button" role="tab" aria-controls="column-review" aria-selected="false"><span>需巩固单词</span><span id="section-count-review" class="tab-count"></span></button><button id="section-final" type="button" role="tab" aria-controls="column-final" aria-selected="false"><span>Final巩固单词</span><span id="section-count-final" class="tab-count"></span></button></div>
     <div class="lists-container">
       <div id="column-new" class="list-column" role="tabpanel" aria-labelledby="section-new">
         <div class="list-column-heading">
           <h2>新单词</h2>
           <select id="capacity-new" class="capacity-select" aria-label="新单词每组容量"></select>
+          <span class="toolbar-spacer"></span>
           <button id="clear-study-new" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-new" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
-        <div id="new-lists" class="list-container"></div>
+        <p id="section-stats-new" class="section-stats" data-user-content></p><div id="new-lists" class="list-container"></div>
       </div>
       <div id="column-review" class="list-column" role="tabpanel" aria-labelledby="section-review" hidden>
         <div class="list-column-heading">
           <h2>需巩固单词</h2>
           <select id="capacity-review" class="capacity-select" aria-label="需巩固单词每组容量"></select>
+          <span class="toolbar-spacer"></span>
           <button id="clear-study-review" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-review" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
-        <div id="review-lists" class="list-container"></div>
+        <p id="section-stats-review" class="section-stats" data-user-content></p><div id="review-lists" class="list-container"></div>
       </div>
       <div id="column-final" class="list-column" role="tabpanel" aria-labelledby="section-final" hidden>
         <div class="list-column-heading">
           <h2>Final巩固单词</h2>
           <select id="capacity-final" class="capacity-select" aria-label="Final巩固单词每组容量"></select>
+          <span class="toolbar-spacer"></span>
           <button id="clear-study-final" class="rebalance-btn" type="button">清空背诵记录</button>
           <button id="rebalance-final" class="rebalance-btn" type="button">重新排列单词</button>
         </div>
-        <div id="final-lists" class="list-container"></div>
+        <p id="section-stats-final" class="section-stats" data-user-content></p><div id="final-lists" class="list-container"></div>
       </div>
     </div>
   </div>
@@ -998,7 +1108,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.28.1517</span>
+      <span id="app-version" class="app-version">v2026.10.28.1539</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1086,18 +1196,23 @@
   </div>
 
   <div id="mode-page" class="view">
+    <div class="breadcrumb"><button id="mode-back" class="back-btn">← 返回</button><button id="mode-library-link" class="icon-btn" type="button">全部单词本</button><span aria-hidden="true">/</span><span id="mode-book" data-user-content></span><span aria-hidden="true">/</span><span id="mode-list-crumb" data-user-content></span></div>
     <header style="display:flex; align-items:center;">
-      <button id="mode-back" class="back-btn">← 返回</button>
-      <h2 id="mode-title">选择模式</h2>
+      <h1>背诵设置</h1>
     </header>
+    <p class="mode-subtitle"><span id="mode-title" data-user-content>选择模式</span><span aria-hidden="true"> · </span><span id="mode-word-count" data-user-content></span></p>
     <div class="mode-select">
       <h3>翻译方向</h3>
+      <div class="option-group">
       <button id="mode-en2zh" class="mode-btn">英 → 中</button>
       <button id="mode-zh2en" class="mode-btn">中 → 英</button>
+      </div>
       <h3 style="margin-top:20px;">顺序</h3>
+      <div class="option-group">
       <button id="order-normal" class="order-btn" data-i18n-context="normal-order">顺序</button>
       <button id="order-reverse" class="order-btn">逆序</button>
       <button id="order-random" class="order-btn">随机</button>
+      </div>
       <h3 id="study-layout-heading" style="margin-top:20px;">背诵模式</h3>
       <div class="study-layout-options" role="group" aria-labelledby="study-layout-heading">
         <button id="study-layout-list" class="study-layout-btn active" type="button" aria-pressed="true">列表模式</button>
@@ -1190,6 +1305,7 @@
         '主导航': 'Main navigation', '总览': 'Overview', '每天一点，慢慢积累。': 'Your learning, one day at a time.',
         '全部单词本': 'Wordbooks', 'AI 整理': 'AI Organizer',
         '单词分区': 'Word sections',
+        '个人空间': 'Personal space', '导入单词': 'Import words', '背诵设置': 'Study options', '更多操作': 'More actions',
         '继续学习': 'Continue learning', '最近打开': 'Last opened', '准备学习 →': 'Prepare to study →',
         '进入后选择翻译方向和背诵模式。': 'Choose your study options next.', '打卡日历': 'Check-in calendar',
         '回看每一次学习。': 'A simple record of your study days.', '上个月': 'Previous month', '下个月': 'Next month',
@@ -1215,7 +1331,7 @@
         '目前支持 deepseek-flash；ChatGPT 等其他 AI 模型需要另外接入，暂不能直接使用其 API Key。API Key 只保存在当前浏览器，不会写进网页或上传到 Firebase；调用模型时会发送给对应的 API 服务。': 'Currently supports deepseek-flash. Other models, including ChatGPT, require a separate integration; their API keys cannot be used here yet. Your API key is stored only in this browser, not in the page or Firebase. It is sent to the API provider when you use the model.',
         '输入 DeepSeek API Key（sk-...）': 'Enter your DeepSeek API key (sk-...)', '保存 Key': 'Save key', '清除': 'Clear',
         '选择模式': 'Study Options', '翻译方向': 'Translation Direction', '英 → 中': 'English → Chinese', '中 → 英': 'Chinese → English',
-        '顺序': 'Order', '逆序': 'Reverse', '随机': 'Shuffle', '背诵模式': 'Study Mode', '列表模式': 'List', '单卡片模式': 'Flashcards',
+        '顺序': 'Order', '逆序': 'Reverse', '随机': 'Random', '背诵模式': 'Study Mode', '列表模式': 'List', '单卡片模式': 'Single card',
         '开始背诵': 'Start studying', '背诵完成': 'Mark as completed', '背诵': 'Study', '单卡片背诵': 'Flashcard study', '点击显示': 'Reveal answer',
         '上一个': 'Previous', '下一个': 'Next', '已完成': 'Done', '预览': 'Preview', '编辑单词': 'Edit words', '保存单词修改': 'Save word changes',
         '添加新的空单词词组集': 'Add a blank word pair', '历史打卡记录': 'Check-in History', '关闭历史打卡记录': 'Close check-in history',
@@ -1495,12 +1611,48 @@
     document.getElementById('sidebar-footer').appendChild(document.querySelector('.settings-wrap'));
 
     function updateSidebar(page) {
+      renderOverviewDetails();
       const selected = page === mainPage ? 'nav-overview' : [aiPage, aiSettingsPage, importPage].includes(page) ? 'open-ai-organizer' : 'nav-wordbooks';
       for (const id of ['nav-overview', 'nav-wordbooks', 'open-ai-organizer']) {
         const button = document.getElementById(id);
         if (id === selected) button.setAttribute('aria-current', 'page');
         else button.removeAttribute('aria-current');
       }
+    }
+
+    function renderOverviewDetails() {
+      const english = window.vocabI18n.language === 'en';
+      const formatter = new Intl.DateTimeFormat(english ? 'en-GB' : 'zh-CN', {weekday:'long',day:'numeric',month:'long',timeZone:studyTimeZone});
+      const parts = formatter.formatToParts(new Date());
+      const part = type => parts.find(value => value.type === type)?.value || '';
+      document.getElementById('overview-date').textContent = english ? `${part('weekday')}, ${part('day')} ${part('month')}` : formatter.format(new Date());
+      document.getElementById('sidebar-zh').setAttribute('aria-pressed', String(!english));
+      document.getElementById('sidebar-en').setAttribute('aria-pressed', String(english));
+    }
+    for (const [id,language] of [['sidebar-zh','zh-CN'],['sidebar-en','en']]) {
+      document.getElementById(id).addEventListener('click', () => {
+        window.vocabI18n.setLanguage(language);
+        renderOverviewDetails(); renderContinueLearning(); renderStudyDashboard();
+        if (currentList) renderModeContext(currentList);
+        updateWordbookPage();
+      });
+    }
+
+    function decorateStreakCounter(node, value) {
+      const number = document.createElement('span');
+      number.className = 'streak-number'; number.textContent = String(value);
+      const unit = document.createElement('span');
+      unit.className = 'streak-unit';
+      unit.textContent = window.vocabI18n.language === 'en' ? (value === 1 ? 'day' : 'days') : '天';
+      node.replaceChildren(number,unit);
+    }
+
+    function renderModeContext(list) {
+      const translate = window.vocabI18n.translate;
+      document.getElementById('mode-title').textContent = translate(getListDisplayName(list,list.type));
+      document.getElementById('mode-book').textContent = wordbooks.find(book => book.id === getListBookId(list))?.name || '';
+      document.getElementById('mode-list-crumb').textContent = translate(getListDisplayName(list,list.type));
+      document.getElementById('mode-word-count').textContent = translate(`${list.words.length}个`);
     }
 
     function selectWordSection(type) {
@@ -1557,6 +1709,8 @@
       const detail = document.getElementById('continue-list');
       title.textContent = recentStudyList ? wordbooks.find(book => book.id === getListBookId(recentStudyList))?.name || '' : window.vocabI18n.translate('先选一组单词吧');
       detail.textContent = recentStudyList ? `${window.vocabI18n.translate(getListDisplayName(recentStudyList))} · ${window.vocabI18n.translate(`${recentStudyList.words.length}个`)}` : window.vocabI18n.translate('从单词本中选择一个 List。');
+      if (recentStudyList) detail.textContent = window.vocabI18n.translate(getListDisplayName(recentStudyList));
+      document.getElementById('continue-count').textContent = recentStudyList ? window.vocabI18n.translate(`${recentStudyList.words.length}个`) : '';
     }
     document.getElementById('continue-study').addEventListener('click', () => {
       renderContinueLearning();
@@ -1607,7 +1761,7 @@
     }
     document.getElementById('calendar-prev').addEventListener('click', () => { overviewMonthOffset = Math.max(-1200, overviewMonthOffset - 1); renderOverviewCalendar(); });
     document.getElementById('calendar-next').addEventListener('click', () => { overviewMonthOffset = Math.min(0, overviewMonthOffset + 1); renderOverviewCalendar(); });
-    document.getElementById('ui-language').addEventListener('change', () => { renderOverviewCalendar(); renderContinueLearning(); });
+    document.getElementById('ui-language').addEventListener('change', () => { renderOverviewDetails(); renderStudyDashboard(); renderContinueLearning(); if (currentList) renderModeContext(currentList); updateWordbookPage(); });
 
     function showPage(page) {
       closeCheckinSettings();
@@ -1879,6 +2033,7 @@
     }
 
     function renderStudyDashboard() {
+      renderOverviewDetails();
       renderOverviewCalendar();
       const status = document.getElementById('checkin-status');
       const card = document.getElementById('checkin-card');
@@ -1910,6 +2065,7 @@
       };
       card.dataset.state = streak.state;
       count.textContent = `${streak.count}天`;
+      decorateStreakCounter(count,streak.count);
       document.getElementById('checkin-counter').setAttribute('aria-label', `学习连击${streak.count}天`);
       status.textContent = messages[streak.state];
       document.getElementById('checkin-warning-icon').hidden = !['caution', 'danger'].includes(streak.state);
@@ -2282,13 +2438,17 @@
         header.className = 'wordbook-card-header';
         const name = document.createElement('h3');
         name.textContent = wordbook.name || '未命名单词本';
-        const actions = document.createElement('div');
+        const actions = document.createElement('details');
         actions.className = 'wordbook-card-actions';
+        const summary = document.createElement('summary');
+        summary.textContent = '…'; summary.setAttribute('aria-label', '更多操作');
+        actions.appendChild(summary);
         const renameButton = document.createElement('button');
         renameButton.className = 'icon-btn';
         renameButton.textContent = '重命名';
         renameButton.addEventListener('click', event => {
           event.stopPropagation();
+          actions.open = false;
           renameWordbook(wordbook);
         });
         const deleteButton = document.createElement('button');
@@ -2296,18 +2456,23 @@
         deleteButton.textContent = '删除';
         deleteButton.addEventListener('click', event => {
           event.stopPropagation();
+          actions.open = false;
           requestDeleteWordbook(wordbook);
         });
         actions.appendChild(renameButton);
         actions.appendChild(deleteButton);
         header.appendChild(name);
-        header.appendChild(actions);
         const meta = document.createElement('div');
         meta.className = 'wordbook-card-meta';
         meta.textContent = `${lists.length} 个列表 · ${wordCount} 个单词`;
-        card.appendChild(header);
-        card.appendChild(meta);
-        card.addEventListener('click', () => openWordbook(wordbook.id));
+        const entry = document.createElement('button');
+        entry.type = 'button'; entry.className = 'wordbook-entry';
+        const cover = document.createElement('span'); cover.className = 'book-cover'; cover.setAttribute('aria-hidden','true');
+        const copy = document.createElement('div'); copy.className = 'wordbook-copy'; copy.appendChild(header); copy.appendChild(meta);
+        const arrow = document.createElement('span'); arrow.className = 'entry-arrow'; arrow.textContent = '›'; arrow.setAttribute('aria-hidden','true');
+        entry.appendChild(cover); entry.appendChild(copy); entry.appendChild(arrow);
+        entry.addEventListener('click', () => openWordbook(wordbook.id));
+        card.appendChild(entry); card.appendChild(actions);
         container.appendChild(card);
       });
     }
@@ -2560,6 +2725,9 @@
       const activeBook = wordbooks.find(book => book.id === activeWordbookId);
       const title = document.getElementById('active-wordbook-title');
       if (title) title.textContent = activeBook?.name || '单词本';
+      document.getElementById('wordbook-breadcrumb-name').textContent = activeBook?.name || '';
+      const lists = getBookLists(activeWordbookId);
+      document.getElementById('wordbook-summary').textContent = window.vocabI18n.translate(`${lists.length} 个列表 · ${lists.reduce((sum,list) => sum + (list.words?.length || 0),0)} 个单词`);
       const newContainer = document.getElementById('new-lists');
       const reviewContainer = document.getElementById('review-lists');
       const finalContainer = document.getElementById('final-lists');
@@ -2567,9 +2735,26 @@
       newContainer.innerHTML = '';
       reviewContainer.innerHTML = '';
       finalContainer.innerHTML = '';
-      [...newLists].sort((a, b) => a.id - b.id).forEach(list => newContainer.appendChild(createListRow(list, 'new')));
-      [...reviewLists].sort((a, b) => a.id - b.id).forEach(list => reviewContainer.appendChild(createListRow(list, 'review')));
-      [...finalLists].sort((a, b) => a.id - b.id).forEach(list => finalContainer.appendChild(createListRow(list, 'final')));
+      for (const [container,values,type] of [[newContainer,newLists,'new'],[reviewContainer,reviewLists,'review'],[finalContainer,finalLists,'final']]) {
+        const sorted = [...values].sort((a,b) => a.id-b.id);
+        document.getElementById(`section-count-${type}`).textContent = String(sorted.length);
+        let total = document.getElementById(`section-total-${type}`);
+        if (!total) {
+          total = document.createElement('span'); total.id = `section-total-${type}`; total.className = 'toolbar-total'; total.setAttribute('data-user-content','');
+          const select = document.getElementById(`capacity-${type}`);
+          select.parentNode.insertBefore(total,select);
+        }
+        total.textContent = window.vocabI18n.language === 'en' ? `${sorted.length} lists` : `${sorted.length} 组`;
+        const completed = sorted.filter(list => list.studyCompletedAt).length;
+        document.getElementById(`section-stats-${type}`).textContent = window.vocabI18n.language === 'en' ? `${completed} of ${sorted.length} lists marked complete` : `${sorted.length} 组中，${completed} 组已完成`;
+        const half = Math.ceil(sorted.length / 2);
+        sorted.forEach((list,index) => {
+          const row = createListRow(list,type);
+          row.style.gridColumn = String(index < half ? 1 : 2);
+          row.style.gridRow = String(index < half ? index+1 : index-half+1);
+          container.appendChild(row);
+        });
+      }
       renderSpecificListOptions();
     }
 
@@ -2577,6 +2762,7 @@
       const row = document.createElement('div');
       row.className = 'list-item';
       const leftWrap = document.createElement('div');
+      leftWrap.className = 'list-copy';
       leftWrap.style.display = 'flex';
       leftWrap.style.alignItems = 'center';
       const nameSpan = document.createElement('span');
@@ -2593,7 +2779,8 @@
       const previewBtn = document.createElement('button');
       previewBtn.className = 'icon-btn';
       previewBtn.title = '预览';
-      previewBtn.textContent = '🔍';
+      previewBtn.setAttribute('aria-label','预览');
+      previewBtn.className = 'icon-btn preview-symbol';
       previewBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         openPreview(list);
@@ -2601,6 +2788,7 @@
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'icon-btn';
       deleteBtn.title = '删除';
+      deleteBtn.setAttribute('aria-label','删除');
       deleteBtn.textContent = '×';
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2616,6 +2804,10 @@
       }
       actions.appendChild(previewBtn);
       actions.appendChild(deleteBtn);
+      const studyButton = document.createElement('button');
+      studyButton.className = 'list-study'; studyButton.type = 'button'; studyButton.textContent = '准备学习 →';
+      studyButton.addEventListener('click', event => { event.stopPropagation(); startModeSelection(list); });
+      actions.appendChild(studyButton);
       row.appendChild(actions);
       row.addEventListener('click', () => startModeSelection(list));
       return row;
@@ -2631,9 +2823,10 @@
       studySession = null;
       document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.order-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('mode-en2zh').classList.add('active');
-      document.getElementById('order-normal').classList.add('active');
+      setActiveModeBtn(document.getElementById('mode-en2zh'));
+      setActiveOrderBtn(document.getElementById('order-normal'));
       document.getElementById('mode-title').textContent = getListDisplayName(list, list.type);
+      renderModeContext(list);
       showPage(modePage);
     }
 
@@ -2646,8 +2839,9 @@
       setActiveModeBtn(this);
     });
     function setActiveModeBtn(btn) {
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.mode-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed','true');
     }
     document.getElementById('order-normal').addEventListener('click', function() {
       selectedOrder = 'normal';
@@ -2662,8 +2856,9 @@
       setActiveOrderBtn(this);
     });
     function setActiveOrderBtn(btn) {
-      document.querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.order-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed','true');
     }
     function setStudyLayout(layout) {
       selectedStudyLayout = layout === 'card' ? 'card' : 'list';
@@ -2973,6 +3168,13 @@
       }
     });
     document.getElementById('wordbook-back').addEventListener('click', () => showPage(libraryPage));
+    document.getElementById('wordbook-library-link').addEventListener('click', () => showPage(libraryPage));
+    document.getElementById('mode-library-link').addEventListener('click', () => showPage(libraryPage));
+    document.getElementById('wordbook-import').addEventListener('click', () => {
+      renderManualWordbookOptions();
+      document.getElementById('manual-target-wordbook').value = activeWordbookId;
+      document.getElementById('open-import').click();
+    });
     document.getElementById('open-import').addEventListener('click', () => {
       renderManualWordbookOptions();
       const size = getListGroupSize('new', getManualBookId());
