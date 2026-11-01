@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.10.28.2220</span>
+        <span id="main-app-version" class="app-version">v2026.11.01.0120</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.10.28.2220</span>
+      <span id="app-version" class="app-version">v2026.11.01.0120</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -3720,11 +3720,23 @@ NO`;
     }
 
     function getFirstExamplePair(item) {
-      const exampleMatch = item.match(/^Example:\s*([\s\S]*?)(?=^\w[\w\s/]*:|\n\s*Common mistake:|\n\s*Final advice:|$)/im);
-      if (!exampleMatch) return null;
-      const line = exampleMatch[1].split(/\r?\n/).map(cleanExampleLine).find(Boolean);
-      const pair = splitExampleTranslation(line);
-      return pair?.en ? pair : null;
+      const lines = String(item || '').split(/\r?\n/);
+      const start = lines.findIndex(line => /^Example:/i.test(line.trim()));
+      if (start < 0) return null;
+      const examples = [];
+      for (const raw of [lines[start].trim().replace(/^Example:\s*/i, ''), ...lines.slice(start + 1)]) {
+        const line = cleanExampleLine(raw);
+        if (/^(?:Input|Word\s*\/\s*Phrase\s*\/\s*Sentence|Answer the input question|Spoken meaning|Naturalness|Common mistake|Final advice|Different expressions|Expression differences|Possible alternatives):/i.test(line)) break;
+        if (line) examples.push(line);
+        if (examples.length === 2) break;
+      }
+      const english = examples[0]?.replace(/^(?:English|EN|英文)\s*[:：]\s*/i, '') || '';
+      const pair = splitExampleTranslation(english);
+      if (!pair?.en) return null;
+      if (pair.zh && /[\u4e00-\u9fff]/.test(pair.zh)) return pair;
+      const chinese = examples[1]?.replace(/^(?:Chinese|ZH|中文|Translation|翻译)\s*[:：]\s*/i, '') || '';
+      if (/^[\u4e00-\u9fff“"（(]/.test(chinese) && !/^(?:用法|说明|注意|解释|语境)[:：]/.test(chinese)) return { en: english, zh: chinese };
+      return pair;
     }
 
     function getReportInputText(item) {
@@ -4060,7 +4072,10 @@ NO`;
         );
         directChinese = sanitizeImportMeaning(legacyZhParts[0]);
         if (!exampleEnglish || !exampleChinese || /[\u4e00-\u9fff]/.test(exampleEnglish) || !/[\u4e00-\u9fff]/.test(exampleChinese)) {
-          throw new Error(`${sourceLabel}短语缺少对应例句`);
+          const error = new Error(`${sourceLabel}短语缺少对应例句`);
+          error.code = 'missing-example-pair';
+          error.itemIndex = index;
+          throw error;
         }
         return {
           en: `${cleanImportEnglish(title)}: ${exampleEnglish}`,
@@ -4116,7 +4131,27 @@ NO`;
         } catch (error) {
           throw firstValidationError;
         }
-        return validateReviewedImportRows(repairedReview, report, sourceItems);
+        // Isolate any remaining missing pair instead of regenerating every successful row.
+        const repairedItems = new Set();
+        while (true) {
+          try {
+            return validateReviewedImportRows(repairedReview, report, sourceItems);
+          } catch (error) {
+            const index = error.itemIndex;
+            if (error.code !== 'missing-example-pair' || repairedItems.has(index)) throw error;
+            repairedItems.add(index);
+            const item = splitAiReportItems(report)[index];
+            const title = item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim() || '';
+            const content = await callDeepSeek([
+              { role: 'system', content: '只补齐一个词语的中英例句，返回 JSON：{"exampleEnglish":"完整自然的英文例句","exampleChinese":"该例句完整且直接的中文翻译"}。英文例句必须使用 finalEnglish 中的表达；中文仅翻译该例句，不添加解释、用法或对话下一句。两个字段都不能为空。不要更改词条或回答原始提问。' },
+              { role: 'user', content: JSON.stringify({ sourceInput: sourceItems[index], finalEnglish: title, directChinese: repairedReview.rows[index].directChinese ?? repairedReview.rows[index].zh, reportItem: item }) }
+            ], true, 1000);
+            let pair;
+            try { pair = JSON.parse(content); } catch { throw error; }
+            if (typeof pair?.exampleEnglish !== 'string' || typeof pair?.exampleChinese !== 'string') throw error;
+            repairedReview.rows[index] = { ...repairedReview.rows[index], exampleEnglish: pair.exampleEnglish, exampleChinese: pair.exampleChinese };
+          }
+        }
       }
     }
 
