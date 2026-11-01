@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.01.0135</span>
+        <span id="main-app-version" class="app-version">v2026.11.01.0203</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.01.0135</span>
+      <span id="app-version" class="app-version">v2026.11.01.0203</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1418,6 +1418,7 @@
         '没有可以保存的导入段落': 'No import text to save', '请先生成一次整理报告': 'Generate a report first', '保存失败': 'Save failed', '已保存当前导入段落修改': 'Import text changes saved',
         'API Key 已保存到当前浏览器': 'API key saved in this browser', 'API Key 已清除': 'API key cleared', '请先输入需要整理的内容': 'Enter some content to organize first',
         '正在同步报告...': 'Syncing reports…', '正在生成第一批报告...': 'Generating the first batch…', 'AI 返回的报告或导入条数不完整': 'The AI returned an incomplete report or import list', '生成失败': 'Generation failed',
+        'AI 输出达到长度上限，内容被截断': 'The AI output reached its length limit and was truncated',
         '正在生成，历史切换已暂停': 'Generating — history navigation is paused',
         '本次生成结果（尚未保存）': 'Current generated result (not saved)',
         '当前生成结果尚未保存，切换历史会离开这份结果，确定继续吗？': 'This generated result has not been saved. Leave it and switch to history?',
@@ -1452,6 +1453,8 @@
           [/^正在生成 (\d+)\/(\d+)$/, (_, n, total) => `Generating ${n}/${total}`],
           [/^正在生成第 (\d+)\/(\d+) 批$/, (_, n, total) => `Generating batch ${n}/${total}`],
           [/^第 (\d+) 批校对未通过，正在重试$/, (_, n) => `Review failed for batch ${n}. Retrying…`],
+          [/^第 (\d+) 批返回不完整，正在拆小处理$/, (_, n) => `Batch ${n} is incomplete. Processing smaller batches…`],
+          [/^AI 返回不完整：应有 (\d+) 条，报告 (\d+) 条，导入 (\d+) 条$/, (_, expected, reports, rows) => `Incomplete AI output: expected ${expected} entries; received ${reports} report entries and ${rows} import rows`],
           [/^已完成 (\d+)\/(\d+)$/, (_, n, total) => `Completed ${n}/${total}`],
           [/^已生成 (\d+) 条$/, (_, n) => `Generated ${n} items`],
           [/^第 (\d+)\/(\d+) 批失败：([\s\S]*)$/, (_, n, total, error) => `Batch ${n}/${total} failed: ${translateEnglish(error)}`],
@@ -3616,6 +3619,11 @@ NO`;
       }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error?.message || `DeepSeek 请求失败（${response.status}）`);
+      if (data.choices?.[0]?.finish_reason === 'length') {
+        const error = new Error('AI 输出达到长度上限，内容被截断');
+        error.code = 'ai-response-truncated';
+        throw error;
+      }
       return data.choices?.[0]?.message?.content || '';
     }
 
@@ -4777,6 +4785,55 @@ NO`;
       setAiStatus('ai-generate-status', '');
     });
 
+    async function generateAiOrganizerBatch(batch, active, onRecovery) {
+      let lastError;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        let content;
+        try {
+          content = await callDeepSeek([
+            { role: 'system', content: organizerSystemPrompt },
+            { role: 'user', content: batch.join('\n') + (attempt ? '\n\n请重新核对：逐行处理全部输入，不得合并或遗漏。每条报告及导入行必须完整，最终英文完整覆盖原始输入，导入区中文只能翻译对应英文。' : '') }
+          ], false);
+        } catch (error) {
+          if (!active()) return null;
+          if (error.code !== 'ai-response-truncated') throw error;
+          lastError = error;
+        }
+        if (!active()) return null;
+        if (content !== undefined) {
+          try {
+            const result = parseAiOrganizerResponse(content);
+            const items = splitAiReportItems(result.report || '');
+            const reportCount = items.filter(item => /^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*\S+/im.test(item)).length;
+            const importCount = parseImportLines(result.importText || '').length;
+            if (reportCount !== batch.length || items.length !== batch.length || importCount !== batch.length) {
+              const error = new Error(`AI 返回不完整：应有 ${batch.length} 条，报告 ${reportCount} 条，导入 ${importCount} 条`);
+              error.code = 'ai-batch-incomplete';
+              throw error;
+            }
+            result.importText = await reviewAiImportBatch(result.report, result.importText, batch);
+            if (!active()) return null;
+            return result;
+          } catch (error) {
+            if (!active()) return null;
+            lastError = error;
+          }
+        }
+        if (attempt === 0) onRecovery('retry');
+      }
+      // Only structural output failures are retried in smaller, bounded batches.
+      if (batch.length > 1 && ['ai-batch-incomplete', 'ai-response-truncated'].includes(lastError?.code)) {
+        onRecovery('split');
+        const midpoint = Math.ceil(batch.length / 2);
+        const first = await generateAiOrganizerBatch(batch.slice(0, midpoint), active, onRecovery);
+        if (!active() || !first) return null;
+        const second = await generateAiOrganizerBatch(batch.slice(midpoint), active, onRecovery);
+        if (!active() || !second) return null;
+        return { report: `${first.report.trim()}\n\n---\n\n${second.report.trim()}`, importText: `${first.importText.trim()}\n${second.importText.trim()}` };
+      }
+      throw lastError;
+    }
+
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
       if (aiGenerating) return;
       const source = document.getElementById('ai-source-input').value.trim();
@@ -4799,6 +4856,7 @@ NO`;
       document.getElementById('ai-report').classList.add('empty');
       document.getElementById('ai-import-output').value = '';
       document.getElementById('ai-import-output').scrollTop = 0;
+      document.getElementById('ai-pair-status').hidden = true;
       resetAiChat();
       updateAiHistoryControls();
       setAiProgress(0, 0, sourceItems.length);
@@ -4812,26 +4870,12 @@ NO`;
           setAiStatus('ai-generate-status', `正在生成第 ${batchIndex + 1}/${batches.length} 批`);
           let result;
           try {
-            for (let attempt = 0; attempt < 2; attempt++) {
-              const content = await callDeepSeek([
-                { role: 'system', content: organizerSystemPrompt },
-                { role: 'user', content: batch.join('\n') + (attempt ? '\n\n请重新核对：每条最终英文必须完整覆盖原始输入，导入区中文只能翻译对应英文，不能添加对话下一句或解释。' : '') }
-              ], false);
-              if (!active()) return;
-              result = parseAiOrganizerResponse(content);
-              if (!result.report || parseImportLines(result.importText || '').length !== batch.length) {
-                throw new Error('AI 返回的报告或导入条数不完整');
-              }
-              try {
-                result.importText = await reviewAiImportBatch(result.report, result.importText, batch);
-                if (!active()) return;
-                break;
-              } catch (reviewError) {
-                if (!active()) return;
-                if (attempt === 1) throw reviewError;
-                setAiStatus('ai-generate-status', `第 ${batchIndex + 1} 批校对未通过，正在重试`);
-              }
-            }
+            result = await generateAiOrganizerBatch(batch, active, mode => {
+              setAiStatus('ai-generate-status', mode === 'split'
+                ? `第 ${batchIndex + 1} 批返回不完整，正在拆小处理`
+                : `第 ${batchIndex + 1} 批校对未通过，正在重试`);
+            });
+            if (!active() || !result) return;
           } catch (error) {
             throw new Error(`第 ${batchIndex + 1}/${batches.length} 批失败：${error.message || '生成失败'}`);
           }
