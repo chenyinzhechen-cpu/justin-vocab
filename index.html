@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.01.0203</span>
+        <span id="main-app-version" class="app-version">v2026.11.01.0258</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.01.0203</span>
+      <span id="app-version" class="app-version">v2026.11.01.0258</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1445,6 +1445,8 @@
           [/^(\d+) 个列表 · (\d+) 个单词$/, (_, lists, words) => `${lists} ${lists === '1' ? 'list' : 'lists'} · ${words} ${words === '1' ? 'word' : 'words'}`],
           [/^(\d+)个$/, (_, n) => `${n} ${n === '1' ? 'word' : 'words'}`],
           [/^已核对：(\d+) 条英文与报告顺序一致。$/, (_, n) => `Checked: ${n} English entries match the report order.`],
+          [/^已核对：(\d+) 条英文与对应报告一致（含报告内替代表达）。$/, (_, n) => `Checked: ${n} English entries match their report, including its listed alternatives.`],
+          [/^条数一致，但第 ([\d、]+) 条英文未匹配到对应报告。请核对这些行；手动修改也可确认后保留。$/, (_, indices) => `Row counts match, but English in rows ${indices.replace(/、/g, ', ')} does not match the corresponding report. Check these rows; intentional edits can still be kept after confirmation.`],
           [/^内容不匹配：报告 (\d+) 条，导出 (\d+) 条。请先核对右侧内容。$/, (_, reports, rows) => `Contents do not match: ${reports} report entries and ${rows} import rows. Check the right-hand contents.`],
           [/^(\d+)（默认）$/, (_, n) => `${n} (default)`],
           [/^第\s*(\d+)\s*\/\s*(\d+)\s*条$/, (_, n, total) => `${n} / ${total}`],
@@ -4478,16 +4480,32 @@ NO`;
     }
 
     function checkAiReportImport(report, importText) {
-      const titles = splitAiReportItems(report).map(item => item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim()).filter(Boolean);
-      if (!titles.length) return null;
+      const items = splitAiReportItems(report).map(item => ({
+        text: item,
+        title: item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim()
+      })).filter(item => item.title);
+      if (!items.length) return null;
       const rows = parseImportLines(importText);
       const comparable = text => String(text || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9]/g, '');
-      const matches = titles.length === rows.length && titles.every((title,index) => {
+      const mismatchIndices = [];
+      items.forEach(({title, text}, index) => {
+        if (!rows[index]) { mismatchIndices.push(index + 1); return; }
         const candidate = rows[index].en;
         const options = [title, ...title.split(/\s*\/\s*/)];
-        return options.some(option => comparable(option) === comparable(candidate) || comparable(option) === comparable(candidate.split(/[:：]/)[0]));
+        const alternativeSection = splitReportSections(text).find(section => /^(?:Other Spoken Alternative|Better spoken alternatives)$/i.test(section.title));
+        const alternatives = (alternativeSection?.body || '').split(/\r?\n/).filter(line => line.includes('|')).map(line => {
+          const cells = line.trim().replace(/^\|/, '').split('|');
+          return cells[0].trim();
+        }).filter(value => /[A-Za-z]/.test(value) && !/[\u4e00-\u9fff]/.test(value));
+        const allowed = new Set([...options, ...alternatives].map(comparable).filter(Boolean));
+        const expression = candidate.split(/[:：]/)[0].trim();
+        const candidateOptions = expression.split(/\s*\/\s*/).filter(Boolean);
+        const matches = allowed.has(comparable(candidate)) || allowed.has(comparable(expression)) ||
+          (candidateOptions.length > 1 && candidateOptions.every(option => allowed.has(comparable(option))));
+        if (!matches) mismatchIndices.push(index + 1);
       });
-      return { matches, reportCount: titles.length, importCount: rows.length };
+      for (let index = items.length; index < rows.length; index++) mismatchIndices.push(index + 1);
+      return { matches: mismatchIndices.length === 0, reportCount: items.length, importCount: rows.length, mismatchIndices };
     }
 
     function renderAiPairStatus() {
@@ -4496,7 +4514,10 @@ NO`;
       node.hidden = !check;
       if (!check) return;
       node.style.color = check.matches ? 'var(--muted)' : 'var(--danger, #c62828)';
-      node.textContent = check.matches ? `已核对：${check.reportCount} 条英文与报告顺序一致。` : `内容不匹配：报告 ${check.reportCount} 条，导出 ${check.importCount} 条。请先核对右侧内容。`;
+      node.textContent = check.matches ? `已核对：${check.reportCount} 条英文与对应报告一致（含报告内替代表达）。` :
+        check.reportCount === check.importCount
+          ? `条数一致，但第 ${check.mismatchIndices.join('、')} 条英文未匹配到对应报告。请核对这些行；手动修改也可确认后保留。`
+          : `内容不匹配：报告 ${check.reportCount} 条，导出 ${check.importCount} 条。请先核对右侧内容。`;
     }
 
     function showAiHistoryEntry(index, options = {}) {
