@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.01.0120</span>
+        <span id="main-app-version" class="app-version">v2026.11.01.0126</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.01.0120</span>
+      <span id="app-version" class="app-version">v2026.11.01.0126</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1417,6 +1417,10 @@
         '没有可以保存的导入段落': 'No import text to save', '请先生成一次整理报告': 'Generate a report first', '保存失败': 'Save failed', '已保存当前导入段落修改': 'Import text changes saved',
         'API Key 已保存到当前浏览器': 'API key saved in this browser', 'API Key 已清除': 'API key cleared', '请先输入需要整理的内容': 'Enter some content to organize first',
         '正在同步报告...': 'Syncing reports…', '正在生成第一批报告...': 'Generating the first batch…', 'AI 返回的报告或导入条数不完整': 'The AI returned an incomplete report or import list', '生成失败': 'Generation failed',
+        '正在生成，历史切换已暂停': 'Generating — history navigation is paused',
+        '本次生成结果（尚未保存）': 'Current generated result (not saved)',
+        '当前生成结果尚未保存，切换历史会离开这份结果，确定继续吗？': 'This generated result has not been saved. Leave it and switch to history?',
+        '请等待当前报告生成完成后再操作。': 'Wait for the current report to finish generating before continuing.',
         '还没有可复制的导入段落': 'No import text to copy', '已复制导入段落': 'Import text copied', '浏览器未允许自动复制，请手动选中复制': 'Automatic copying is blocked. Select and copy the text manually.',
         '确定删除当前这份报告吗？': 'Delete the current report?', '导入段落为空或格式不正确': 'Import text is empty or incorrectly formatted', '请选择有效的目标单词本': 'Choose a valid target wordbook', '导入失败': 'Import failed',
         '请先启用本报告追问': 'Enable report context first', '请先生成或选择一份整理报告': 'Generate or select a report first', '正在回答...': 'Replying…', '发送失败': 'Could not send message',
@@ -1629,6 +1633,8 @@
     const AI_HISTORY_LIMIT = 30;
     let aiHistory = [];
     let activeAiHistoryIndex = -1;
+    let aiGenerating = false;
+    let aiGenerationVersion = 0;
 
     const authPage = document.getElementById('auth-page');
     const mainPage = document.getElementById('main-page');
@@ -4329,8 +4335,12 @@ NO`;
         const nextHistory = snapshot.docs
           .map(docSnap => normalizeAiHistoryEntry({ id: docSnap.id, ...docSnap.data() }))
           .filter(Boolean);
+        const selectedId = aiHistory[activeAiHistoryIndex]?.id;
         aiHistory = sortAiHistoryEntries(nextHistory).slice(0, AI_HISTORY_LIMIT);
         aiReportsLoaded = true;
+        if (aiGenerating) { updateAiHistoryControls(); return; }
+        if (selectedId) activeAiHistoryIndex = aiHistory.findIndex(entry => entry.id === selectedId);
+        if (latestAiReport) { updateAiHistoryControls(); return; }
         if (aiHistory.length === 0) {
           activeAiHistoryIndex = -1;
           clearAiReportDisplay();
@@ -4366,6 +4376,22 @@ NO`;
       const prevButton = document.getElementById('ai-history-prev');
       const nextButton = document.getElementById('ai-history-next');
       if (!indicator || !prevButton || !nextButton) return;
+      for (const id of ['copy-ai-output', 'save-ai-output', 'import-ai-output', 'delete-ai-report', 'enable-ai-chat']) {
+        document.getElementById(id).disabled = aiGenerating;
+      }
+      document.getElementById('ai-import-output').readOnly = aiGenerating;
+      if (aiGenerating) {
+        indicator.textContent = '正在生成，历史切换已暂停';
+        prevButton.disabled = true;
+        nextButton.disabled = true;
+        return;
+      }
+      if (latestAiReport && activeAiHistoryIndex < 0) {
+        indicator.textContent = '本次生成结果（尚未保存）';
+        prevButton.disabled = aiHistory.length === 0;
+        nextButton.disabled = true;
+        return;
+      }
       if (!aiReportsLoaded && auth.currentUser) {
         indicator.textContent = '正在同步报告...';
         prevButton.disabled = true;
@@ -4426,24 +4452,37 @@ NO`;
       setAiStatus('ai-chat-status', '');
     }
 
+    function displayAiReportPair(report, importText, sourceItems, trustReportInputs = false) {
+      latestAiReport = report;
+      latestAiImport = importText;
+      latestRawReport = report;
+      latestSourceItems = Array.isArray(sourceItems) ? [...sourceItems] : [];
+      renderAiReport(report, trustReportInputs ? [] : latestSourceItems);
+      const output = document.getElementById('ai-import-output');
+      output.value = importText;
+      output.scrollTop = 0;
+    }
+
     function showAiHistoryEntry(index, options = {}) {
+      if (aiGenerating) return;
       if (index < 0 || index >= aiHistory.length) return;
+      if (latestAiReport && activeAiHistoryIndex < 0 && !options.discardUnsaved) {
+        return showModal('当前生成结果尚未保存，切换历史会离开这份结果，确定继续吗？', () => showAiHistoryEntry(index, { ...options, discardUnsaved: true }));
+      }
       activeAiHistoryIndex = index;
       const entry = normalizeAiHistoryEntry(aiHistory[index]);
       if (!entry) return clearAiReportDisplay();
       aiHistory[index] = entry;
       if (!options.skipNormalizeSave) saveAiHistoryEntryToFirebase(entry).catch(error => console.error(error));
-      latestAiReport = entry.report || '';
-      latestAiImport = entry.importText || '';
-      latestRawReport = entry.report || '';
-      latestSourceItems = Array.isArray(entry.sourceItems) ? [...entry.sourceItems] : [];
-      renderAiReport(latestAiReport, []);
-      document.getElementById('ai-import-output').value = latestAiImport;
+      displayAiReportPair(entry.report || '', entry.importText || '', entry.sourceItems, true);
       resetAiChat();
       updateAiHistoryControls();
     }
 
     function clearAiReportDisplay() {
+      aiGenerationVersion++;
+      aiGenerating = false;
+      document.getElementById('generate-ai-report').disabled = false;
       latestAiReport = '';
       latestAiImport = '';
       latestRawReport = '';
@@ -4460,6 +4499,7 @@ NO`;
     }
 
     async function deleteCurrentAiReport() {
+      if (aiGenerating) return;
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
         clearAiReportDisplay();
         return;
@@ -4511,9 +4551,12 @@ NO`;
     }
 
     async function saveCurrentAiHistoryEdit() {
+      if (aiGenerating) return showModal('请等待当前报告生成完成后再操作。');
       const currentImport = document.getElementById('ai-import-output').value.trim();
       if (!currentImport) return showModal('没有可以保存的导入段落');
       const normalizedImport = normalizeManualImportText(currentImport);
+      // A live history reorder must never attach this report's text to another entry.
+      if (aiHistory[activeAiHistoryIndex]?.report !== latestAiReport) activeAiHistoryIndex = -1;
       latestAiImport = normalizedImport;
       document.getElementById('ai-import-output').value = normalizedImport;
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
@@ -4703,8 +4746,14 @@ NO`;
     });
 
     document.getElementById('generate-ai-report').addEventListener('click', async () => {
+      if (aiGenerating) return;
       const source = document.getElementById('ai-source-input').value.trim();
       if (!source) return showModal('请先输入需要整理的内容');
+      const uid = auth.currentUser?.uid;
+      const version = ++aiGenerationVersion;
+      const active = () => aiGenerationVersion === version && auth.currentUser?.uid === uid;
+      aiGenerating = true;
+      activeAiHistoryIndex = -1;
       aiSourceDraft.save();
       const sourceItems = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
       const batches = createAiBatches(sourceItems);
@@ -4717,6 +4766,9 @@ NO`;
       document.getElementById('ai-report').textContent = '正在生成第一批报告...';
       document.getElementById('ai-report').classList.add('empty');
       document.getElementById('ai-import-output').value = '';
+      document.getElementById('ai-import-output').scrollTop = 0;
+      resetAiChat();
+      updateAiHistoryControls();
       setAiProgress(0, 0, sourceItems.length);
       setAiStatus('ai-generate-status', `正在生成 0/${sourceItems.length}`);
       const reportParts = [];
@@ -4733,14 +4785,17 @@ NO`;
                 { role: 'system', content: organizerSystemPrompt },
                 { role: 'user', content: batch.join('\n') + (attempt ? '\n\n请重新核对：每条最终英文必须完整覆盖原始输入，导入区中文只能翻译对应英文，不能添加对话下一句或解释。' : '') }
               ], false);
+              if (!active()) return;
               result = parseAiOrganizerResponse(content);
               if (!result.report || parseImportLines(result.importText || '').length !== batch.length) {
                 throw new Error('AI 返回的报告或导入条数不完整');
               }
               try {
                 result.importText = await reviewAiImportBatch(result.report, result.importText, batch);
+                if (!active()) return;
                 break;
               } catch (reviewError) {
+                if (!active()) return;
                 if (attempt === 1) throw reviewError;
                 setAiStatus('ai-generate-status', `第 ${batchIndex + 1} 批校对未通过，正在重试`);
               }
@@ -4755,8 +4810,7 @@ NO`;
 
           const combinedReport = reportParts.join('\n\n---\n\n');
           const combinedImport = importParts.join('\n');
-          renderAiReport(combinedReport, sourceItems.slice(0, completedItems));
-          document.getElementById('ai-import-output').value = combinedImport;
+          displayAiReportPair(combinedReport, combinedImport, sourceItems.slice(0, completedItems));
           const percent = (completedItems / sourceItems.length) * 100;
           setAiProgress(percent, completedItems, sourceItems.length);
           setAiStatus('ai-generate-status', `已完成 ${completedItems}/${sourceItems.length}`);
@@ -4765,18 +4819,20 @@ NO`;
         const combinedReport = reportParts.join('\n\n---\n\n');
         const combinedImport = importParts.join('\n');
         const words = parseImportLines(combinedImport);
-        latestAiReport = combinedReport;
-        latestAiImport = combinedImport;
-        renderAiReport(combinedReport, sourceItems);
-        document.getElementById('ai-import-output').value = combinedImport;
+        displayAiReportPair(combinedReport, combinedImport, sourceItems);
         await addAiHistoryEntry(combinedReport, combinedImport, sourceItems, true);
+        if (!active()) return;
         resetAiChat();
         setAiProgress(100, sourceItems.length, sourceItems.length);
         setAiStatus('ai-generate-status', `已生成 ${words.length} 条`);
       } catch (error) {
-        setAiStatus('ai-generate-status', error.message || '生成失败', true);
+        if (active()) setAiStatus('ai-generate-status', error.message || '生成失败', true);
       } finally {
-        button.disabled = false;
+        if (active()) {
+          aiGenerating = false;
+          button.disabled = false;
+          updateAiHistoryControls();
+        }
       }
     });
 
@@ -4808,6 +4864,7 @@ NO`;
     document.getElementById('enable-ai-chat').addEventListener('click', enableAiChatForCurrentReport);
 
     document.getElementById('import-ai-output').addEventListener('click', async () => {
+      if (aiGenerating) return showModal('请等待当前报告生成完成后再操作。');
       const words = parseImportLines(document.getElementById('ai-import-output').value.trim());
       if (words.length === 0) return showModal('导入段落为空或格式不正确');
       const targetBookId = document.getElementById('ai-target-wordbook').value;
