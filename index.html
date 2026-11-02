@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.02.0145</span>
+        <span id="main-app-version" class="app-version">v2026.11.02.1350</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.02.0145</span>
+      <span id="app-version" class="app-version">v2026.11.02.1350</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1152,10 +1152,6 @@
           <button id="save-ai-source" class="ai-btn secondary" type="button">保存草稿</button>
           <button id="clear-ai-source" class="ai-btn secondary" type="button">一键清空</button>
           <span id="ai-draft-status" class="ai-status" role="status" aria-live="polite" style="margin:0;"></span>
-          <span id="ai-draft-conflict" hidden>
-            <button id="ai-draft-use-account" class="ai-btn secondary" type="button">使用账号草稿</button>
-            <button id="ai-draft-keep-local" class="ai-btn secondary" type="button">保留当前草稿</button>
-          </span>
           <div id="ai-progress-wrap" class="ai-progress-wrap" hidden>
             <div id="ai-progress" class="ai-progress" role="progressbar" aria-label="报告生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div id="ai-progress-bar" class="ai-progress-bar"></div>
@@ -1164,6 +1160,10 @@
           </div>
           <span id="ai-generate-status" class="ai-status" style="margin:0;"></span>
         </div>
+        <details id="ai-draft-backups" hidden>
+          <summary>自动备份（仅异常恢复用）</summary>
+          <pre id="ai-draft-backup-text" data-user-content style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;"></pre>
+        </details>
       </div>
       <section class="ai-report-package">
         <div class="ai-package-header">
@@ -1358,8 +1358,7 @@
         '草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试': 'Draft could not be saved. Keep this page open, allow website storage, and retry.',
         '草稿读取失败，请检查浏览器存储设置': 'Draft could not be restored. Check browser storage settings.',
         '请先登录后保存草稿': 'Sign in before saving a draft',
-        '使用账号草稿': 'Use account draft', '保留当前草稿': 'Keep current draft',
-        '另一设备或本机旧草稿与账号内容不同，当前输入已保留，请选择保留哪份': 'Another device or an older local draft differs from your account draft. Your input is preserved. Choose which version to keep.',
+        '自动备份（仅异常恢复用）': 'Automatic backups (recovery only)',
         '草稿待同步到账号，请保持页面打开': 'Draft pending account sync. Keep this page open.',
         '草稿已同步到账号，同一账号可跨设备继续编辑': 'Draft synced to your account. Continue on another device with the same account.',
         '正在读取账号草稿，当前输入尚未同步': 'Loading account draft. Current input is not synced yet.',
@@ -1371,9 +1370,7 @@
         '账号草稿同步失败，当前输入已保留；请检查网络或账号权限后重试': 'Account draft sync failed. Your input is preserved. Check your connection or account permissions and retry.',
         '账号草稿格式无效，请勿覆盖；请稍后重试': 'The account draft format is invalid. Do not overwrite it; retry later.',
         '账号草稿已被其他设备修改': 'The account draft was changed on another device',
-        '使用账号草稿将替换当前输入，确定继续吗？': 'Replace your current input with the account draft?',
-        '当前草稿将替换账号里的草稿，并同步到其他设备，确定继续吗？': 'Replace the account draft with your current input and sync it to other devices?',
-        '确定清空账号草稿吗？清空后会同步到其他设备，不会删除已生成的报告。': 'Clear the account draft on all devices? Generated reports will not be deleted.',
+        '只清空上方输入内容，并同步到同一账号的其他设备。已生成的报告和单词本保持不变。确定清空输入吗？': 'Clear only the input above and sync the empty input to your other devices on the same account. Existing reports and wordbooks stay unchanged. Clear input?',
         'Other Spoken Alternative · 表达选择与区别': 'Other Spoken Alternative',
         '上一份': 'Previous report', '下一份': 'Next report', '暂无历史记录': 'No reports yet', '删除当前报告': 'Delete current report',
         '生成后，这里会显示每条表达的简短说明。': 'Explanations for each expression will appear here.', '可直接导入单词本的完整段落': 'Ready-to-Import Vocabulary',
@@ -4703,21 +4700,52 @@ NO`;
       showModal('API Key 已清除');
     });
 
-    function createAiSourceDraft(input, status, getStorage, cloud, conflictUI, schedule = setTimeout, cancel = clearTimeout) {
+    function mergeAiDraftText(base, local, remote) {
+      if (local === remote || local === base) return remote;
+      if (remote === base || local === '') return local;
+      const original = Array.from(base);
+      function change(text) {
+        const next = Array.from(text);
+        let start = 0, end = original.length, tail = next.length;
+        while (start < end && start < tail && original[start] === next[start]) start++;
+        while (end > start && tail > start && original[end - 1] === next[tail - 1]) { end--; tail--; }
+        return { start, end, insert: next.slice(start, tail) };
+      }
+      const a = change(local), b = change(remote);
+      if (a.start === a.end && b.start === b.end && a.start === b.start) {
+        if (a.start === 0 || original[a.start - 1] === '\n' || (a.insert[0] === '\n' && b.insert[0] === '\n')) {
+          const left = b.insert.join(''), right = a.insert.join('');
+          return original.slice(0, a.start).join('') + left + (left.endsWith('\n') || right.startsWith('\n') ? '' : '\n') + right + original.slice(a.end).join('');
+        }
+        return local;
+      }
+      if (a.end <= b.start || b.end <= a.start) {
+        const result = [...original];
+        for (const edit of [a, b].sort((x, y) => y.start - x.start || y.end - x.end)) {
+          result.splice(edit.start, edit.end - edit.start, ...edit.insert);
+        }
+        return result.join('');
+      }
+      // Overlapping edits keep the active input; both versions are backed up by the caller.
+      return local;
+    }
+
+    function createAiSourceDraft(input, status, getStorage, cloud, backupUI, schedule = setTimeout, cancel = clearTimeout) {
       let uid = null;
       let dirty = false;
       let session = 0;
       let ready = false;
       let baseRevision = null;
       let remote = null;
-      let conflict = false;
+      let baseText = null;
+      let backups = [];
       let timer = null;
       let unsubscribe = null;
       let inFlight = null;
       let lastText = '';
       let loadFailed = false;
       let subscriptionVersion = 0;
-      const key = () => `vocabAiSourceDraft:v2:${uid}`;
+      const key = () => `vocabAiSourceDraft:v3:${uid}`;
       function show(message, failed = false) {
         status.textContent = message;
         status.style.color = failed ? 'var(--danger, #c62828)' : '';
@@ -4725,14 +4753,19 @@ NO`;
       function cache() {
         if (!uid) return false;
         try {
-          getStorage().setItem(key(), JSON.stringify({ text: input.value, baseRevision, dirty }));
+          getStorage().setItem(key(), JSON.stringify({ text: input.value, baseRevision, baseText, dirty, backups }));
           return true;
         } catch { return false; }
       }
-      function showConflict() {
-        conflict = true;
-        conflictUI.hidden = false;
-        show('另一设备或本机旧草稿与账号内容不同，当前输入已保留，请选择保留哪份', true);
+      function renderBackups() {
+        backupUI.panel.hidden = backups.length === 0;
+        backupUI.content.textContent = backups.map(item => `${item.time}\n${item.text}`).join('\n\n---\n\n');
+      }
+      function backup(text) {
+        if (!text || backups.some(item => item.text === text)) return;
+        backups.unshift({ time: new Date().toISOString(), text });
+        backups = backups.slice(0, 5);
+        renderBackups();
       }
       function queueSave() {
         cancel(timer);
@@ -4757,30 +4790,47 @@ NO`;
         } catch { fail(); }
       }
       function receive(record) {
-        remote = record || { text: '', revision: 0 };
+        const next = record || { text: '', revision: 0 };
+        if (ready && remote && next.revision < remote.revision) return;
+        remote = next;
         ready = true;
         if (inFlight && remote.revision === inFlight.revision + 1 && remote.text === inFlight.text) {
           baseRevision = remote.revision;
+          baseText = remote.text;
           if (input.value === inFlight.text) dirty = false;
         } else if (dirty && input.value !== remote.text) {
           if (baseRevision === remote.revision || (baseRevision === null && remote.revision === 0)) {
             baseRevision = remote.revision;
+            baseText = remote.text;
             queueSave();
             show('草稿待同步到账号，请保持页面打开');
             cache();
             return;
           }
-          showConflict();
-          cache();
-          return;
+          backup(input.value);
+          backup(remote.text);
+          if (remote.revision > 0 && remote.text === '') {
+            input.value = '';
+          } else if (baseText !== null) {
+            input.value = mergeAiDraftText(baseText, input.value, remote.text);
+          } else {
+            // Older local-only drafts have no shared baseline; preserve unique lines once.
+            const existing = new Set(remote.text.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
+            const additions = input.value.split(/\r?\n/).filter(line => line.trim() && !existing.has(line.trim()));
+            input.value = [remote.text, ...additions].filter(Boolean).join('\n');
+          }
+          lastText = input.value;
+          baseRevision = remote.revision;
+          baseText = remote.text;
+          dirty = input.value !== remote.text;
+          if (dirty) queueSave();
         } else {
           input.value = remote.text;
           lastText = input.value;
           baseRevision = remote.revision;
+          baseText = remote.text;
           dirty = false;
         }
-        conflict = false;
-        conflictUI.hidden = true;
         cache();
         show(dirty ? '草稿待同步到账号，请保持页面打开' : '草稿已同步到账号，同一账号可跨设备继续编辑');
       }
@@ -4795,7 +4845,6 @@ NO`;
             return false;
           }
         }
-        if (conflict) { showConflict(); return false; }
         if (inFlight) return inFlight.promise;
         if (!dirty) { show('草稿已同步到账号，同一账号可跨设备继续编辑'); return true; }
         const token = session;
@@ -4805,33 +4854,42 @@ NO`;
         pending.promise = (async () => {
           let succeeded = false;
           try {
-            const record = await cloud.save(pending.uid, pending.text, pending.revision);
-            if (token !== session) return false;
-            if (remote && remote.revision > record.revision && remote.text !== pending.text) {
-              showConflict();
-              return false;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              pending.text = input.value;
+              pending.revision = baseRevision;
+              let record;
+              try {
+                record = await cloud.save(pending.uid, pending.text, pending.revision);
+              } catch (error) {
+                if (token !== session) return false;
+                if (error.code !== 'draft-conflict') throw error;
+                receive(error.current);
+                if (!dirty) return true;
+                continue;
+              }
+              if (token !== session) return false;
+              if (!remote || remote.revision <= record.revision) {
+                baseRevision = record.revision;
+                baseText = record.text;
+                remote = record;
+                if (input.value === pending.text) dirty = false;
+              }
+              succeeded = true;
+              break;
             }
-            baseRevision = record.revision;
-            remote = record;
-            if (input.value === pending.text) dirty = false;
+            if (!succeeded) queueSave();
             cache();
-            succeeded = true;
             show(dirty ? '草稿待同步到账号，请保持页面打开' : '草稿已同步到账号，同一账号可跨设备继续编辑');
-            return true;
+            return succeeded;
           } catch (error) {
             if (token !== session) return false;
-            if (error.code === 'draft-conflict') {
-              remote = error.current || { text: '', revision: 0 };
-              showConflict();
-            } else {
-              const backedUp = cache();
-              show(backedUp ? '草稿尚未同步到账号，已保留本机备份；联网后点击保存草稿重试' : '草稿未保存，请勿关闭页面；请联网后重试', true);
-            }
+            const backedUp = cache();
+            show(backedUp ? '草稿尚未同步到账号，已保留本机备份；联网后点击保存草稿重试' : '草稿未保存，请勿关闭页面；请联网后重试', true);
             return false;
           } finally {
             if (token === session) {
               inFlight = null;
-              if (succeeded && dirty && !conflict) queueSave();
+              if (succeeded && dirty) queueSave();
             }
           }
         })();
@@ -4842,11 +4900,8 @@ NO`;
         dirty = true;
         lastText = input.value;
         const backedUp = cache();
-        if (conflict) showConflict();
-        else {
-          show(ready ? '草稿待同步到账号，请保持页面打开' : '正在读取账号草稿，当前输入尚未同步');
-          if (ready) queueSave();
-        }
+        show(ready ? '草稿待同步到账号，请保持页面打开' : '正在读取账号草稿，当前输入尚未同步');
+        if (ready) queueSave();
         if (!backedUp) show('本机备份不可用，等待账号保存完成前请勿关闭页面', true);
         return backedUp;
       }
@@ -4863,15 +4918,16 @@ NO`;
           ready = false;
           baseRevision = null;
           remote = null;
-          conflict = false;
+          baseText = null;
+          backups = [];
           inFlight = null;
-          conflictUI.hidden = true;
+          renderBackups();
           input.value = '';
           lastText = '';
           show('');
           if (!uid) return;
           try {
-            const saved = getStorage().getItem(key());
+            const saved = getStorage().getItem(key()) ?? getStorage().getItem(`vocabAiSourceDraft:v2:${uid}`);
             if (saved !== null) {
               const parsed = JSON.parse(saved);
               if (typeof parsed.text !== 'string' || typeof parsed.dirty !== 'boolean' ||
@@ -4879,6 +4935,9 @@ NO`;
               input.value = parsed.text;
               dirty = parsed.dirty;
               baseRevision = parsed.baseRevision;
+              baseText = typeof parsed.baseText === 'string' ? parsed.baseText : null;
+              backups = Array.isArray(parsed.backups) ? parsed.backups.filter(item => typeof item?.text === 'string' && typeof item.time === 'string').slice(0, 5) : [];
+              renderBackups();
             } else {
               const legacy = getStorage().getItem(`vocabAiSourceDraft:v1:${uid}`);
               input.value = legacy ?? '';
@@ -4899,21 +4958,6 @@ NO`;
           if (!uid) { show('请先登录后保存草稿', true); return false; }
           input.value = '';
           changed();
-          return true;
-        },
-        resolveConflict(useAccount) {
-          if (!conflict || !remote) return false;
-          if (useAccount) {
-            input.value = remote.text;
-            lastText = input.value;
-            dirty = false;
-          } else dirty = true;
-          baseRevision = remote.revision;
-          conflict = false;
-          conflictUI.hidden = true;
-          cache();
-          if (dirty) return save();
-          show('草稿已同步到账号，同一账号可跨设备继续编辑');
           return true;
         }
       };
@@ -4955,16 +4999,10 @@ NO`;
 
     const aiSourceDraft = createAiSourceDraft(
       document.getElementById('ai-source-input'), document.getElementById('ai-draft-status'), () => localStorage,
-      aiDraftCloud, document.getElementById('ai-draft-conflict')
+      aiDraftCloud, { panel: document.getElementById('ai-draft-backups'), content: document.getElementById('ai-draft-backup-text') }
     );
     document.getElementById('ai-source-input').addEventListener('input', () => aiSourceDraft.changed());
     document.getElementById('save-ai-source').addEventListener('click', () => aiSourceDraft.save());
-    document.getElementById('ai-draft-use-account').addEventListener('click', () => {
-      showModal('使用账号草稿将替换当前输入，确定继续吗？', () => aiSourceDraft.resolveConflict(true));
-    });
-    document.getElementById('ai-draft-keep-local').addEventListener('click', () => {
-      showModal('当前草稿将替换账号里的草稿，并同步到其他设备，确定继续吗？', () => aiSourceDraft.resolveConflict(false));
-    });
     window.addEventListener('online', () => aiSourceDraft.flush());
     window.addEventListener('pagehide', () => aiSourceDraft.flush());
     document.addEventListener('visibilitychange', () => {
@@ -4972,7 +5010,7 @@ NO`;
     });
 
     document.getElementById('clear-ai-source').addEventListener('click', () => {
-      showModal('确定清空账号草稿吗？清空后会同步到其他设备，不会删除已生成的报告。', () => {
+      showModal('只清空上方输入内容，并同步到同一账号的其他设备。已生成的报告和单词本保持不变。确定清空输入吗？', () => {
         if (!aiSourceDraft.clear()) return;
         void aiSourceDraft.save();
         resetAiProgress();
