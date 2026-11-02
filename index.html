@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.01.0258</span>
+        <span id="main-app-version" class="app-version">v2026.11.02.0124</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.01.0258</span>
+      <span id="app-version" class="app-version">v2026.11.02.0124</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1152,6 +1152,10 @@
           <button id="save-ai-source" class="ai-btn secondary" type="button">保存草稿</button>
           <button id="clear-ai-source" class="ai-btn secondary" type="button">一键清空</button>
           <span id="ai-draft-status" class="ai-status" role="status" aria-live="polite" style="margin:0;"></span>
+          <span id="ai-draft-conflict" hidden>
+            <button id="ai-draft-use-account" class="ai-btn secondary" type="button">使用账号草稿</button>
+            <button id="ai-draft-keep-local" class="ai-btn secondary" type="button">保留当前草稿</button>
+          </span>
           <div id="ai-progress-wrap" class="ai-progress-wrap" hidden>
             <div id="ai-progress" class="ai-progress" role="progressbar" aria-label="报告生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div id="ai-progress-bar" class="ai-progress-bar"></div>
@@ -1355,6 +1359,22 @@
         '草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试': 'Draft could not be saved. Keep this page open, allow website storage, and retry.',
         '草稿读取失败，请检查浏览器存储设置': 'Draft could not be restored. Check browser storage settings.',
         '请先登录后保存草稿': 'Sign in before saving a draft',
+        '使用账号草稿': 'Use account draft', '保留当前草稿': 'Keep current draft',
+        '另一设备或本机旧草稿与账号内容不同，当前输入已保留，请选择保留哪份': 'Another device or an older local draft differs from your account draft. Your input is preserved. Choose which version to keep.',
+        '草稿待同步到账号，请保持页面打开': 'Draft pending account sync. Keep this page open.',
+        '草稿已同步到账号，同一账号可跨设备继续编辑': 'Draft synced to your account. Continue on another device with the same account.',
+        '正在读取账号草稿，当前输入尚未同步': 'Loading account draft. Current input is not synced yet.',
+        '正在保存草稿到账号...': 'Saving draft to your account…',
+        '草稿尚未同步到账号，已保留本机备份；联网后点击保存草稿重试': 'Draft not synced to your account. A local backup is kept. Reconnect and save again.',
+        '草稿未保存，请勿关闭页面；请联网后重试': 'Draft not saved. Keep this page open, reconnect, and retry.',
+        '本机备份不可用，等待账号保存完成前请勿关闭页面': 'Local backup unavailable. Keep this page open until account saving completes.',
+        '本机草稿读取失败，正在读取账号草稿': 'Local draft unavailable. Loading your account draft.',
+        '账号草稿同步失败，当前输入已保留；请检查网络或账号权限后重试': 'Account draft sync failed. Your input is preserved. Check your connection or account permissions and retry.',
+        '账号草稿格式无效，请勿覆盖；请稍后重试': 'The account draft format is invalid. Do not overwrite it; retry later.',
+        '账号草稿已被其他设备修改': 'The account draft was changed on another device',
+        '使用账号草稿将替换当前输入，确定继续吗？': 'Replace your current input with the account draft?',
+        '当前草稿将替换账号里的草稿，并同步到其他设备，确定继续吗？': 'Replace the account draft with your current input and sync it to other devices?',
+        '确定清空账号草稿吗？清空后会同步到其他设备，不会删除已生成的报告。': 'Clear the account draft on all devices? Generated reports will not be deleted.',
         'Other Spoken Alternative · 表达选择与区别': 'Other Spoken Alternative',
         '上一份': 'Previous report', '下一份': 'Next report', '暂无历史记录': 'No reports yet', '删除当前报告': 'Delete current report',
         '生成后，这里会显示每条表达的简短说明。': 'Explanations for each expression will appear here.', '可直接导入单词本的完整段落': 'Ready-to-Import Vocabulary',
@@ -4736,74 +4756,281 @@ NO`;
       showModal('API Key 已清除');
     });
 
-    function createAiSourceDraft(input, status, getStorage) {
+    function createAiSourceDraft(input, status, getStorage, cloud, conflictUI, schedule = setTimeout, cancel = clearTimeout) {
       let uid = null;
       let dirty = false;
-      const key = () => `vocabAiSourceDraft:v1:${uid}`;
+      let session = 0;
+      let ready = false;
+      let baseRevision = null;
+      let remote = null;
+      let conflict = false;
+      let timer = null;
+      let unsubscribe = null;
+      let inFlight = null;
+      let lastText = '';
+      let loadFailed = false;
+      let subscriptionVersion = 0;
+      const key = () => `vocabAiSourceDraft:v2:${uid}`;
       function show(message, failed = false) {
         status.textContent = message;
         status.style.color = failed ? 'var(--danger, #c62828)' : '';
       }
-      function save() {
-        if (!uid) { show('请先登录后保存草稿', true); return false; }
+      function cache() {
+        if (!uid) return false;
         try {
-          getStorage().setItem(key(), input.value);
-          dirty = false;
-          show('草稿已保存到当前浏览器');
+          getStorage().setItem(key(), JSON.stringify({ text: input.value, baseRevision, dirty }));
           return true;
-        } catch {
-          dirty = true;
-          show('草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试', true);
-          return false;
+        } catch { return false; }
+      }
+      function showConflict() {
+        conflict = true;
+        conflictUI.hidden = false;
+        show('另一设备或本机旧草稿与账号内容不同，当前输入已保留，请选择保留哪份', true);
+      }
+      function queueSave() {
+        cancel(timer);
+        const token = session;
+        timer = schedule(() => { if (token === session) void save(); }, 750);
+      }
+      function connect() {
+        if (!uid) return;
+        if (unsubscribe) unsubscribe();
+        const token = session;
+        const subscription = ++subscriptionVersion;
+        loadFailed = false;
+        const active = () => token === session && subscription === subscriptionVersion;
+        const fail = () => {
+          if (!active()) return;
+          ready = false;
+          loadFailed = true;
+          show('账号草稿同步失败，当前输入已保留；请检查网络或账号权限后重试', true);
+        };
+        try {
+          unsubscribe = cloud.subscribe(uid, record => { if (active()) receive(record); }, fail);
+        } catch { fail(); }
+      }
+      function receive(record) {
+        remote = record || { text: '', revision: 0 };
+        ready = true;
+        if (inFlight && remote.revision === inFlight.revision + 1 && remote.text === inFlight.text) {
+          baseRevision = remote.revision;
+          if (input.value === inFlight.text) dirty = false;
+        } else if (dirty && input.value !== remote.text) {
+          if (baseRevision === remote.revision || (baseRevision === null && remote.revision === 0)) {
+            baseRevision = remote.revision;
+            queueSave();
+            show('草稿待同步到账号，请保持页面打开');
+            cache();
+            return;
+          }
+          showConflict();
+          cache();
+          return;
+        } else {
+          input.value = remote.text;
+          lastText = input.value;
+          baseRevision = remote.revision;
+          dirty = false;
         }
+        conflict = false;
+        conflictUI.hidden = true;
+        cache();
+        show(dirty ? '草稿待同步到账号，请保持页面打开' : '草稿已同步到账号，同一账号可跨设备继续编辑');
+      }
+      async function save() {
+        if (!uid) { show('请先登录后保存草稿', true); return false; }
+        cancel(timer);
+        if (input.value !== lastText) { dirty = true; lastText = input.value; cache(); }
+        if (!ready) {
+          if (loadFailed) connect();
+          if (!ready) {
+            if (!loadFailed) show('正在读取账号草稿，当前输入尚未同步');
+            return false;
+          }
+        }
+        if (conflict) { showConflict(); return false; }
+        if (inFlight) return inFlight.promise;
+        if (!dirty) { show('草稿已同步到账号，同一账号可跨设备继续编辑'); return true; }
+        const token = session;
+        const pending = { text: input.value, revision: baseRevision, uid };
+        inFlight = pending;
+        show('正在保存草稿到账号...');
+        pending.promise = (async () => {
+          let succeeded = false;
+          try {
+            const record = await cloud.save(pending.uid, pending.text, pending.revision);
+            if (token !== session) return false;
+            if (remote && remote.revision > record.revision && remote.text !== pending.text) {
+              showConflict();
+              return false;
+            }
+            baseRevision = record.revision;
+            remote = record;
+            if (input.value === pending.text) dirty = false;
+            cache();
+            succeeded = true;
+            show(dirty ? '草稿待同步到账号，请保持页面打开' : '草稿已同步到账号，同一账号可跨设备继续编辑');
+            return true;
+          } catch (error) {
+            if (token !== session) return false;
+            if (error.code === 'draft-conflict') {
+              remote = error.current || { text: '', revision: 0 };
+              showConflict();
+            } else {
+              const backedUp = cache();
+              show(backedUp ? '草稿尚未同步到账号，已保留本机备份；联网后点击保存草稿重试' : '草稿未保存，请勿关闭页面；请联网后重试', true);
+            }
+            return false;
+          } finally {
+            if (token === session) {
+              inFlight = null;
+              if (succeeded && dirty && !conflict) queueSave();
+            }
+          }
+        })();
+        return pending.promise;
+      }
+      function changed() {
+        if (!uid) { show('请先登录后保存草稿', true); return false; }
+        dirty = true;
+        lastText = input.value;
+        const backedUp = cache();
+        if (conflict) showConflict();
+        else {
+          show(ready ? '草稿待同步到账号，请保持页面打开' : '正在读取账号草稿，当前输入尚未同步');
+          if (ready) queueSave();
+        }
+        if (!backedUp) show('本机备份不可用，等待账号保存完成前请勿关闭页面', true);
+        return backedUp;
       }
       return {
         setUser(nextUid) {
           if (nextUid === uid) return;
+          if (dirty) cache();
+          session++;
+          cancel(timer);
+          if (unsubscribe) unsubscribe();
+          unsubscribe = null;
           uid = nextUid;
           dirty = false;
+          ready = false;
+          baseRevision = null;
+          remote = null;
+          conflict = false;
+          inFlight = null;
+          conflictUI.hidden = true;
           input.value = '';
+          lastText = '';
           show('');
           if (!uid) return;
           try {
             const saved = getStorage().getItem(key());
-            input.value = saved ?? '';
-            show(saved ? '已恢复上次草稿' : '自动保存，不会生成报告；草稿仅保存在当前设备的此浏览器');
-          } catch { show('草稿读取失败，请检查浏览器存储设置', true); }
+            if (saved !== null) {
+              const parsed = JSON.parse(saved);
+              if (typeof parsed.text !== 'string' || typeof parsed.dirty !== 'boolean' ||
+                  !(parsed.baseRevision === null || (Number.isSafeInteger(parsed.baseRevision) && parsed.baseRevision >= 0))) throw new Error('Invalid draft cache');
+              input.value = parsed.text;
+              dirty = parsed.dirty;
+              baseRevision = parsed.baseRevision;
+            } else {
+              const legacy = getStorage().getItem(`vocabAiSourceDraft:v1:${uid}`);
+              input.value = legacy ?? '';
+              dirty = !!legacy;
+            }
+          } catch { show('本机草稿读取失败，正在读取账号草稿', true); }
+          lastText = input.value;
+          show('正在读取账号草稿，当前输入尚未同步');
+          connect();
         },
-        changed() { dirty = true; return save(); },
+        changed,
         save,
-        flush() { if (dirty) save(); },
+        flush() {
+          if (dirty) { cache(); return save(); }
+          if (loadFailed) connect();
+        },
         clear() {
           if (!uid) { show('请先登录后保存草稿', true); return false; }
-          try {
-            getStorage().removeItem(key());
-            input.value = '';
+          input.value = '';
+          changed();
+          return true;
+        },
+        resolveConflict(useAccount) {
+          if (!conflict || !remote) return false;
+          if (useAccount) {
+            input.value = remote.text;
+            lastText = input.value;
             dirty = false;
-            show('草稿已清空');
-            return true;
-          } catch {
-            show('草稿保存失败，请勿关闭页面；请允许浏览器保存网站数据后重试', true);
-            return false;
-          }
+          } else dirty = true;
+          baseRevision = remote.revision;
+          conflict = false;
+          conflictUI.hidden = true;
+          cache();
+          if (dirty) return save();
+          show('草稿已同步到账号，同一账号可跨设备继续编辑');
+          return true;
         }
       };
     }
 
+    function getAiDraftRecord(snapshot) {
+      if (!snapshot.exists()) return null;
+      const data = snapshot.data();
+      if (typeof data.text !== 'string' || !Number.isSafeInteger(data.revision) || data.revision < 1) {
+        throw new Error('账号草稿格式无效，请勿覆盖；请稍后重试');
+      }
+      return { text: data.text, revision: data.revision };
+    }
+
+    const aiDraftCloud = {
+      subscribe(uid, receive, fail) {
+        return onSnapshot(doc(db, 'users', uid, 'preferences', 'aiSourceDraft'), { includeMetadataChanges: true }, snapshot => {
+          if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) return;
+          try { receive(getAiDraftRecord(snapshot)); } catch (error) { fail(error); }
+        }, fail);
+      },
+      async save(uid, text, expectedRevision) {
+        if (auth.currentUser?.uid !== uid) throw new Error('请先登录后保存草稿');
+        const ref = doc(db, 'users', uid, 'preferences', 'aiSourceDraft');
+        return runTransaction(db, async transaction => {
+          const current = getAiDraftRecord(await transaction.get(ref));
+          if ((current?.revision || 0) !== expectedRevision) {
+            const error = new Error('账号草稿已被其他设备修改');
+            error.code = 'draft-conflict';
+            error.current = current;
+            throw error;
+          }
+          const record = { text, revision: expectedRevision + 1 };
+          transaction.set(ref, { ...record, updatedAt: new Date().toISOString() });
+          return record;
+        });
+      }
+    };
+
     const aiSourceDraft = createAiSourceDraft(
-      document.getElementById('ai-source-input'), document.getElementById('ai-draft-status'), () => localStorage
+      document.getElementById('ai-source-input'), document.getElementById('ai-draft-status'), () => localStorage,
+      aiDraftCloud, document.getElementById('ai-draft-conflict')
     );
     document.getElementById('ai-source-input').addEventListener('input', () => aiSourceDraft.changed());
     document.getElementById('save-ai-source').addEventListener('click', () => aiSourceDraft.save());
+    document.getElementById('ai-draft-use-account').addEventListener('click', () => {
+      showModal('使用账号草稿将替换当前输入，确定继续吗？', () => aiSourceDraft.resolveConflict(true));
+    });
+    document.getElementById('ai-draft-keep-local').addEventListener('click', () => {
+      showModal('当前草稿将替换账号里的草稿，并同步到其他设备，确定继续吗？', () => aiSourceDraft.resolveConflict(false));
+    });
+    window.addEventListener('online', () => aiSourceDraft.flush());
     window.addEventListener('pagehide', () => aiSourceDraft.flush());
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') aiSourceDraft.flush();
     });
 
     document.getElementById('clear-ai-source').addEventListener('click', () => {
-      if (!aiSourceDraft.clear()) return;
-      resetAiProgress();
-      setAiStatus('ai-generate-status', '');
+      showModal('确定清空账号草稿吗？清空后会同步到其他设备，不会删除已生成的报告。', () => {
+        if (!aiSourceDraft.clear()) return;
+        void aiSourceDraft.save();
+        resetAiProgress();
+        setAiStatus('ai-generate-status', '');
+      });
     });
 
     async function generateAiOrganizerBatch(batch, active, onRecovery) {
