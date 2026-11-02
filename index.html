@@ -986,7 +986,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.02.0124</span>
+        <span id="main-app-version" class="app-version">v2026.11.02.0145</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1140,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.02.0124</span>
+      <span id="app-version" class="app-version">v2026.11.02.0145</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1188,7 +1188,6 @@
             <h3>可直接导入单词本的完整段落</h3>
             <p class="ai-note">格式固定为每行 <code>英文,中文</code>。可先修改，再一键导入；内容较多时会自动拆成多个单词列表。</p>
             <textarea id="ai-import-output" class="ai-textarea" placeholder="AI 生成后会出现在这里"></textarea>
-            <p id="ai-pair-status" class="ai-note" role="status" hidden></p>
             <div class="ai-actions">
               <button id="copy-ai-output" class="ai-btn secondary">复制段落</button>
               <button id="save-ai-output" class="ai-btn secondary">保存修改</button>
@@ -1443,8 +1442,6 @@
         '本次生成结果（尚未保存）': 'Current generated result (not saved)',
         '当前生成结果尚未保存，切换历史会离开这份结果，确定继续吗？': 'This generated result has not been saved. Leave it and switch to history?',
         '请等待当前报告生成完成后再操作。': 'Wait for the current report to finish generating before continuing.',
-        '右侧英文与当前报告不匹配，可能混入了其他报告。仍要保存这些手动修改吗？': 'The English entries do not match the current report and may belong to another report. Save these manual edits anyway?',
-        '右侧英文与当前报告不匹配，可能混入了其他报告。仍要仅按右侧内容导入吗？': 'The English entries do not match the current report and may belong to another report. Import only the right-hand contents anyway?',
         '还没有可复制的导入段落': 'No import text to copy', '已复制导入段落': 'Import text copied', '浏览器未允许自动复制，请手动选中复制': 'Automatic copying is blocked. Select and copy the text manually.',
         '确定删除当前这份报告吗？': 'Delete the current report?', '导入段落为空或格式不正确': 'Import text is empty or incorrectly formatted', '请选择有效的目标单词本': 'Choose a valid target wordbook', '导入失败': 'Import failed',
         '请先启用本报告追问': 'Enable report context first', '请先生成或选择一份整理报告': 'Generate or select a report first', '正在回答...': 'Replying…', '发送失败': 'Could not send message',
@@ -1464,10 +1461,6 @@
           [/^学习连击(\d+)天$/, (_, n) => `${n}-day study streak`],
           [/^(\d+) 个列表 · (\d+) 个单词$/, (_, lists, words) => `${lists} ${lists === '1' ? 'list' : 'lists'} · ${words} ${words === '1' ? 'word' : 'words'}`],
           [/^(\d+)个$/, (_, n) => `${n} ${n === '1' ? 'word' : 'words'}`],
-          [/^已核对：(\d+) 条英文与报告顺序一致。$/, (_, n) => `Checked: ${n} English entries match the report order.`],
-          [/^已核对：(\d+) 条英文与对应报告一致（含报告内替代表达）。$/, (_, n) => `Checked: ${n} English entries match their report, including its listed alternatives.`],
-          [/^条数一致，但第 ([\d、]+) 条英文未匹配到对应报告。请核对这些行；手动修改也可确认后保留。$/, (_, indices) => `Row counts match, but English in rows ${indices.replace(/、/g, ', ')} does not match the corresponding report. Check these rows; intentional edits can still be kept after confirmation.`],
-          [/^内容不匹配：报告 (\d+) 条，导出 (\d+) 条。请先核对右侧内容。$/, (_, reports, rows) => `Contents do not match: ${reports} report entries and ${rows} import rows. Check the right-hand contents.`],
           [/^(\d+)（默认）$/, (_, n) => `${n} (default)`],
           [/^第\s*(\d+)\s*\/\s*(\d+)\s*条$/, (_, n, total) => `${n} / ${total}`],
           [/^第(\d+)条(英文|中文)$/, (_, n, lang) => `Word ${n}, ${lang === '英文' ? 'English' : 'Chinese'}`],
@@ -4496,48 +4489,6 @@ NO`;
       const output = document.getElementById('ai-import-output');
       output.value = importText;
       output.scrollTop = 0;
-      renderAiPairStatus();
-    }
-
-    function checkAiReportImport(report, importText) {
-      const items = splitAiReportItems(report).map(item => ({
-        text: item,
-        title: item.match(/^Word\s*\/\s*Phrase\s*\/\s*Sentence:\s*(.+)$/im)?.[1]?.trim()
-      })).filter(item => item.title);
-      if (!items.length) return null;
-      const rows = parseImportLines(importText);
-      const comparable = text => String(text || '').toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9]/g, '');
-      const mismatchIndices = [];
-      items.forEach(({title, text}, index) => {
-        if (!rows[index]) { mismatchIndices.push(index + 1); return; }
-        const candidate = rows[index].en;
-        const options = [title, ...title.split(/\s*\/\s*/)];
-        const alternativeSection = splitReportSections(text).find(section => /^(?:Other Spoken Alternative|Better spoken alternatives)$/i.test(section.title));
-        const alternatives = (alternativeSection?.body || '').split(/\r?\n/).filter(line => line.includes('|')).map(line => {
-          const cells = line.trim().replace(/^\|/, '').split('|');
-          return cells[0].trim();
-        }).filter(value => /[A-Za-z]/.test(value) && !/[\u4e00-\u9fff]/.test(value));
-        const allowed = new Set([...options, ...alternatives].map(comparable).filter(Boolean));
-        const expression = candidate.split(/[:：]/)[0].trim();
-        const candidateOptions = expression.split(/\s*\/\s*/).filter(Boolean);
-        const matches = allowed.has(comparable(candidate)) || allowed.has(comparable(expression)) ||
-          (candidateOptions.length > 1 && candidateOptions.every(option => allowed.has(comparable(option))));
-        if (!matches) mismatchIndices.push(index + 1);
-      });
-      for (let index = items.length; index < rows.length; index++) mismatchIndices.push(index + 1);
-      return { matches: mismatchIndices.length === 0, reportCount: items.length, importCount: rows.length, mismatchIndices };
-    }
-
-    function renderAiPairStatus() {
-      const node = document.getElementById('ai-pair-status');
-      const check = checkAiReportImport(latestAiReport, document.getElementById('ai-import-output').value);
-      node.hidden = !check;
-      if (!check) return;
-      node.style.color = check.matches ? 'var(--muted)' : 'var(--danger, #c62828)';
-      node.textContent = check.matches ? `已核对：${check.reportCount} 条英文与对应报告一致（含报告内替代表达）。` :
-        check.reportCount === check.importCount
-          ? `条数一致，但第 ${check.mismatchIndices.join('、')} 条英文未匹配到对应报告。请核对这些行；手动修改也可确认后保留。`
-          : `内容不匹配：报告 ${check.reportCount} 条，导出 ${check.importCount} 条。请先核对右侧内容。`;
     }
 
     function showAiHistoryEntry(index, options = {}) {
@@ -4571,7 +4522,6 @@ NO`;
         report.classList.add('empty');
       }
       if (importOutput) importOutput.value = '';
-      document.getElementById('ai-pair-status').hidden = true;
       resetAiChat();
       updateAiHistoryControls();
     }
@@ -4628,18 +4578,15 @@ NO`;
       }
     }
 
-    async function saveCurrentAiHistoryEdit(options = {}) {
+    async function saveCurrentAiHistoryEdit() {
       if (aiGenerating) return showModal('请等待当前报告生成完成后再操作。');
       const currentImport = document.getElementById('ai-import-output').value.trim();
       if (!currentImport) return showModal('没有可以保存的导入段落');
-      const check = checkAiReportImport(latestAiReport, currentImport);
-      if (check && !check.matches && !options.confirmMismatch) return showModal('右侧英文与当前报告不匹配，可能混入了其他报告。仍要保存这些手动修改吗？', () => saveCurrentAiHistoryEdit({ confirmMismatch: true }));
       const normalizedImport = normalizeManualImportText(currentImport);
       // A live history reorder must never attach this report's text to another entry.
       if (aiHistory[activeAiHistoryIndex]?.report !== latestAiReport) activeAiHistoryIndex = -1;
       latestAiImport = normalizedImport;
       document.getElementById('ai-import-output').value = normalizedImport;
-      renderAiPairStatus();
       if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) {
         if (!latestAiReport) return showModal('请先生成一次整理报告');
         const entry = {
@@ -5104,7 +5051,6 @@ NO`;
       document.getElementById('ai-report').classList.add('empty');
       document.getElementById('ai-import-output').value = '';
       document.getElementById('ai-import-output').scrollTop = 0;
-      document.getElementById('ai-pair-status').hidden = true;
       resetAiChat();
       updateAiHistoryControls();
       setAiProgress(0, 0, sourceItems.length);
@@ -5172,7 +5118,6 @@ NO`;
     });
 
     document.getElementById('save-ai-output').addEventListener('click', saveCurrentAiHistoryEdit);
-    document.getElementById('ai-import-output').addEventListener('input', renderAiPairStatus);
 
     document.getElementById('ai-history-prev').addEventListener('click', () => {
       showAiHistoryEntry(activeAiHistoryIndex + 1);
@@ -5188,10 +5133,8 @@ NO`;
 
     document.getElementById('enable-ai-chat').addEventListener('click', enableAiChatForCurrentReport);
 
-    async function importCurrentAiOutput(options = {}) {
+    async function importCurrentAiOutput() {
       if (aiGenerating) return showModal('请等待当前报告生成完成后再操作。');
-      const check = checkAiReportImport(latestAiReport, document.getElementById('ai-import-output').value.trim());
-      if (check && !check.matches && !options.confirmMismatch) return showModal('右侧英文与当前报告不匹配，可能混入了其他报告。仍要仅按右侧内容导入吗？', () => importCurrentAiOutput({ confirmMismatch: true }));
       const words = parseImportLines(document.getElementById('ai-import-output').value.trim());
       if (words.length === 0) return showModal('导入段落为空或格式不正确');
       const targetBookId = document.getElementById('ai-target-wordbook').value;
