@@ -1,0 +1,14 @@
+{
+  "id": "/justin-vocab/",
+  "name": "Sayfolio · 拾言",
+  "short_name": "Sayfolio",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f6f1",
+  "theme_color": "#f8f6f1",
+  "icons": [
+    { "src": "brand/sayfolio-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "brand/sayfolio-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

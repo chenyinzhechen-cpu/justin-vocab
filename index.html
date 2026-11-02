@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Justin专属单词背诵程序</title>
+  <title>拾言 · Sayfolio</title>
+  <meta name="application-name" content="Sayfolio" />
+  <meta name="apple-mobile-web-app-title" content="Sayfolio" />
+  <meta name="theme-color" content="#f8f6f1" />
+  <link rel="icon" href="brand/sayfolio-icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="brand/sayfolio-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="brand/sayfolio-180.png" sizes="180x180" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <style>
     :root {
       --bg: #0b0d12;
@@ -693,9 +700,12 @@
     #app-sidebar { display:none; position:fixed; inset:0 auto 0 0; width:220px; padding:32px 18px 24px; border-right:1px solid var(--soft-border); background:var(--panel-dark); z-index:50; }
     :root[data-screen]:not([data-screen="auth"]) #app-sidebar { display:flex; flex-direction:column; }
     .sidebar-brand { display:flex; align-items:center; gap:13px; margin:0 14px 42px; }
-    .sidebar-brand svg { width:36px; height:36px; }
+    .brand-mark { object-fit:contain; filter:brightness(0) invert(1); }
+    :root[data-theme="light"] .brand-mark { filter:none; }
+    .sidebar-brand .brand-mark { width:40px; height:42px; flex-shrink:0; }
+    .login-brand-mark { display:block; width:68px; height:72px; margin:0 auto 16px; }
     .sidebar-brand strong,.sidebar-brand span { display:block; }
-    .sidebar-brand strong { font-size:20px; letter-spacing:-.5px; }
+    .sidebar-brand strong { font-family:Georgia,'Songti SC',serif; font-size:25px; font-weight:650; letter-spacing:-.8px; }
     .sidebar-brand span { font-size:13px; color:var(--muted); }
     #app-sidebar nav { display:grid; gap:6px; }
     #app-sidebar nav button { text-align:left; padding:13px 16px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:15px; cursor:pointer; }
@@ -799,7 +809,7 @@
     @media(max-width:1100px) { #app-sidebar { width:180px; padding-left:10px; padding-right:10px; } .view:not(#auth-page) { margin-left:180px; padding:28px 24px; } .overview-top { grid-template-columns:1fr; } .overview-calendar { gap:22px; grid-template-columns:1fr 1.6fr; } .ai-report-pair { grid-template-columns:1fr; } }
     @media(max-width:700px) {
       #app-sidebar { inset:0 0 auto; width:100%; height:62px; padding:10px 12px; flex-direction:row !important; align-items:center; border-right:0; border-bottom:1px solid var(--panel-light); gap:8px; }
-      .sidebar-brand { margin:0 8px 0 0; } .sidebar-brand svg { width:25px; height:25px; } .sidebar-brand div { display:none; }
+      .sidebar-brand { margin:0 8px 0 0; } .sidebar-brand .brand-mark { width:28px; height:30px; } .sidebar-brand div { display:none; }
       #app-sidebar nav { display:flex; flex:1; gap:2px; } #app-sidebar nav button { padding:9px 8px; font-size:12px; white-space:nowrap; }
       #sidebar-footer { margin:0; padding:0; border:0; } #sidebar-footer #home-settings-toggle { padding:7px; font-size:19px; } #home-settings-toggle span { display:none; }
       #sidebar-footer #home-settings-menu { bottom:auto; top:100%; left:auto; right:0; }
@@ -955,12 +965,13 @@
 <body>
 
   <div id="app-startup" role="status">
-    <div><h1>Justin专属单词背诵程序</h1><p id="startup-status">正在打开…</p><button id="retry-startup" class="ai-btn secondary" type="button" hidden>重试</button></div>
+    <div><h1>拾言 · Sayfolio</h1><p id="startup-status">正在打开…</p><button id="retry-startup" class="ai-btn secondary" type="button" hidden>重试</button></div>
   </div>
 
   <div id="auth-page" class="view" hidden>
     <div class="login-container">
-      <h1>Justin专属单词背诵程序</h1>
+      <img class="brand-mark login-brand-mark" src="brand/sayfolio-mark.svg" width="68" height="72" alt="Sayfolio" />
+      <h1>拾言 · Sayfolio</h1>
       <p>请使用邮箱注册或登录</p>
       <p id="auth-persistence-note" class="auth-note" hidden></p>
       <input type="email" id="auth-email" placeholder="邮箱" autocomplete="username" />
@@ -973,7 +984,7 @@
   </div>
 
   <aside id="app-sidebar" aria-label="主导航">
-    <div class="sidebar-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 7C12 3 6 3 2 5v23c4-2 10-2 14 1 4-3 10-3 14-1V5c-4-2-10-2-14 2Zm0 0v22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><div><strong>Justin</strong><span>Vocabulary</span></div></div>
+    <div class="sidebar-brand"><img class="brand-mark" src="brand/sayfolio-mark.svg" width="40" height="42" alt="Sayfolio" /><div><strong>Sayfolio</strong><span>拾言 · Vocabulary</span></div></div>
     <nav>
       <button id="nav-overview" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Zm6 10v-7h6v7"/></svg><span>总览</span></button>
       <button id="nav-wordbooks" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C8 2 4 3 2 4v17c3-2 7-2 10 0 3-2 7-2 10 0V4c-3-1-7-2-10 1Zm0 0v16"/></svg><span>全部单词本</span></button>
@@ -986,7 +997,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.02.1350</span>
+        <span id="main-app-version" class="app-version">v2026.11.02.1738</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1140,7 +1151,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.02.1350</span>
+      <span id="app-version" class="app-version">v2026.11.02.1738</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1314,7 +1325,8 @@
   <script id="ui-localization">
     function createVocabLocalization() {
       const english = {
-        'Justin专属单词背诵程序': "Justin's Vocabulary Trainer",
+        '拾言 · Sayfolio': 'Sayfolio',
+        '拾言 · Vocabulary': 'Vocabulary',
         '语言': 'Language', '界面语言': 'Interface language', '设置': 'Settings',
         '正在打开…': 'Opening…', '重试': 'Retry', '打开时间较长，请检查网络后重试。': 'This is taking longer than usual. Check your connection and retry.',
         '请使用邮箱注册或登录': 'Sign in or register with your email', '邮箱': 'Email', '密码': 'Password', '登录': 'Sign in', '注册': 'Register',
