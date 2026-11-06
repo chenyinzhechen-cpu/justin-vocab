@@ -962,15 +962,11 @@
     }
   </style>
   <style>
-    .wordbook-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:20px; min-width:0; }
-    .wordbook-last-study { display:flex; flex-direction:column; gap:5px; max-width:290px; text-align:right; }
-    .last-study-label { color:var(--muted); font-size:12px; font-weight:500; letter-spacing:.4px; }
-    #wordbook-last-study-name { font-family:var(--font-display); font-size:17px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
-    @media(max-width:760px) {
-      .wordbook-header-actions { width:100%; justify-content:space-between; gap:14px; }
-      .wordbook-last-study { text-align:left; }
-      #wordbook-last-study-name { font-size:16px; }
-      #wordbook-import { flex-shrink:0; }
+    #wordbook-page .list-item.is-last-completed { position:relative; padding-top:32px; }
+    .list-last-completed {
+      position:absolute; top:6px; right:10px;
+      padding:2px 8px; border-radius:999px; background:var(--panel-light); color:var(--text);
+      font-size:11px; font-weight:600; line-height:16px; white-space:nowrap;
     }
     #import-page { max-width:1180px; margin-inline:auto; }
     #import-page > header { gap:16px; margin-bottom:24px; flex-wrap:wrap; }
@@ -1115,13 +1111,7 @@
         <button id="wordbook-back" class="back-btn">← 返回</button>
         <h1 id="active-wordbook-title">单词本</h1>
       </div>
-      <div class="wordbook-header-actions">
-        <div id="wordbook-last-study" class="wordbook-last-study" role="status" aria-live="polite">
-          <span class="last-study-label">上次背诵</span>
-          <strong id="wordbook-last-study-name" data-user-content></strong>
-        </div>
-        <button id="wordbook-import" class="ai-btn secondary" type="button">导入单词</button>
-      </div>
+      <button id="wordbook-import" class="ai-btn secondary" type="button">导入单词</button>
     </header>
     <p id="wordbook-summary" class="subtle" data-user-content></p>
     <div class="word-section-tabs" role="tablist" aria-label="单词分区"><button id="section-new" type="button" role="tab" aria-controls="column-new" aria-selected="true"><span>新单词</span><span id="section-count-new" class="tab-count"></span></button><button id="section-review" type="button" role="tab" aria-controls="column-review" aria-selected="false"><span>需巩固单词</span><span id="section-count-review" class="tab-count"></span></button><button id="section-final" type="button" role="tab" aria-controls="column-final" aria-selected="false"><span>Final巩固单词</span><span id="section-count-final" class="tab-count"></span></button></div>
@@ -1424,7 +1414,7 @@
         '新建列表': 'NEW LISTS', '粘贴单词': 'Paste words', '每行一组：英文,中文': 'One pair per line: English,Chinese',
         '追加到已有列表': 'Add to an existing list', '不创建新列表；单词将追加到所选列表末尾，原有单词保留。': 'Append words to your selected list. Existing words stay unchanged; no new list is created.',
         '追加单词': 'APPEND WORDS', '待追加的单词': 'Words to append',
-        '上次背诵': 'Last completed', '暂无背诵完成记录': 'No completed lists yet',
+        '上次背诵': 'Last completed',
         '选择 CSV 文件': 'Choose CSV file', '未选择文件': 'No file selected',
         '直接粘贴内容（每行：英文,中文）': 'Paste words (one English,Chinese pair per line)', '导入粘贴内容并分组': 'Import and group pasted words',
         '导入单词到指定 List': 'Add words to an existing list', '格式同样是每行：英文,中文。会直接追加到你选择的具体 List 末尾。': 'Use one English,Chinese pair per line. Words will be appended to the selected list.',
@@ -3031,8 +3021,6 @@
       document.getElementById('wordbook-breadcrumb-name').textContent = activeBook?.name || '';
       const lists = getBookLists(activeWordbookId);
       const lastCompleted = getLastCompletedList(lists);
-      const lastStudyName = document.getElementById('wordbook-last-study-name');
-      if (lastStudyName) lastStudyName.textContent = window.vocabI18n.translate(lastCompleted ? getListDisplayName(lastCompleted, lastCompleted.type) : '暂无背诵完成记录');
       document.getElementById('wordbook-summary').textContent = window.vocabI18n.translate(`${lists.length} 个列表 · ${lists.reduce((sum,list) => sum + (list.words?.length || 0),0)} 个单词`);
       const newContainer = document.getElementById('new-lists');
       const reviewContainer = document.getElementById('review-lists');
@@ -3055,7 +3043,7 @@
         document.getElementById(`section-stats-${type}`).textContent = window.vocabI18n.language === 'en' ? `${completed} of ${sorted.length} lists marked complete` : `${sorted.length} 组中，${completed} 组已完成`;
         const half = Math.ceil(sorted.length / 2);
         sorted.forEach((list,index) => {
-          const row = createListRow(list,type);
+          const row = createListRow(list, type, list === lastCompleted);
           row.style.gridColumn = String(index < half ? 1 : 2);
           row.style.gridRow = String(index < half ? index+1 : index-half+1);
           container.appendChild(row);
@@ -3072,7 +3060,7 @@
       }, null);
     }
 
-    function createListRow(list, type) {
+    function createListRow(list, type, isLastCompleted = false) {
       const row = document.createElement('div');
       row.className = 'list-item';
       const leftWrap = document.createElement('div');
@@ -3123,6 +3111,13 @@
       studyButton.addEventListener('click', event => { event.stopPropagation(); startModeSelection(list); });
       actions.appendChild(studyButton);
       row.appendChild(actions);
+      if (isLastCompleted) {
+        row.classList.add('is-last-completed');
+        const badge = document.createElement('span');
+        badge.className = 'list-last-completed';
+        badge.textContent = '上次背诵';
+        row.appendChild(badge);
+      }
       row.addEventListener('click', () => startModeSelection(list));
       return row;
     }
