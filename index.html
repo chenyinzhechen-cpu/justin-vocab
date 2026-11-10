@@ -3669,6 +3669,16 @@ NO`;
       element.classList.toggle('error', isError);
     }
 
+    function splitAiSourceItems(source) {
+      return source.split(/\r?\n/).map(line => line.trim()).filter(Boolean).flatMap(line => {
+        const parts = line.split('和').map(part => part.trim());
+        const isEnglishExpression = part => /[A-Za-z]/.test(part)
+          && !/\p{L}/u.test(part.replace(/\p{Script=Latin}/gu, ''));
+        return parts.length > 1 && !/[?？]/.test(line) && parts.every(isEnglishExpression)
+          ? parts : [line];
+      });
+    }
+
     function createAiBatches(items, batchSize = AI_BATCH_SIZE) {
       const batches = [];
       for (let index = 0; index < items.length; index += batchSize) {
@@ -5179,7 +5189,7 @@ NO`;
       aiGenerating = true;
       activeAiHistoryIndex = -1;
       aiSourceDraft.save();
-      const sourceItems = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const sourceItems = splitAiSourceItems(source);
       const batches = createAiBatches(sourceItems);
       const button = document.getElementById('generate-ai-report');
       button.disabled = true;
