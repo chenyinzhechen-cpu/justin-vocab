@@ -4169,7 +4169,7 @@ NO`;
         );
         const comparable = value => String(value || '').toLowerCase().replace(/[\s.,!?;:。！？；：]/g, '');
         const completeSentence = looksLikeCompleteEnglishSentence(title);
-        const titleOptions = title.split(/\s*\/\s*/).map(part => comparable(part));
+        const titleOptions = [title, ...title.split(/\s*\/\s*/)].map(comparable);
         if (!title || !reviewedEnglish || !directChinese || !/[\u4e00-\u9fff]/.test(directChinese) || /[\u4e00-\u9fff]/.test(reviewedEnglish)) {
           throw new Error(`${sourceLabel}中英内容不完整`);
         }
