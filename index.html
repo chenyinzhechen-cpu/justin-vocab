@@ -1042,7 +1042,7 @@
       <div class="overview-heading">
         <p id="overview-date" class="eyebrow" data-user-content></p>
         <h1>总览</h1>
-        <span id="main-app-version" class="app-version">v2026.11.10.1155</span>
+        <span id="main-app-version" class="app-version">v2026.11.11.0107</span>
       </div>
       <span class="profile-mark" aria-label="个人空间">J</span>
       <div class="dashboard-header-actions">
@@ -1216,7 +1216,7 @@
     <header style="display:flex; align-items:center;">
       <button id="ai-back" class="back-btn">← 返回</button>
       <h2>AI 单词整理</h2>
-      <span id="app-version" class="app-version">v2026.11.10.1155</span>
+      <span id="app-version" class="app-version">v2026.11.11.0107</span>
     </header>
     <div class="ai-workspace">
       <div class="ai-card ai-generate-card">
@@ -1716,6 +1716,7 @@
     let preferencesUnsubscribe = null;
     let aiReportsUnsubscribe = null;
     let aiReportsLoaded = false;
+    let aiReportsRequest = null;
     let studyDays = [];
     let studyGeneration = 0;
     let studyTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
@@ -1946,8 +1947,14 @@
       document.documentElement.dataset.screen = page?.id || 'auth';
       updateSidebar(page);
       window.scrollTo(0, 0);
-      if (page === mainPage || page === libraryPage) { updateWordbookDashboard(); renderOverviewCalendar(); }
+      if (page === mainPage) { renderContinueLearning(); renderOverviewCalendar(); }
+      if (page === libraryPage) updateWordbookDashboard();
       if (page === wordbookPage) updateWordbookPage();
+      if (page === aiPage) {
+        renderAiWordbookOptions();
+        loadAiHistory();
+        if (!latestAiReport && aiHistory.length > 0) showAiHistoryEntry(0);
+      }
     }
 
     function showModal(message, onConfirm) {
@@ -2062,6 +2069,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       const version = ++authNavigationVersion;
+      aiReportsRequest = null;
       aiSourceDraft.setUser(user?.uid || null);
       document.getElementById('app-startup').hidden = true;
       if (user) {
@@ -2126,8 +2134,23 @@
       const version = authNavigationVersion;
       const active = () => auth.currentUser?.uid === uid && authNavigationVersion === version;
       initStudyRecords(uid);
+      const preferenceRef = doc(db, 'users', uid, 'preferences', 'ui');
+      const listsRef = collection(db, 'users', uid, 'lists');
+      if (listsUnsubscribe) listsUnsubscribe();
+      listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
+        if (!active()) return;
+        allLists = snapshot.docs.map(docSnap => ({ ...docSnap.data(), docId: docSnap.id }));
+        if (currentList && !snapshot.metadata?.hasPendingWrites) {
+          const latest = allLists.find(list => list.docId === currentList.docId);
+          currentList.studyCompletedAt = latest?.studyCompletedAt || null;
+          renderCompletionControls();
+        }
+        refreshActiveLists();
+        refreshVisibleWordbookData();
+      });
+
       const wordbooksRef = collection(db, 'users', uid, 'wordbooks');
-      const existingWordbooks = await getDocs(wordbooksRef);
+      const [existingWordbooks, preferenceSnap] = await Promise.all([getDocs(wordbooksRef), getDoc(preferenceRef)]);
       if (!active()) return;
       if (existingWordbooks.empty) {
         const now = Date.now();
@@ -2148,30 +2171,10 @@
           activeWordbookId = wordbooks[0].id;
         }
         refreshActiveLists();
-        updateWordbookDashboard();
-        renderAiWordbookOptions();
-        updateWordbookPage();
+        refreshVisibleWordbookData();
         if (previewState) updatePreviewControls();
       });
 
-      const listsRef = collection(db, 'users', uid, 'lists');
-      if (listsUnsubscribe) listsUnsubscribe();
-      listsUnsubscribe = onSnapshot(listsRef, (snapshot) => {
-        if (!active()) return;
-        allLists = snapshot.docs.map(docSnap => ({ ...docSnap.data(), docId: docSnap.id }));
-        if (currentList && !snapshot.metadata?.hasPendingWrites) {
-          const latest = allLists.find(list => list.docId === currentList.docId);
-          currentList.studyCompletedAt = latest?.studyCompletedAt || null;
-          renderCompletionControls();
-        }
-        refreshActiveLists();
-        updateWordbookDashboard();
-        updateWordbookPage();
-      });
-
-      const preferenceRef = doc(db, 'users', uid, 'preferences', 'ui');
-      const preferenceSnap = await getDoc(preferenceRef);
-      if (!active()) return;
       if (!preferenceSnap.exists()) {
         await setDoc(preferenceRef, { theme: document.documentElement.dataset.theme || 'dark' });
         if (!active()) return;
@@ -2181,8 +2184,15 @@
         if (!active()) return;
         if (snapshot.exists()) applyTheme(snapshot.data().theme);
       });
+    }
 
-      await initAiReports(uid);
+    function refreshVisibleWordbookData() {
+      const screen = document.documentElement.dataset.screen;
+      if (screen === mainPage.id) renderContinueLearning();
+      if (screen === libraryPage.id) updateWordbookDashboard();
+      if (screen === wordbookPage.id) updateWordbookPage();
+      if (screen === aiPage.id) renderAiWordbookOptions();
+      if (screen === importPage.id) renderManualWordbookOptions();
     }
 
     function studyDateKey(now = new Date(), timeZone = studyTimeZone) {
@@ -3497,9 +3507,6 @@
     document.getElementById('open-ai-organizer').addEventListener('click', () => {
       if (previewState?.saving) return;
       if (previewHasChanges()) return showModal('请先保存或取消当前编辑，再切换页面。');
-      renderAiWordbookOptions();
-      loadAiHistory();
-      if (!latestAiReport && aiHistory.length > 0) showAiHistoryEntry(0);
       showPage(aiPage);
     });
     document.getElementById('import-back').addEventListener('click', () => showPage(aiPage));
@@ -4460,9 +4467,18 @@ NO`;
     }
 
     async function initAiReports(uid) {
-      const version = authNavigationVersion;
-      const active = () => auth.currentUser?.uid === uid && authNavigationVersion === version;
-      await migrateLocalAiHistoryToFirebase(uid);
+      if (aiReportsRequest?.uid === uid) return;
+      const request = aiReportsRequest = { uid };
+      const active = () => auth.currentUser?.uid === uid && aiReportsRequest === request;
+      const fail = (error) => {
+        if (!active()) return;
+        aiReportsRequest = null;
+        aiReportsLoaded = false;
+        console.error(error);
+        showModal(error.message || '报告同步失败');
+      };
+      try { await migrateLocalAiHistoryToFirebase(uid); }
+      catch (error) { fail(error); return; }
       if (!active()) return;
       const reportsRef = getAiReportsRef(uid);
       if (aiReportsUnsubscribe) aiReportsUnsubscribe();
@@ -4486,16 +4502,12 @@ NO`;
         if (activeAiHistoryIndex < 0 || activeAiHistoryIndex >= aiHistory.length) activeAiHistoryIndex = 0;
         if (!latestAiReport) showAiHistoryEntry(activeAiHistoryIndex, { skipNormalizeSave: true });
         updateAiHistoryControls();
-      }, (error) => {
-        if (!active()) return;
-        aiReportsLoaded = false;
-        console.error(error);
-        showModal(error.message || '报告同步失败');
-      });
+      }, fail);
     }
 
     function loadAiHistory() {
       updateAiHistoryControls();
+      if (auth.currentUser) void initAiReports(auth.currentUser.uid);
     }
 
     function persistAiHistory() {
